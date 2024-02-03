@@ -192,7 +192,7 @@ include_directories(
 # )
 
 ## Mark other files for installation (e.g. launch and bag files, etc.)
- install(FILES
+ install(DIRECTORY
 #   # myfile1
 #   # myfile2
     launch
