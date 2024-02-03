@@ -31,3 +31,10 @@ Since the creation of the conda virtual environment, it should be activated befo
 catkin_make -DPYTHON_EXECUTABLE=~/miniconda3/envs/dual_quat/bin/python
 source devel/setup.bash
 ```
+
+## Use
+To use the library, execute the following command:
+```bash
+roslaunch dual_quaternion quaternion.launch
+```
+
