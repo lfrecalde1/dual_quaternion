@@ -1,0 +1,4 @@
+<launch>
+ <node pkg = "dual_quaternion" name = "check" type = "main.py" output = "screen">
+    </node>
+</launch>
