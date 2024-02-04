@@ -76,6 +76,17 @@ class Quaternion():
 
     
     def matrix_quaternion(qw=0.0, qx=0.0, qy=0.0, qz=0.0, q=None):
+        # Funtion that transforms a quaternion (4,1) to a matrix (4, 4)
+        # INPUT
+        #  qw: Scalar part of the quaternion.
+        #  qx: First element of the vector part of the quaternion.
+        #  qy: Second element of the vector part of the quaternion.
+        #  qz: Third element of the vector part of the quaternion.
+        #  q: Quaternion as an array, list, tuple, or numpy array [qw, qx, qy, qz].
+
+        # OUTPUT
+        # qm: Quaternion in a matrix form
+
         if q is not None:
             if isinstance(q, (np.ndarray, list, tuple)):
                 if len(q) != 4:
@@ -99,20 +110,28 @@ class Quaternion():
         # Function that multiples two quaternions
         # q = q1 x q2
         # INPUT                                    
-        # q2                                      - 
+        # q1                                      - Quaternion 
+        # OUTPUT
+        # q_mul                                   - Results of the multiplication of two Quaternions
         q1m = self.matrix_quaternion(q = q1)
         q2 = self.q
         q_mul = q1m@q2
         return q_mul
     
     def __ode__(self, w, ts):
+        # Funtion that evolve the quaternion states
+        # INPUTS
+        # w                                                       - Angular velocities
+        # ts                                                      - Sample time
+        # Output                                                  
+        # q_k                                                     - Solution ODE
         wm = self.matrix_quaternion(q = w)
         wm_aux = wm*(ts/2)
         wm_exp = expm(wm_aux)
 
-        # System evolution 
-        qnew = wm_exp@self.q
-        self.q = qnew
+        # ODE
+        q_k = wm_exp@self.q
+        self.q = q_k
         return None
 
     @property
