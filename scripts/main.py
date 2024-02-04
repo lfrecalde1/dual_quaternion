@@ -7,9 +7,16 @@ import numpy as np
 import matplotlib.pyplot as plt
 from dual_quaternion.quaternion import Quaternion
 
+def control_quat(qd, q, kp):
+    q_e = q.left_error(qd)
+    q_e_ln = q_e.ln_quat()
+    U = q_e_ln.vector_dot_product(kp)
+    return -2*U.get()
+
+
 def main():
     # Sample Time Defintion
-    sample_time = 0.02
+    sample_time = 0.05
 
     # Time defintion aux variable
     t = 0
@@ -22,17 +29,19 @@ def main():
     rospy.loginfo_once("Quaternion.....")
 
     # Init Quaternion Axis angle
-    theta = np.pi/4
-    n = np.array([0.0, 0.0, 1.0])
-    q0 = np.hstack([np.cos(theta / 2), np.sin(theta / 2) * np.array(n)])
+    theta = 3.81
+    n = np.array([0.4896, 0.2032, 0.8480])
 
-    # Velocities
+    theta_d = 0.45
+    n_d = np.array([0.4896, 0.2032, 0.8480])
 
-
-
+    q1 = np.hstack([np.cos(theta / 2), np.sin(theta / 2) * np.array(n)])
+    qd = np.hstack([np.cos(theta_d / 2), np.sin(theta_d / 2) * np.array(n_d)])
 
     # Object quaternion
-    q1 = Quaternion(q = q0, name = "quat_1")
+    q1 = Quaternion(q = q1, name = "quat_1")
+    qd = Quaternion(q = qd, name = "quat_d")
+    kp = Quaternion(q = [0.0, 1, 1, 1])
 
     # Message 
     message_ros = "Quaternion "
@@ -40,15 +49,16 @@ def main():
     # Simulation loop
     while not rospy.is_shutdown():
         tic = rospy.get_time()
+        u = control_quat(qd, q1, kp)
+
         
         # Time restriction Correct
         loop_rate.sleep()
 
-        # Send Odometry
-        q1.send_odometry()
-
         # System evolution
-        q1.__ode__([0.0, 0.0, 0.0, 0.5], sample_time)
+        q1.__ode__(u, sample_time)
+        q1.send_odometry()
+        qd.send_odometry()
 
         # Print Time Verification
         toc = rospy.get_time()
