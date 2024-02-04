@@ -9,7 +9,7 @@ from dual_quaternion.quaternion import Quaternion
 
 def main():
     # Sample Time Defintion
-    sample_time = 0.05
+    sample_time = 0.02
 
     # Time defintion aux variable
     t = 0
@@ -26,20 +26,29 @@ def main():
     n = np.array([0.0, 0.0, 1.0])
     q0 = np.hstack([np.cos(theta / 2), np.sin(theta / 2) * np.array(n)])
 
+    # Velocities
+
+
+
+
     # Object quaternion
-    q = Quaternion(q = q0)
+    q1 = Quaternion(q = q0, name = "quat_1")
 
     # Message 
     message_ros = "Quaternion "
+    
+    # Simulation loop
     while not rospy.is_shutdown():
         tic = rospy.get_time()
-
-
+        
         # Time restriction Correct
         loop_rate.sleep()
 
         # Send Odometry
-        q.send_odometry()
+        q1.send_odometry()
+
+        # System evolution
+        q1.__ode__([0.0, 0.0, 0.0, 0.5], sample_time)
 
         # Print Time Verification
         toc = rospy.get_time()
