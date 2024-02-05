@@ -31,10 +31,23 @@ Since the creation of the conda virtual environment, it should be activated befo
 catkin_make -DPYTHON_EXECUTABLE=~/miniconda3/envs/dual_quat/bin/python
 source devel/setup.bash
 ```
+## Differential Kinematics Quaternions Control
 
-## Use
-To use the library, execute the following command:
+It is possible to execute quaternion-based kinematic control, where the purpose is to converge to a desired orientation.
+
+To run the controller without taking the shortest path, execute the following command:
+
+
 ```bash
 roslaunch dual_quaternion quaternion.launch
 ```
 
+<p float="left">
+    <img src="videos/no_shortest.gif" width="600"  />
+ </p>
+
+To run the controller taking the shortest path, execute the following command:
+
+```bash
+roslaunch dual_quaternion quaternion.launch lambda:=1.0
+```

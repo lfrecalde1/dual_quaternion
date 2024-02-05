@@ -39,8 +39,8 @@ def main():
     n = np.array([0.4896, 0.2032, 0.8480])
 
     # Desired quaternion
-    theta_d = 0.45
-    n_d = np.array([0.4896, 0.2032, 0.8480])
+    theta_d = 0.0
+    n_d = np.array([0.0, 0.0, 0.0])
 
     # Initial quaternion
     q1 = np.hstack([np.cos(theta / 2), np.sin(theta / 2) * np.array(n)])
@@ -121,7 +121,6 @@ if __name__ == '__main__':
             lambda_value = None
         else:
             lambda_value = lambda_value
-        print(lambda_value)
         main()
     except(rospy.ROSInterruptException, KeyboardInterrupt):
         print("Error System")
