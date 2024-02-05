@@ -56,6 +56,10 @@ class Quaternion():
         print(self.q)
         return "<Quaternion w:{} x:{} y:{} z:{}>".format(self.q[0, 0], self.q[1, 0], self.q[2, 0], self.q[3, 0])
 
+    def __show__(self):
+        print(self.q)
+        return None
+
     def get_odometry(self):
         # Function to send the Oritentation of the Quaternion
         self.odom_msg.header.stamp = rospy.Time.now()
@@ -79,7 +83,7 @@ class Quaternion():
             # Send Odometry
             self.odometry_publisher.publish(self.odom_msg)
         else:
-            raise ValueError("This is not Quaternion with publishe")
+            raise ValueError("This is not Quaternion with publisher")
         return None
 
     
@@ -196,15 +200,29 @@ class Quaternion():
 
     def angle_axis(self):
 
-        if np.isclose(self.q[0,0], 1., atol=1.e-20):
-            return (np.array([[0.0], [0.0], [0.0], [1.0]]))
+        #if np.isclose(self.q[0,0], 1., atol=1.e-20):
+        #    return (np.array([[0.0], [0.0], [0.0], [1.0]]))
 
-        angle = 2. * np.arccos(self.q[0, 0])
-        x = self.q[1, 0] / np.sqrt(1. - self.q[0, 0]**2)
-        y = self.q[2, 0] / np.sqrt(1. - self.q[0, 0]**2)
-        z = self.q[3, 0] / np.sqrt(1. - self.q[0, 0]**2)
+        #angle = 2. * np.arccos(self.q[0, 0])
+        #x = self.q[1, 0] / np.sqrt(1. - self.q[0, 0]**2)
+        #y = self.q[2, 0] / np.sqrt(1. - self.q[0, 0]**2)
+        #z = self.q[3, 0] / np.sqrt(1. - self.q[0, 0]**2)
 
-        return np.array([[angle], [x], [y], [z]], dtype=np.double)
+        vector = Quaternion(q=[0.0, self.q[1, 0], self.q[2, 0], self.q[3, 0]])
+        norm = vector.norm()
+        if norm >0.0:
+            angle = np.arctan2(norm, self.q[0])
+            x = self.q[1, 0] / norm
+            y = self.q[2, 0] / norm
+            z = self.q[3, 0] / norm
+        else:
+            angle = [0.0]
+            x = 1.0
+            y = 0.0
+            z = 0.0
+        result = np.array([[angle[0]], [x], [y], [z]], dtype = np.double)
+        print(result)
+        return result
 
     def ln_quat(self):
         # Log mapping
@@ -229,6 +247,26 @@ class Quaternion():
         q2 = self.q
         q_mul = q1m@q2
         return Quaternion(q = q_mul[:, 0])
+
+    def norm(self):
+        # Function that calculates the norm of a quaternion
+        q1 = self.get()
+        q1 = q1.reshape((4, 1))
+        norm_2 = np.sqrt(np.dot(q1.T, q1))
+        return norm_2[0, 0]
+
+    def norm_square(self):
+        # Function that calculates the norm of a quaternion
+        q1 = self.get()
+        q1 = q1.reshape((4, 1))
+        norm_2 = np.dot(q1.T, q1)
+        return norm_2[0, 0]
+
+    def inverse(self):
+        q1_c = self.conjugate()
+        q1_c_data = q1_c.get()
+        inverse = q1_c_data/self.norm_square()
+        return Quaternion(q= inverse)
 
     def get(self):
         return self.q[:, 0]
