@@ -7,9 +7,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from dual_quaternion.quaternion import Quaternion
 from dual_quaternion.fancy_plots import plot_states_quaternion, fancy_plots_4, fancy_plots_1, plot_norm_quat
+from dual_quaternion.fancy_plots import plot_angular_velocities, fancy_plots_3
 
-# Get Values From Launch File
-lambda_value = rospy.get_param('~lambda_value', None)  # Default to 1.0 if not provided
+global lambda_value
 
 def control_quat(qd, q, kp):
     q_e = q.left_error(qd, lambda_aux = lambda_value)
@@ -60,8 +60,10 @@ def main():
     Qd[:, 0] = qd.get()
     # Message 
     message_ros = "Quaternion "
-
+    # Empty vector Norm of the error between quaternions
     Q_error_norm = np.zeros((1, t.shape[0]+1), dtype=np.double)
+
+    U = np.zeros((3, t.shape[0]), dtype=np.double)
     
     # Simulation loop
     for k in range(0, t.shape[0]):
@@ -73,6 +75,7 @@ def main():
 
         # Control Action
         u = control_quat(qd, q1, kp)
+        U[:, k] = u[1:4]
 
         
         # Time restriction Correct
@@ -104,12 +107,21 @@ def main():
     plot_norm_quat(fig12, ax12, Q_error_norm, t, "Quaternion Error Norm")
     plt.show()
 
+    fig13, ax13, ax23, ax33 = fancy_plots_3()
+    plot_angular_velocities(fig13, ax13, ax23, ax33, U, t, "Angular velocities")
+    plt.show()
     return None
 
 if __name__ == '__main__':
     try:
         # Initialization Node
-        rospy.init_node("Quaternions",disable_signals=True, anonymous=True)
+        rospy.init_node("Quaternions", disable_signals=True, anonymous=True)
+        lambda_value = rospy.get_param('~lambda_value', -1.0)  # Default to None if not provided
+        if lambda_value == -1.0:
+            lambda_value = None
+        else:
+            lambda_value = lambda_value
+        print(lambda_value)
         main()
     except(rospy.ROSInterruptException, KeyboardInterrupt):
         print("Error System")

@@ -1,8 +1,7 @@
 <launch>
  <!-- Define simple parameters -->
- <!-- -->
-    <arg name="lambda" default="" />
-    <param name="lambda_value" value="$(arg lambda)" />
+    <arg name="lambda"  default="-1.0"  />
+    <param name="lambda_value" type="double" value="$(arg lambda)" />
 
  <node pkg = "dual_quaternion" name = "Quaternion_control" type = "quaternion_kinematics_control.py" output = "screen">
     </node>

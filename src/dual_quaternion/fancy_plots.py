@@ -284,6 +284,58 @@ def plot_states_position(fig11, ax11, ax21, ax31, x, xd, t, name):
         fig11.savefig(name + ".png")
         return None
 
+def plot_angular_velocities(fig11, ax11, ax21, ax31, x, t, name):
+        t = t[0:x.shape[1]]
+        ax11.set_xlim((t[0], t[-1]))
+        ax21.set_xlim((t[0], t[-1]))
+        ax31.set_xlim((t[0], t[-1]))
+
+        ax11.set_xticklabels([])
+        ax21.set_xticklabels([])
+        state_1_e, = ax11.plot(t[0:t.shape[0]], x[0, 0:t.shape[0]],
+                    color='#C43C29', lw=1.0, ls="-")
+
+
+        state_2_e, = ax21.plot(t[0:t.shape[0]], x[1, 0:t.shape[0]],
+                        color='#3FB454', lw=1.0, ls="-")
+
+
+        state_3_e, = ax31.plot(t[0:t.shape[0]], x[2, 0:t.shape[0]],
+                        color='#3F8BB4', lw=1.0, ls="-")
+
+
+        ax11.set_ylabel(r"$[rad/s]$", rotation='vertical')
+        ax11.legend([state_1_e],
+                [ r'$w_x$'],
+                loc="best",
+                frameon=True, fancybox=True, shadow=False, ncol=2,
+                borderpad=0.5, labelspacing=0.5, handlelength=3, handletextpad=0.1,
+                borderaxespad=0.3, columnspacing=2)
+        ax11.grid(color='#949494', linestyle='-.', linewidth=0.5)
+
+        ax21.set_ylabel(r"$[rad/s]$", rotation='vertical')
+        ax21.legend([state_2_e],
+                [r'$w_y$'],
+                loc="best",
+                frameon=True, fancybox=True, shadow=False, ncol=2,
+                borderpad=0.5, labelspacing=0.5, handlelength=3, handletextpad=0.1,
+                borderaxespad=0.3, columnspacing=2)
+        ax21.grid(color='#949494', linestyle='-.', linewidth=0.5)
+        ax21.set_xticklabels([])
+    
+        ax31.set_ylabel(r"$[rad/s]$", rotation='vertical')
+        ax31.legend([state_3_e],
+                [r'$w_z$'],
+                loc="best",
+                frameon=True, fancybox=True, shadow=False, ncol=2,
+                borderpad=0.5, labelspacing=0.5, handlelength=3, handletextpad=0.1,
+                borderaxespad=0.3, columnspacing=2)
+        ax31.grid(color='#949494', linestyle='-.', linewidth=0.5)
+        ax31.set_xlabel(r"$\textrm{Time}[s]$", labelpad=5)
+
+        fig11.savefig(name + ".pdf")
+        fig11.savefig(name + ".png")
+        return None
 def plot_states_quaternion(fig11, ax11, ax21, ax31, ax41, x, xd, t, name):
         t = t[0:x.shape[1]]
         ax11.set_xlim((t[0], t[-1]))
