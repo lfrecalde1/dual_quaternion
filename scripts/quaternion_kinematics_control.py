@@ -8,17 +8,21 @@ import matplotlib.pyplot as plt
 from dual_quaternion.quaternion import Quaternion
 from dual_quaternion.fancy_plots import plot_states_quaternion, fancy_plots_4, fancy_plots_1, plot_norm_quat
 
+# Get Values From Launch File
+lambda_value = rospy.get_param('~lambda_value', None)  # Default to 1.0 if not provided
+
 def control_quat(qd, q, kp):
-    q_e = q.left_error(qd)
+    q_e = q.left_error(qd, lambda_aux = lambda_value)
     q_e_ln = q_e.ln_quat()
     U = q_e_ln.vector_dot_product(kp)
     return -2*U.get()
 
 
 def main():
+
     # Sample Time Defintion
     sample_time = 0.01
-    t_f = 10
+    t_f = 15
 
     # Time defintion aux variable
     t = np.arange(0, t_f + sample_time, sample_time)
@@ -63,7 +67,7 @@ def main():
     for k in range(0, t.shape[0]):
         tic = rospy.get_time()
         # Calculate the error and the norm
-        q_e = q1.left_error(qd)
+        q_e = q1.left_error(qd, lambda_aux = lambda_value)
         q_e_ln = q_e.ln_quat()
         Q_error_norm[:, k] = q_e_ln.norm()
 
@@ -93,11 +97,11 @@ def main():
     # Reshape Data
     # Orientation
     fig11, ax11, ax21, ax31, ax41 = fancy_plots_4()
-    plot_states_quaternion(fig11, ax11, ax21, ax31, ax41, Q1[:, :], Qd[:, :], t, "Quaternions of the System")
+    plot_states_quaternion(fig11, ax11, ax21, ax31, ax41, Q1[:, :], Qd[:, :], t, "Quaternions Results")
     plt.show()
 
     fig12, ax12 = fancy_plots_1()
-    plot_norm_quat(fig12, ax12, Q_error_norm, t, "Quaternion error norm")
+    plot_norm_quat(fig12, ax12, Q_error_norm, t, "Quaternion Error Norm")
     plt.show()
 
     return None
