@@ -6,6 +6,7 @@ import casadi as ca
 import numpy as np
 import matplotlib.pyplot as plt
 from dual_quaternion.quaternion import Quaternion
+from dual_quaternion.fancy_plots import plot_states_quaternion, fancy_plots_4, fancy_plots_1, plot_norm_quat
 
 def control_quat(qd, q, kp):
     q_e = q.left_error(qd)
@@ -17,7 +18,7 @@ def control_quat(qd, q, kp):
 def main():
     # Sample Time Defintion
     sample_time = 0.01
-    t_f = 5
+    t_f = 10
 
     # Time defintion aux variable
     t = np.arange(0, t_f + sample_time, sample_time)
@@ -55,11 +56,18 @@ def main():
     Qd[:, 0] = qd.get()
     # Message 
     message_ros = "Quaternion "
+
+    Q_error_norm = np.zeros((1, t.shape[0]+1), dtype=np.double)
     
     # Simulation loop
     for k in range(0, t.shape[0]):
         tic = rospy.get_time()
+        # Calculate the error and the norm
+        q_e = q1.left_error(qd)
+        q_e_ln = q_e.ln_quat()
+        Q_error_norm[:, k] = q_e_ln.norm()
 
+        # Control Action
         u = control_quat(qd, q1, kp)
 
         
@@ -83,6 +91,15 @@ def main():
         Qd[:, k+1] = qd.get()
 
     # Reshape Data
+    # Orientation
+    fig11, ax11, ax21, ax31, ax41 = fancy_plots_4()
+    plot_states_quaternion(fig11, ax11, ax21, ax31, ax41, Q1[:, :], Qd[:, :], t, "Quaternions of the System")
+    plt.show()
+
+    fig12, ax12 = fancy_plots_1()
+    plot_norm_quat(fig12, ax12, Q_error_norm, t, "Quaternion error norm")
+    plt.show()
+
     return None
 
 if __name__ == '__main__':

@@ -158,7 +158,7 @@ class Quaternion():
         # Compute the Conjugate of a quaternion
         return Quaternion(self.q[0,0], -self.q[1,0], -self.q[2,0], -self.q[3,0])
 
-    def left_error(self, q1):
+    def left_error(self, q1, lambda_aux = None):
         # Funtion that evolve the quaternion states
         # error = q1_c x q2 
         # INPUTS
@@ -176,9 +176,26 @@ class Quaternion():
 
         # Compute left error
         error = self.__mul__(q1 = q1_c)
-        return error
+        error_data = error.get()
 
-    def right_error(self, q1):
+        # Check shortest path
+        if lambda_aux is not None:
+            if isinstance(lambda_aux, Number):
+                # Check for shortest path
+                if error_data[0]>=0.0:
+                    aux = 1.0
+                else:
+                    aux = -1.0
+                error_aux = aux*error_data
+            else:
+                raise TypeError("Lambda must be a number.")
+        else:
+            None
+            error_aux = error_data
+
+        return Quaternion(q = error_aux)
+
+    def right_error(self, q1, lambda_aux = None):
         # Funtion that evolve the quaternion states
         # error = q1 x q2_c
         # INPUTS
@@ -193,10 +210,29 @@ class Quaternion():
 
         # get the conjugate
 
-        # Compute left error
+        # Compute right error
         q2_c = self.conjugate()
+
         error = q2_c.__mul__(q1 = q1)
-        return error
+
+        error_data = error.get()
+
+        # Check shortest path
+        if lambda_aux is not None:
+            if isinstance(lambda_aux, Number):
+                # Check for shortest path
+                if error_data[0]>=0.0:
+                    aux = 1.0
+                else:
+                    aux = -1.0
+                error_aux = aux*error_data
+            else:
+                raise TypeError("Lambda must be a number.")
+        else:
+            None
+            error_aux = error_data
+
+        return Quaternion(q = error_aux)
 
     def angle_axis(self):
 
@@ -210,24 +246,25 @@ class Quaternion():
 
         vector = Quaternion(q=[0.0, self.q[1, 0], self.q[2, 0], self.q[3, 0]])
         norm = vector.norm()
-        if norm >0.0:
+        if norm >2.2204e-15:
             angle = np.arctan2(norm, self.q[0])
             x = self.q[1, 0] / norm
             y = self.q[2, 0] / norm
             z = self.q[3, 0] / norm
         else:
             angle = [0.0]
-            x = 1.0
+            x = 0.0
             y = 0.0
-            z = 0.0
+            z = 1.0
         result = np.array([[angle[0]], [x], [y], [z]], dtype = np.double)
-        print(result)
         return result
 
     def ln_quat(self):
         # Log mapping
         angle_axis_aux = self.angle_axis()
         angle_axis_aux = angle_axis_aux[:, 0]
+        
+
         return Quaternion(qw= 0.0, qx= angle_axis_aux[0]*angle_axis_aux[1], qy = angle_axis_aux[0]*angle_axis_aux[2], qz= angle_axis_aux[0]*angle_axis_aux[3])
 
 
@@ -256,17 +293,19 @@ class Quaternion():
         return norm_2[0, 0]
 
     def norm_square(self):
-        # Function that calculates the norm of a quaternion
+        # Function that calculates the square norma of a quaternion
         q1 = self.get()
         q1 = q1.reshape((4, 1))
         norm_2 = np.dot(q1.T, q1)
         return norm_2[0, 0]
 
     def inverse(self):
+        # Function that calculates the inverse of a quaternion
         q1_c = self.conjugate()
         q1_c_data = q1_c.get()
         inverse = q1_c_data/self.norm_square()
         return Quaternion(q= inverse)
 
     def get(self):
+        # Funtion that gets the quaternion as np array
         return self.q[:, 0]
