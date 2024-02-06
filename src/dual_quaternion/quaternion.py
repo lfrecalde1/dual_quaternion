@@ -8,7 +8,7 @@ from scipy.linalg import expm
 
 class Quaternion():
     # Properties of the class
-    q = np.array([1.0, 0.0, 0.0, 0.0])
+    q = np.array([1.0, 0.0, 0.0, 0.0], dtype=np.double)
     def __init__(self, qw=0.0, qx=0.0, qy=0.0, qz=0.0, q=None, name = None):
         # Class initialization
         # INPUT:
@@ -115,6 +115,7 @@ class Quaternion():
                     [0.0, 0.0, 0.0, q_aux[3]]], dtype=np.double)
         return qm
 
+
     def __mul__(self, q1):
         # Check if the input is a quaternion
         if isinstance(q1, (Quaternion)):
@@ -132,6 +133,27 @@ class Quaternion():
         q_mul = q1m@q2
         return Quaternion(q = q_mul[:, 0])
     
+    def __adj__(self, q1):
+        # Check if the input is a quaternion
+        if isinstance(q1, (Quaternion)):
+            q1 = q1
+        else:
+            q1 = Quaternion(q = q1)
+        # Function that multiples two quaternions
+        # q = q1 x q2
+        # INPUT                                    
+        # q1                                      - Quaternion 
+        # OUTPUT
+        # q_mul                                   - Results of the multiplication of two Quaternions
+        q2_c = self.conjugate()
+        q2 = self.get()
+
+        aux_1 = q2_c.__mul__(q1)
+        aux_2 = aux_1.__mul__(q2)
+        q_mul = aux_2.get()
+
+        return Quaternion(q = q_mul)
+
     def __ode__(self, w, ts):
         # Funtion that evolve the quaternion states
         # INPUTS
@@ -140,13 +162,15 @@ class Quaternion():
         # Output                                                  
         # q_k                                                     - Solution ODE
         # Check if the input is a quaternion
+
         if isinstance(w, (Quaternion)):
             w = w
         else:
+            w = w*(ts/2)
             w = Quaternion(q = w)
 
         wm = w.matrix_quaternion()
-        wm_aux = wm*(ts/2)
+        wm_aux = wm
         wm_exp = expm(wm_aux)
 
         # ODE
@@ -236,8 +260,8 @@ class Quaternion():
 
     def angle_axis(self):
 
-        #if np.isclose(self.q[0,0], 1., atol=1.e-20):
-        #    return (np.array([[0.0], [0.0], [0.0], [1.0]]))
+        #if np.isclose(self.q[0,0], 1., atol=1.e-10):
+            #return (np.array([[0.0], [0.0], [0.0], [1.0]]))
 
         #angle = 2. * np.arccos(self.q[0, 0])
         #x = self.q[1, 0] / np.sqrt(1. - self.q[0, 0]**2)
@@ -246,8 +270,9 @@ class Quaternion():
 
         vector = Quaternion(q=[0.0, self.q[1, 0], self.q[2, 0], self.q[3, 0]])
         norm = vector.norm()
-        if norm >2.2204e-15:
-            angle = np.arctan2(norm, self.q[0])
+        #angle = 2. * np.arccos(self.q[0, 0])
+        angle = np.arctan2(norm, self.q[0])
+        if  np.abs(angle[0]) > 2.22e-15:
             x = self.q[1, 0] / norm
             y = self.q[2, 0] / norm
             z = self.q[3, 0] / norm
@@ -257,6 +282,7 @@ class Quaternion():
             y = 0.0
             z = 1.0
         result = np.array([[angle[0]], [x], [y], [z]], dtype = np.double)
+        #result = np.array([[angle], [x], [y], [z]], dtype = np.double)
         return result
 
     def ln_quat(self):

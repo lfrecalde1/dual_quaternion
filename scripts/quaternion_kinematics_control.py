@@ -11,9 +11,18 @@ from dual_quaternion.fancy_plots import plot_angular_velocities, fancy_plots_3
 
 global lambda_value
 
-def control_quat(qd, q, kp):
+def control_quat(qd, q, wd, kp):
+    # Calculate left error
     q_e = q.left_error(qd, lambda_aux = lambda_value)
+
+    # Apply log mapping
     q_e_ln = q_e.ln_quat()
+
+    # Conjugate left error
+    q_e_c = q_e.conjugate()
+
+    Ad_qec = q_e_c.__adj__(wd)
+    
     U = q_e_ln.vector_dot_product(kp)
     return -2*U.get()
 
@@ -21,8 +30,8 @@ def control_quat(qd, q, kp):
 def main():
 
     # Sample Time Defintion
-    sample_time = 0.01
-    t_f = 15
+    sample_time = 0.05
+    t_f = 10
 
     # Time defintion aux variable
     t = np.arange(0, t_f + sample_time, sample_time)
@@ -39,8 +48,8 @@ def main():
     n = np.array([0.4896, 0.2032, 0.8480])
 
     # Desired quaternion
-    theta_d = 0.0
-    n_d = np.array([0.0, 0.0, 0.0])
+    theta_d = np.pi/2
+    n_d = np.array([0.0, 0.0, 1.0])
 
     # Initial quaternion
     q1 = np.hstack([np.cos(theta / 2), np.sin(theta / 2) * np.array(n)])
@@ -50,7 +59,7 @@ def main():
     # Object quaternion
     q1 = Quaternion(q = q1, name = "quat_1")
     qd = Quaternion(q = qd, name = "quat_d")
-    kp = Quaternion(q = [0.0, 2, 2, 2])
+    kp = Quaternion(q = [0.0, 1, 1, 1])
 
     # Empty vector where the data is going to be stored
     Q1 = np.zeros((4, t.shape[0]+1), dtype=np.double)
@@ -74,7 +83,7 @@ def main():
         Q_error_norm[:, k] = q_e_ln.norm()
 
         # Control Action
-        u = control_quat(qd, q1, kp)
+        u = control_quat(qd = qd, q = q1, wd = [0.0, 0.0, 0.0, 0.0], kp = kp)
         U[:, k] = u[1:4]
 
         
