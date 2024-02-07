@@ -43,7 +43,7 @@ roslaunch dual_quaternion quaternion.launch
 ```
 
 <p float="left">
-    <img src="videos/no_shortest.gif" width="600"  />
+    <img src="videos/trajectory_kine.gif" width="600"  />
  </p>
 
 To run the controller taking the shortest path, execute the following command:
