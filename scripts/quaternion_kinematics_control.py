@@ -12,26 +12,48 @@ from dual_quaternion.fancy_plots import plot_angular_velocities, fancy_plots_3
 global lambda_value
 
 def control_quat(qd, q, wd, kp):
+    qd_c = qd.conjugate()
     # Calculate left error
-    q_e = q.left_error(qd, lambda_aux = lambda_value)
+    q_e = q.right_error(qd_c, lambda_aux = lambda_value)
 
     # Apply log mapping
     q_e_ln = q_e.ln_quat()
 
-    # Conjugate left error
-    q_e_c = q_e.conjugate()
 
-    Ad_qec = q_e_c.__adj__(wd)
+    Ad_qe = q_e.__adj__(wd)
     
     U = q_e_ln.vector_dot_product(kp)
-    return -2*U.get()
+    return -2*U.get() + Ad_qe.get()
 
+def reference(t, ts):
+    # Desired quaternion
+    theta_d = np.pi/2
+    n_d = np.array([0.0, 0.0, 1.0])
+
+    # Desired quaternion
+    qd = np.hstack([np.cos(theta_d / 2), np.sin(theta_d / 2) * np.array(n_d)])
+
+    # Object quaternion
+    qd = Quaternion(q = qd, name = "quat_d")
+    # Empty vector
+    Qd = np.zeros((4, t.shape[0]+1), dtype=np.double)
+    Qd[:, 0] = qd.get()
+
+    Wd = np.zeros((4, t.shape[0]), dtype=np.double)
+    Wd[1, :] = 1*np.sin(0.5*t)
+    Wd[2, :] = 1*np.cos(0.5*t)
+    Wd[3, :] = 2*np.cos(1*t)
+
+
+    for k in range(0, t.shape[0]):
+        qd.__ode__(Wd[:, k], ts)
+        Qd[:, k+1] = qd.get()
+    return Qd, Wd
 
 def main():
-
     # Sample Time Defintion
     sample_time = 0.05
-    t_f = 10
+    t_f = 20
 
     # Time defintion aux variable
     t = np.arange(0, t_f + sample_time, sample_time)
@@ -47,55 +69,62 @@ def main():
     theta = 3.81
     n = np.array([0.4896, 0.2032, 0.8480])
 
-    # Desired quaternion
-    theta_d = np.pi/2
-    n_d = np.array([0.0, 0.0, 1.0])
-
     # Initial quaternion
     q1 = np.hstack([np.cos(theta / 2), np.sin(theta / 2) * np.array(n)])
-    # Desired quaternion
-    qd = np.hstack([np.cos(theta_d / 2), np.sin(theta_d / 2) * np.array(n_d)])
 
     # Object quaternion
     q1 = Quaternion(q = q1, name = "quat_1")
-    qd = Quaternion(q = qd, name = "quat_d")
-    kp = Quaternion(q = [0.0, 1, 1, 1])
+
+    # Control Gains
+    kp = Quaternion(q = [0.0, 1.5, 1.5, 1.5])
 
     # Empty vector where the data is going to be stored
     Q1 = np.zeros((4, t.shape[0]+1), dtype=np.double)
     Q1[:, 0] = q1.get()
 
-    Qd = np.zeros((4, t.shape[0]+1), dtype=np.double)
-    Qd[:, 0] = qd.get()
     # Message 
     message_ros = "Quaternion "
+
     # Empty vector Norm of the error between quaternions
     Q_error_norm = np.zeros((1, t.shape[0]+1), dtype=np.double)
 
+    # Empty vector of control actions
     U = np.zeros((3, t.shape[0]), dtype=np.double)
-    
+
+    # Send Initial Odometry 
+    q1.send_odometry()
+
+    # get Reference Signal
+    Qd, Wd = reference(t, sample_time)
+    qd = Quaternion(q = Qd[:, 0], name = "quat_d")
+    wd = Quaternion(q = Wd[:, 0])
+
     # Simulation loop
     for k in range(0, t.shape[0]):
         tic = rospy.get_time()
+        # Update Quaternions
+        qd.set(q = Qd[:, k])
+        wd.set(q = Wd[:, k])
+
         # Calculate the error and the norm
-        q_e = q1.left_error(qd, lambda_aux = lambda_value)
+        qd_c = qd.conjugate()
+        q_e = q1.right_error(qd_c, lambda_aux = lambda_value)
         q_e_ln = q_e.ln_quat()
         Q_error_norm[:, k] = q_e_ln.norm()
 
         # Control Action
-        u = control_quat(qd = qd, q = q1, wd = [0.0, 0.0, 0.0, 0.0], kp = kp)
+        u = control_quat(qd = qd, q = q1, wd = wd, kp = kp)
         U[:, k] = u[1:4]
-
-        
-        # Time restriction Correct
-        loop_rate.sleep()
 
         # System evolution
         q1.__ode__(u, sample_time)
 
         # Send Data
-        q1.send_odometry()
         qd.send_odometry()
+        q1.send_odometry()
+
+        # Time restriction Correct
+        loop_rate.sleep()
 
         # Print Time Verification
         toc = rospy.get_time()
@@ -104,7 +133,6 @@ def main():
 
         # Save Data
         Q1[:, k+1] = q1.get()
-        Qd[:, k+1] = qd.get()
 
     # Reshape Data
     # Orientation

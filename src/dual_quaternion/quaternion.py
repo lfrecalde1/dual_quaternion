@@ -63,7 +63,7 @@ class Quaternion():
     def get_odometry(self):
         # Function to send the Oritentation of the Quaternion
         self.odom_msg.header.stamp = rospy.Time.now()
-        self.odom_msg.header.frame_id = "map"
+        self.odom_msg.header.frame_id = "world"
         self.odom_msg.child_frame_id = self.name
 
         self.odom_msg.pose.pose.position.x = 0
@@ -83,7 +83,7 @@ class Quaternion():
             # Send Odometry
             self.odometry_publisher.publish(self.odom_msg)
         else:
-            raise ValueError("This is not Quaternion with publisher")
+            raise ValueError("This is not a Quaternion with publisher")
         return None
 
     
@@ -164,12 +164,14 @@ class Quaternion():
         # Check if the input is a quaternion
 
         if isinstance(w, (Quaternion)):
-            w = w
-        else:
-            w = w*(ts/2)
-            w = Quaternion(q = w)
+            aux = w.get()
+            w1 = Quaternion(q = aux*(ts/2))
 
-        wm = w.matrix_quaternion()
+        else:
+            aux = w*(ts/2)
+            w1 = Quaternion(q = aux)
+
+        wm = w1.matrix_quaternion()
         wm_aux = wm
         wm_exp = expm(wm_aux)
 
@@ -182,42 +184,6 @@ class Quaternion():
         # Compute the Conjugate of a quaternion
         return Quaternion(self.q[0,0], -self.q[1,0], -self.q[2,0], -self.q[3,0])
 
-    def left_error(self, q1, lambda_aux = None):
-        # Funtion that evolve the quaternion states
-        # error = q1_c x q2 
-        # INPUTS
-        # q1                                                       - Quaternion
-        # Output                                                  
-        # error                                                    - Error quaternion
-        # Check if the input is a quaternion
-        if isinstance(q1, (Quaternion)):
-            q1 = q1
-        else:
-            q1 = Quaternion(q = q1)
-
-        # get the conjugate
-        q1_c = q1.conjugate()
-
-        # Compute left error
-        error = self.__mul__(q1 = q1_c)
-        error_data = error.get()
-
-        # Check shortest path
-        if lambda_aux is not None:
-            if isinstance(lambda_aux, Number):
-                # Check for shortest path
-                if error_data[0]>=0.0:
-                    aux = 1.0
-                else:
-                    aux = -1.0
-                error_aux = aux*error_data
-            else:
-                raise TypeError("Lambda must be a number.")
-        else:
-            None
-            error_aux = error_data
-
-        return Quaternion(q = error_aux)
 
     def right_error(self, q1, lambda_aux = None):
         # Funtion that evolve the quaternion states
@@ -228,16 +194,16 @@ class Quaternion():
         # error                                                    - Error quaternion
         # Check if the input is a quaternion
         if isinstance(q1, (Quaternion)):
-            q1 = q1
+            None
         else:
             q1 = Quaternion(q = q1)
 
         # get the conjugate
 
         # Compute right error
-        q2_c = self.conjugate()
+        q2 = self.get()
 
-        error = q2_c.__mul__(q1 = q1)
+        error = q1.__mul__(q1 = q2)
 
         error_data = error.get()
 
@@ -245,7 +211,7 @@ class Quaternion():
         if lambda_aux is not None:
             if isinstance(lambda_aux, Number):
                 # Check for shortest path
-                if error_data[0]>=0.0:
+                if error_data[0]>=0:
                     aux = 1.0
                 else:
                     aux = -1.0
@@ -253,7 +219,6 @@ class Quaternion():
             else:
                 raise TypeError("Lambda must be a number.")
         else:
-            None
             error_aux = error_data
 
         return Quaternion(q = error_aux)
@@ -272,7 +237,7 @@ class Quaternion():
         norm = vector.norm()
         #angle = 2. * np.arccos(self.q[0, 0])
         angle = np.arctan2(norm, self.q[0])
-        if  np.abs(angle[0]) > 2.22e-15:
+        if  np.abs(angle[0]) > 2.22e-10:
             x = self.q[1, 0] / norm
             y = self.q[2, 0] / norm
             z = self.q[3, 0] / norm
@@ -291,7 +256,7 @@ class Quaternion():
         angle_axis_aux = angle_axis_aux[:, 0]
         
 
-        return Quaternion(qw= 0.0, qx= angle_axis_aux[0]*angle_axis_aux[1], qy = angle_axis_aux[0]*angle_axis_aux[2], qz= angle_axis_aux[0]*angle_axis_aux[3])
+        return Quaternion(qw= 0.0, qx= (1/2)*(angle_axis_aux[0])*angle_axis_aux[1], qy = (1/2)*(angle_axis_aux[0])*angle_axis_aux[2], qz= (1/2)*(angle_axis_aux[0])*angle_axis_aux[3])
 
 
     def vector_dot_product(self, q1):
@@ -335,3 +300,20 @@ class Quaternion():
     def get(self):
         # Funtion that gets the quaternion as np array
         return self.q[:, 0]
+
+    def set(self, qw=0.0, qx=0.0, qy=0.0, qz=0.0, q=None,):
+        # Funtion that sets the quaternion as np array
+        if q is not None:
+            if isinstance(q, (np.ndarray, list, tuple)):
+                if len(q) != 4:
+                    raise ValueError("Array q must have exactly 4 elements.")
+                aux = np.array(q, dtype=np.double)
+                self.q = aux.reshape((4, 1))
+            else:
+                raise TypeError("q must be an ndarray, list, or tuple.")
+        else:
+            if not all(isinstance(i, Number) for i in [qw, qx, qy, qz]):
+                raise TypeError("qw, qx, qy, qz should be scalars.")
+            aux= np.array([qw, qx, qy, qz], dtype=np.double)
+            self.q = aux.reshape((4, 1))
+        return None
