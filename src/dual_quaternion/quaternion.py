@@ -8,7 +8,7 @@ class DualQuaternion():
     # Properties of the class
     q = None
     t = None
-    def __init__(self,tw=0.0, tx=0.0, ty=0.0, tz=0.0, t=None, qw=0.0, qx=0.0, qy=0.0, qz=0.0, q=None, name = None):
+    def __init__(self,tw = 0.0, tx = 0.0, ty = 0.0, tz = 0.0, t = None, qw = 0.0, qx = 0.0, qy = 0.0, qz = 0.0, q = None, name = None):
         # Check Values for the quaternion elements
         if q is not None:
             if isinstance(q, (np.ndarray, list, tuple)):
@@ -20,7 +20,7 @@ class DualQuaternion():
         else:
             if not all(isinstance(i, Number) for i in [qw, qx, qy, qz]):
                 raise TypeError("qw, qx, qy, qz should be scalars.")
-            self.q = Quaternion(qw=qw, qx=qx, qy=qy, qz=qz)
+            self.q = Quaternion(qw = qw, qx = qx, qy = qy, qz = qz)
 
         # Check Values for the position elements
         if t is not None:
@@ -33,7 +33,7 @@ class DualQuaternion():
         else:
             if not all(isinstance(i, Number) for i in [tw, tx, ty, tz]):
                 raise TypeError("tw, tx, ty, tz should be scalars.")
-            self.t = Quaternion(qw=tw, qx=tx, qy=ty, qz=tz)
+            self.t = Quaternion(qw = tw, qx = tx, qy = ty, qz = tz)
         
         # Set name for the Odometry topic
         if name is None:
@@ -49,7 +49,36 @@ class DualQuaternion():
             odomety_topic = "/" + self.name + "/odom"
             self.odometry_publisher = rospy.Publisher(odomety_topic, Odometry, queue_size = 10)
 
-        None
+        # Set Primal and Dual Part
+        self.p = self.q
+        dual = self.q.__mul__(q1 = self.t)
+        dual_data = (1/2)*dual.get()
+        self.d = Quaternion(q = dual_data)
+
+    def get_p(self):
+        # Funtion that gets the dualquaternion primal part as np array
+        return self.p.get()
+
+    def get_q(self):
+        # Function thar returns the quaternion of the dualquaternion
+        return self.p.get()
+
+    def get_d(self):
+        # Funtion that gets the quaternion dual part as np array
+        return self.d.get()
+
+    def get_t(self):
+        # Funtion that returns the translation of the dualquaternion
+        primal_m = self.p.matrix_quaternion_aux()
+        primal_m_t = primal_m.T
+        dual_v = self.d.get()
+        dual_v = dual_v.reshape((4, 1))
+        trans = 2*primal_m_t@dual_v
+        return trans[:, 0]
+
+    def get(self):
+        # Funtion that gets the dualquaternion as np array
+        return np.hstack([self.p.get(), self.d.get()])
 
 class Quaternion():
     # Properties of the class
@@ -146,6 +175,19 @@ class Quaternion():
                     [q_aux[3], -q_aux[2], q_aux[1], q_aux[0]]], dtype=np.double)
         return qm
 
+    def matrix_quaternion_aux(self):
+        # Funtion that transforms a quaternion (4,1) to a matrix (4, 4)
+        # INPUT
+        q_aux = self.q[:, 0]
+
+        # OUTPUT
+        # qm: Quaternion in a matrix form
+
+        qm = np.array([[q_aux[0], -q_aux[1], -q_aux[2], -q_aux[3]],
+                    [q_aux[1], q_aux[0], q_aux[3], -q_aux[2]],
+                    [q_aux[2], -q_aux[3], q_aux[0], q_aux[1]],
+                    [q_aux[3], q_aux[2], -q_aux[1], q_aux[0]]], dtype=np.double)
+        return qm
     def matrix_identity(self):
         # Funtion that transforms a quaternion (4,1) to a matrix (4, 4)
         # INPUT

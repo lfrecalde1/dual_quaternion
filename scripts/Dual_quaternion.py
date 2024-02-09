@@ -6,6 +6,7 @@ import casadi as ca
 import numpy as np
 import matplotlib.pyplot as plt
 from dual_quaternion.quaternion import Quaternion
+from dual_quaternion.quaternion import DualQuaternion
 
 
 def main():
@@ -29,13 +30,10 @@ def main():
 
     # Initial quaternion
     q1 = np.hstack([np.cos(theta / 2), np.sin(theta / 2) * np.array(n)])
+    t1 = np.array([0.0, -1.0, 10.0, -6.0])
 
     # Object quaternion
-    q1 = Quaternion(q = q1, name = "quat_1")
-
-    # Control Gains
-    kp = Quaternion(q = [0.0, 1.5, 1.5, 1.5])
-
+    Q1 = DualQuaternion(q = q1, t = t1, name = "dual_1")
     return None
 
 if __name__ == '__main__':
