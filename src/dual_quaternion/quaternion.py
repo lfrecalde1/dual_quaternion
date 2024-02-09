@@ -4,7 +4,52 @@ import rospy
 from nav_msgs.msg import Odometry
 import random
 from scipy.linalg import expm
+class DualQuaternion():
+    # Properties of the class
+    q = None
+    t = None
+    def __init__(self,tw=0.0, tx=0.0, ty=0.0, tz=0.0, t=None, qw=0.0, qx=0.0, qy=0.0, qz=0.0, q=None, name = None):
+        # Check Values for the quaternion elements
+        if q is not None:
+            if isinstance(q, (np.ndarray, list, tuple)):
+                if len(q) != 4:
+                    raise ValueError("Array q must have exactly 4 elements.")
+                self.q = Quaternion(q = q)
+            else:
+                raise TypeError("q must be an ndarray, list, or tuple.")
+        else:
+            if not all(isinstance(i, Number) for i in [qw, qx, qy, qz]):
+                raise TypeError("qw, qx, qy, qz should be scalars.")
+            self.q = Quaternion(qw=qw, qx=qx, qy=qy, qz=qz)
 
+        # Check Values for the position elements
+        if t is not None:
+            if isinstance(t, (np.ndarray, list, tuple)):
+                if len(t) != 4:
+                    raise ValueError("Array t must have exactly 4 elements with the first values equal to zero.")
+                self.t = Quaternion(q = t)
+            else:
+                raise TypeError("t must be an ndarray, list, or tuple.")
+        else:
+            if not all(isinstance(i, Number) for i in [tw, tx, ty, tz]):
+                raise TypeError("tw, tx, ty, tz should be scalars.")
+            self.t = Quaternion(qw=tw, qx=tx, qy=ty, qz=tz)
+        
+        # Set name for the Odometry topic
+        if name is None:
+            self.name = name
+        else:
+            # Odometry message
+            self.odom_msg = Odometry()
+
+            # Name
+            self.name = name
+
+            # Publisher Odometry
+            odomety_topic = "/" + self.name + "/odom"
+            self.odometry_publisher = rospy.Publisher(odomety_topic, Odometry, queue_size = 10)
+
+        None
 
 class Quaternion():
     # Properties of the class
