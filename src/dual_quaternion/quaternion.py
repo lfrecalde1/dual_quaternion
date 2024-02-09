@@ -8,32 +8,51 @@ class DualQuaternion():
     # Properties of the class
     q = None
     t = None
-    def __init__(self,tw = 0.0, tx = 0.0, ty = 0.0, tz = 0.0, t = None, qw = 0.0, qx = 0.0, qy = 0.0, qz = 0.0, q = None, name = None):
+    def __init__(self,tw = 0.0, tx = 0.0, ty = 0.0, tz = 0.0, t = None, qw = 0.0, qx = 0.0, qy = 0.0, qz = 0.0, q = None, dual=None, name = None):
         # Check Values for the quaternion elements
-        if q is not None:
-            if isinstance(q, (np.ndarray, list, tuple)):
-                if len(q) != 4:
+        if dual is not None:
+            if isinstance(dual, (np.ndarray, list, tuple)):
+                if len(dual) != 8:
                     raise ValueError("Array q must have exactly 4 elements.")
-                self.q = Quaternion(q = q)
+                self.p = Quaternion(q = dual[0:4])
+                self.d = Quaternion(q = dual[4:8])
             else:
-                raise TypeError("q must be an ndarray, list, or tuple.")
+                raise TypeError("dual must be an ndarray, list, or tuple.")
         else:
-            if not all(isinstance(i, Number) for i in [qw, qx, qy, qz]):
-                raise TypeError("qw, qx, qy, qz should be scalars.")
-            self.q = Quaternion(qw = qw, qx = qx, qy = qy, qz = qz)
+            if q is not None:
+                if isinstance(q, (np.ndarray, list, tuple)):
+                    if len(q) != 4:
+                        raise ValueError("Array q must have exactly 4 elements.")
+                    q = Quaternion(q = q)
+                elif isinstance(q, (Quaternion)):
+                    q = q
+                else:
+                    raise TypeError("q must be an ndarray, list, or tuple.")
+            else:
+                if not all(isinstance(i, Number) for i in [qw, qx, qy, qz]):
+                    raise TypeError("qw, qx, qy, qz should be scalars.")
+                q = Quaternion(qw = qw, qx = qx, qy = qy, qz = qz)
 
-        # Check Values for the position elements
-        if t is not None:
-            if isinstance(t, (np.ndarray, list, tuple)):
-                if len(t) != 4:
-                    raise ValueError("Array t must have exactly 4 elements with the first values equal to zero.")
-                self.t = Quaternion(q = t)
+            # Check Values for the position elements
+            if t is not None:
+                if isinstance(t, (np.ndarray, list, tuple)):
+                    if len(t) != 4:
+                        raise ValueError("Array t must have exactly 4 elements with the first values equal to zero.")
+                    t = Quaternion(q = t)
+                elif isinstance(t, (Quaternion)):
+                    t = t
+                else:
+                    raise TypeError("t must be an ndarray, list, or tuple.")
             else:
-                raise TypeError("t must be an ndarray, list, or tuple.")
-        else:
-            if not all(isinstance(i, Number) for i in [tw, tx, ty, tz]):
-                raise TypeError("tw, tx, ty, tz should be scalars.")
-            self.t = Quaternion(qw = tw, qx = tx, qy = ty, qz = tz)
+                if not all(isinstance(i, Number) for i in [tw, tx, ty, tz]):
+                    raise TypeError("tw, tx, ty, tz should be scalars.")
+                t = Quaternion(qw = tw, qx = tx, qy = ty, qz = tz)
+                
+            self.p = q
+            dual = q.__mul__(q1 = t)
+            dual_data = (1/2)*dual.get()
+            self.d = Quaternion(q = dual_data)
+
         
         # Set name for the Odometry topic
         if name is None:
@@ -48,12 +67,6 @@ class DualQuaternion():
             # Publisher Odometry
             odomety_topic = "/" + self.name + "/odom"
             self.odometry_publisher = rospy.Publisher(odomety_topic, Odometry, queue_size = 10)
-
-        # Set Primal and Dual Part
-        self.p = self.q
-        dual = self.q.__mul__(q1 = self.t)
-        dual_data = (1/2)*dual.get()
-        self.d = Quaternion(q = dual_data)
 
     def get_p(self):
         # Funtion that gets the dualquaternion primal part as np array
@@ -79,6 +92,152 @@ class DualQuaternion():
     def get(self):
         # Funtion that gets the dualquaternion as np array
         return np.hstack([self.p.get(), self.d.get()])
+
+    def matrix_dualquaternion(self):
+        # Funtion that transforms a dualquaternion (8,1) to a matrix (8, 8)
+        # INPUT  
+        # None                                                             
+        # OUTPUT
+        # H                                                                 - Dualquaternion matrix
+        h1p = self.p.matrix_quaternion()
+        h1d = self.d.matrix_quaternion()
+        h1_zero = np.zeros((4, 4), dtype=np.double)
+        H = np.vstack((np.hstack((h1p, h1_zero)),np.hstack((h1d, h1p))))
+        return H
+
+    def __mul__(self, q1, name=None):
+        # Check if the input is a quaternion
+        if isinstance(q1, (DualQuaternion)):
+            D1 = q1
+        else:
+            D1 = DualQuaternion(dual = q1)
+
+        # Function that multiples two quaternions
+        # q = q1 x q2
+        # INPUT                                    
+        # q1                                      - Quaternion 
+        # OUTPUT
+        # q_mul                                   - Results of the multiplication of two Quaternions
+        q1m = D1.matrix_dualquaternion()
+        q2 = self.get()
+        q2 = q2.reshape((8, 1))
+        q_mul = q1m@q2
+        return DualQuaternion(dual = q_mul[:, 0], name= name)
+
+    def get_odometry(self):
+        # Function to send the Oritentation of the Quaternion
+        self.odom_msg.header.stamp = rospy.Time.now()
+        self.odom_msg.header.frame_id = "world"
+        self.odom_msg.child_frame_id = self.name
+        # Get Data 
+        t = self.get_t()
+        q = self.get_q()
+        self.odom_msg.pose.pose.position.x = t[1]
+        self.odom_msg.pose.pose.position.y = t[2]
+        self.odom_msg.pose.pose.position.z = t[3]
+
+        self.odom_msg.pose.pose.orientation.x = q[1]
+        self.odom_msg.pose.pose.orientation.y = q[2]
+        self.odom_msg.pose.pose.orientation.z = q[3]
+        self.odom_msg.pose.pose.orientation.w = q[0]
+        return None
+
+    def send_odometry(self):
+        # Function to send the orientation of the Quaternion
+        if self.name is not None:
+            self.get_odometry()
+            # Send Odometry
+            self.odometry_publisher.publish(self.odom_msg)
+        else:
+            raise ValueError("This is not a Quaternion with publisher")
+        return None
+
+    def dual_velocity_body(self, w):
+        # Function that maps the linear and angular velocities to the dual quaternion form
+        if isinstance(w, (DualQuaternion)):
+            aux = w.get()
+            w1 = DualQuaternion(dual = aux)
+
+        else:
+            aux = w
+            w1 = DualQuaternion(dual = aux)
+
+        # Transform velocity to the body
+        #w1 = self.__adj__(w1)
+
+        # Split values
+        w1_data = w1.get()
+        angular = w1_data[1:4]
+        linear = w1_data[5:8]
+
+        # Position dual
+        p_data = self.get_t()
+        p = p_data[1:4]
+
+        # Create Primal and dual
+        primal = np.hstack((0, angular))
+        dual_aux = linear + np.cross(p, angular)
+        dual = np.hstack((0, dual_aux))
+
+        dual_velocity = np.hstack((primal, dual))
+
+        return DualQuaternion(dual=dual_velocity)
+
+    def __ode__(self, w, ts):
+        # Funtion that evolves the Dualquaternion states
+        # INPUTS
+        # w                                                       - Angular velocities
+        # ts                                                      - Sample time
+        # Output                                                  
+        # q_k                                                     - Solution ODE
+        # Check if the input is a quaternion
+
+        if isinstance(w, (DualQuaternion)):
+            aux = w.get()
+            w1 = DualQuaternion(dual = aux*(ts/2))
+
+        else:
+            aux = w*(ts/2)
+            w1 = DualQuaternion(dual = aux)
+
+        wm = w1.matrix_dualquaternion()
+        wm_aux = wm
+        wm_exp = expm(wm_aux)
+
+        # ODE
+        q2 = self.get()
+        q2 = q2.reshape((8, 1))
+        q_k = wm_exp@q2
+
+        self.p = Quaternion(q = q_k[0:4, 0])
+        self.d = Quaternion(q = q_k[4:8, 0])
+        return None
+
+    def __adj__(self, q1):
+        # Check if the input is a DualQuaternion
+        if isinstance(q1, (DualQuaternion)):
+            q1 = q1
+        else:
+            q1 = DualQuaternion(dual = q1)
+
+        q2_c = self.conjugate()
+        q2 = self.get()
+
+        aux_1 = q2_c.__mul__(q1)
+        aux_2 = aux_1.__mul__(q2)
+        q_mul = aux_2.get()
+
+        return DualQuaternion(dual = q_mul)
+
+    def conjugate(self):
+        # Compute the Conjugate of a quaternion
+        primal_c = self.p.conjugate()
+        dual_c = self.d.conjugate()
+        primal_c_data = primal_c.get()
+        dual_c_data = dual_c.get()
+        aux = np.hstack((primal_c_data, dual_c_data))
+
+        return DualQuaternion(dual = aux)
 
 class Quaternion():
     # Properties of the class
