@@ -18,8 +18,6 @@ def control_quat(qd, q, wd, kp):
 
     # Apply log mapping
     q_e_ln = q_e.ln_quat()
-
-
     Ad_qe = q_e.__adj__(wd)
     
     U = q_e_ln.vector_dot_product(kp)
@@ -27,8 +25,8 @@ def control_quat(qd, q, wd, kp):
 
 def reference(t, ts):
     # Desired quaternion
-    theta_d = np.pi/2
-    n_d = np.array([0.0, 0.0, 1.0])
+    theta_d = -np.pi/4
+    n_d = np.array([1.0, 0.0, 0.0])
 
     # Desired quaternion
     qd = np.hstack([np.cos(theta_d / 2), np.sin(theta_d / 2) * np.array(n_d)])
@@ -40,12 +38,16 @@ def reference(t, ts):
     Qd[:, 0] = qd.get()
 
     Wd = np.zeros((4, t.shape[0]), dtype=np.double)
-    Wd[1, :] = 1*np.sin(0.5*t)
+    Wd[1, :] = 0.1
     Wd[2, :] = 1*np.cos(0.5*t)
     Wd[3, :] = 2*np.cos(1*t)
 
+    Wd_q = np.zeros((4, t.shape[0]), dtype=np.double)
+
 
     for k in range(0, t.shape[0]):
+        Wd_qaux = qd.__adj__(Wd[:,k])
+        Wd_q[:, k] = Wd_qaux.get()
         qd.__ode__(Wd[:, k], ts)
         Qd[:, k+1] = qd.get()
     return Qd, Wd
@@ -66,8 +68,8 @@ def main():
     rospy.loginfo_once("Quaternion.....")
 
     # Init Quaternion Axis angle
-    theta = 3.81
-    n = np.array([0.4896, 0.2032, 0.8480])
+    theta = np.pi/4
+    n = np.array([0.0, 0.0, 1.0])
 
     # Initial quaternion
     q1 = np.hstack([np.cos(theta / 2), np.sin(theta / 2) * np.array(n)])

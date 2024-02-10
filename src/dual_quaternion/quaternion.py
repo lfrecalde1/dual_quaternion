@@ -176,7 +176,7 @@ class DualQuaternion():
 
         # Create Primal and dual
         primal = np.hstack((0, angular))
-        dual_aux = linear + np.cross(p, angular)
+        dual_aux = linear + np.cross(angular, p)
         dual = np.hstack((0, dual_aux))
 
         dual_velocity = np.hstack((primal, dual))
@@ -397,7 +397,6 @@ class Quaternion():
         aux_1 = q2_c.__mul__(q1)
         aux_2 = aux_1.__mul__(q2)
         q_mul = aux_2.get()
-
         return Quaternion(q = q_mul)
 
     def __ode__(self, w, ts):
