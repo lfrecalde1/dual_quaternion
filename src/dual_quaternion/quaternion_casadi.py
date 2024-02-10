@@ -66,8 +66,8 @@ class Quaternion():
             q_product = q_product.reshape((4, 1))
 
         elif isinstance(p, cs.MX) and isinstance(q, cs.MX):
-            aux_1 = p[0, 0] * q[0, 0] - np.dot(p[1:4, 0], q[1:4, 0])
-            aux_2 = p[0, 0] * q[1:4, 0] + q[0, 0]* p[1:4, 0]+ np.cross(p[1:4, 0], q[1:4, 0])
+            aux_1 = p[0, 0] * q[0, 0] - cs.dot(p[1:4, 0], q[1:4, 0])
+            aux_2 = p[0, 0] * q[1:4, 0] + q[0, 0]* p[1:4, 0]+ cs.cross(p[1:4, 0], q[1:4, 0])
             q_product = cs.vertcat(aux_1, aux_2)
 
         elif isinstance(p, cs.SX) and isinstance(q, cs.SX):
@@ -180,3 +180,39 @@ class Quaternion():
             raise TypeError("Internal problem with the definition of the Quaternion, it should be a np.array, cs.MX or cs.SX.")
         # Funtion that defines the conjugate of a quaternion
         return Quaternion(q = q_conjugate)
+
+    def norm(self) -> "Scalar":
+        q = self.q
+        if isinstance(q, np.ndarray):  # Use Vector directly without parentheses
+            norm = np.sqrt(np.dot(q.T, q))
+            norm_value = norm[0,0]
+        elif isinstance(q, cs.MX):
+            norm = cs.sqrt(cs.dot(q, q))
+            norm_value = norm
+        elif isinstance(q, cs.SX):
+            norm = cs.sqrt(cs.dot(q, q))
+            norm_value = norm
+        else:
+            raise TypeError("Internal problem with the definition of the Quaternion, it should be a np.array, cs.MX or cs.SX.")
+        # Funtion that defines the conjugate of a quaternion
+        return norm_value
+
+    def square_norm(self) -> "Scalar":
+        q = self.q
+        if isinstance(q, np.ndarray):  # Use Vector directly without parentheses
+            norm = np.dot(q.T, q)
+            norm_value = norm[0,0]
+        elif isinstance(q, cs.MX):
+            norm = cs.dot(q, q)
+            norm_value = norm
+        elif isinstance(q, cs.SX):
+            norm = cs.dot(q, q)
+            norm_value = norm
+        else:
+            raise TypeError("Internal problem with the definition of the Quaternion, it should be a np.array, cs.MX or cs.SX.")
+        return norm_value
+
+
+    def inverse(self) -> "Quaternion":
+        # Function that computes the inverse of a quaternion
+        return self.conjugate() / self.square_norm()

@@ -44,43 +44,13 @@ def main():
     q2_c = ca.vertcat(ca.cos(theta2_c/2), ca.sin(theta2_c/2)@n2_c)
 
 
-    quat_1 = Quaternion(q = q1_c)
+    quat_1 = Quaternion(q = q1)
     quat_1_c = quat_1.conjugate()
-    quat_2 = Quaternion(q = q2_c)
 
+    quat_2 = Quaternion(q = q1)
 
-    quat_3 = quat_1 - quat_2
-    quat_4 = quat_2 - quat_1
-
-    aux1 = q1 - q2
-    aux2 =  q2 - q1
-
-    aux1_c = q1_c - q2_c
-    aux2_c = q2_c - q1_c
-
-    aux_c = quat_1*quat_1_c
-
-    print(q1)
-    print(aux1)
-    print(aux2)
-    print("--------------------------")
-    print(q1_c)
-    print(aux1_c)
-    print(aux2_c)
-    print("--------------------------")
-    print(quat_1)
-    print(quat_3)
-    print(quat_4)
-    print("--------------------------")
-    print(quat_1)
-    print(quat_1_c)
-    print(aux_c)
-
-
-
-
-
-
+    norm_1 = quat_1.conjugate()
+    norm_2 = quat_2.inverse()
 
     return None
 
