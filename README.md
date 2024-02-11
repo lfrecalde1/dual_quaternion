@@ -35,19 +35,24 @@ source devel/setup.bash
 
 It is possible to execute quaternion-based kinematic control, where the purpose is to converge to a desired orientation.
 
-To run the controller without taking the shortest path, execute the following command:
+To run the controller taking the shortest path based on numpy, execute the following command:
 
 
 ```bash
-roslaunch dual_quaternion quaternion.launch
+roslaunch dual_quaternion quat_numpy.launch
 ```
 
 <p float="left">
     <img src="videos/trajectory_kine.gif" width="600"  />
  </p>
 
-To run the controller taking the shortest path, execute the following command:
+To run the controller taking the shortest path based on Casadi, execute the following command:
+
 
 ```bash
-roslaunch dual_quaternion quaternion.launch lambda:=1.0
+roslaunch dual_quaternion quat_casadi.launch
 ```
+
+<p float="left">
+    <img src="videos/trajectory_kine.gif" width="600"  />
+ </p>

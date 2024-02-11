@@ -190,12 +190,6 @@ def main(odom_pub_1, odom_pub_2):
         delta = toc - tic
         rospy.loginfo(message_ros + str(delta))
 
-    # Get SX information
-    #Q1 = ca.DM(Q1)
-    #Q1 = np.array(Q1)
-
-    #Q2 = ca.DM(Q2)
-    #Q2 = np.array(Q2)
 
     fig11, ax11, ax21, ax31, ax41 = fancy_plots_4()
     plot_states_quaternion(fig11, ax11, ax21, ax31, ax41, Q1[:, :], Q2[:, :], t, "Quaternions Results")
@@ -209,18 +203,6 @@ def main(odom_pub_1, odom_pub_2):
     plot_angular_velocities(fig13, ax13, ax23, ax33, w1[1:4, :], t, "Angular velocities")
     plt.show()
 
-    # 
-    # Symbolic quaternion using Casadi
-    #theta_c = ca.MX.sym('theta_c', 1)
-    #n_c = ca.MX.sym('n_c', 3, 1)
-    #theta1_c = ca.SX([3.8134])
-    #n1_c = ca.SX([0.4896, 0.2032, 0.8480])
-    #q1_c = ca.vertcat(ca.cos(theta1_c/2), ca.sin(theta1_c/2)@n1_c)
-
-    #theta2_c = ca.SX([ca.pi/2])
-    #n2_c = ca.SX([0.0, 0.0, 1.0])
-    #q2_c = ca.vertcat(ca.cos(theta2_c/2), ca.sin(theta2_c/2)@n2_c)
-    #q2_c = ca.vertcat(ca.cos(theta2_c/2), ca.sin(theta2_c/2)@n2_c)
     return None
 if __name__ == '__main__':
     try:

@@ -2,7 +2,6 @@ from numbers import Number
 import numpy as np
 import rospy
 from nav_msgs.msg import Odometry
-import random
 from scipy.linalg import expm
 class DualQuaternion():
     # Properties of the class

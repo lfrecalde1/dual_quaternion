@@ -71,12 +71,12 @@ def reference(t, ts):
     Qd[:, 0] = quat_2.get[:, 0]
 
     Wd = ca.SX.zeros(4, t.shape[0])
-    Wd[1, :] = 0
-    Wd[2, :] = 0
-    Wd[3, :] = 0
 
     qw = Quaternion(q = Wd[:, 0])
     for k in range(0, t.shape[0]):
+        Wd[1, k] = 0.1
+        Wd[2, k] = 1*ca.cos(0.5*t[k])
+        Wd[3, k] = 2*ca.cos(1*t[k])
         # Save Control Actions
         qw.set(q = Wd[:, k])
 
@@ -123,7 +123,7 @@ def main(odom_pub_1, odom_pub_2):
     rospy.loginfo_once("Quaternion.....")
 
     # Init Quaternions
-    theta = ca.SX([3.8134])
+    theta = ca.SX([ca.pi/4])
     n = ca.SX([0.0, 0.0, 1.0])
     q1 = ca.vertcat(ca.cos(theta/2), ca.sin(theta/2)@n)
     q2, w2 = reference(t, sample_time)
@@ -148,7 +148,7 @@ def main(odom_pub_1, odom_pub_2):
     Qnorm = ca.SX.zeros(1, t.shape[0] + 1)
 
     # Control Gain
-    kp = Quaternion(q = np.array([0.0, 1.5, 1.5, 1.5]))
+    kp = Quaternion(q = ca.SX([0.0, 1.5, 1.5, 1.5]))
 
     # Message 
     message_ros = "Quaternion Casadi "
@@ -166,14 +166,12 @@ def main(odom_pub_1, odom_pub_2):
         w1[:, k] = U.get[:, 0]
         Qnorm[:, k] = q_e_ln.norm
 
-
         # Send Data throught Ros
         quat_1_msg = get_odometry(quat_1_msg, quat_1, 'quat_1')
         send_odometry(quat_1_msg, odom_pub_1)
 
         quat_2_msg = get_odometry(quat_2_msg, quat_2, 'quat_2')
         send_odometry(quat_2_msg, odom_pub_2)
-
 
         # System Evolution
         quat_1 = f_rk4(quat_1, U, sample_time)
@@ -194,11 +192,17 @@ def main(odom_pub_1, odom_pub_2):
     Q1 = ca.DM(Q1)
     Q1 = np.array(Q1)
 
+    Qnorm = ca.DM(Qnorm)
+    Qnorm = np.array(Qnorm)
+
     Q2 = ca.DM(Q2)
     Q2 = np.array(Q2)
 
     w2 = ca.DM(w2)
     w2 = np.array(w2)
+
+    w1 = ca.DM(w1)
+    w1 = np.array(w1)
 
     fig11, ax11, ax21, ax31, ax41 = fancy_plots_4()
     plot_states_quaternion(fig11, ax11, ax21, ax31, ax41, Q1[:, :], Q2[:, :], t, "Quaternions Results")
@@ -212,18 +216,6 @@ def main(odom_pub_1, odom_pub_2):
     plot_angular_velocities(fig13, ax13, ax23, ax33, w1[1:4, :], t, "Angular velocities")
     plt.show()
 
-    # 
-    # Symbolic quaternion using Casadi
-    #theta_c = ca.MX.sym('theta_c', 1)
-    #n_c = ca.MX.sym('n_c', 3, 1)
-    #theta1_c = ca.SX([3.8134])
-    #n1_c = ca.SX([0.4896, 0.2032, 0.8480])
-    #q1_c = ca.vertcat(ca.cos(theta1_c/2), ca.sin(theta1_c/2)@n1_c)
-
-    #theta2_c = ca.SX([ca.pi/2])
-    #n2_c = ca.SX([0.0, 0.0, 1.0])
-    #q2_c = ca.vertcat(ca.cos(theta2_c/2), ca.sin(theta2_c/2)@n2_c)
-    #q2_c = ca.vertcat(ca.cos(theta2_c/2), ca.sin(theta2_c/2)@n2_c)
     return None
 if __name__ == '__main__':
     try:
