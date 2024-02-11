@@ -62,18 +62,18 @@ def f_rk4(quat, omega, ts):
 
 def reference(t, ts):
     # Desired Quaternion
-    theta_2 = -np.pi/4
-    n_2 = np.array([1.0, 0.0, 0.0])
-    q2 = np.hstack([np.cos(theta_2 / 2), np.sin(theta_2 / 2) * np.array(n_2)])
+    theta_2 = ca.SX([-ca.pi/4])
+    n = ca.SX([1.0, 0.0, 0.0])
+    q2 = ca.vertcat(ca.cos(theta_2/2), ca.sin(theta_2/2)@n)
     quat_2 = Quaternion(q = q2)
 
-    Qd = np.zeros((4, t.shape[0]+1), dtype=np.double)
+    Qd = ca.SX.zeros(4, t.shape[0]+1)
     Qd[:, 0] = quat_2.get[:, 0]
 
-    Wd = np.zeros((4, t.shape[0]), dtype=np.double)
-    Wd[1, :] = 0.1
-    Wd[2, :] = 1*np.cos(0.5*t)
-    Wd[3, :] = 2*np.cos(1*t)
+    Wd = ca.SX.zeros(4, t.shape[0])
+    Wd[1, :] = 0
+    Wd[2, :] = 0
+    Wd[3, :] = 0
 
     qw = Quaternion(q = Wd[:, 0])
     for k in range(0, t.shape[0]):
