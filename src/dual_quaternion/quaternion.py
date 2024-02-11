@@ -546,7 +546,7 @@ class Quaternion():
         # Funtion that gets the quaternion as np array
         return self.q[:, 0]
 
-    def set(self, qw=0.0, qx=0.0, qy=0.0, qz=0.0, q=None,):
+    def set(self, qw=0.0, qx=0.0, qy=0.0, qz=0.0, q=None):
         # Funtion that sets the quaternion as np array
         if q is not None:
             if isinstance(q, (np.ndarray, list, tuple)):

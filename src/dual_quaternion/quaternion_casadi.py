@@ -212,7 +212,24 @@ class Quaternion():
             raise TypeError("Internal problem with the definition of the Quaternion, it should be a np.array, cs.MX or cs.SX.")
         return norm_value
 
-
     def inverse(self) -> "Quaternion":
         # Function that computes the inverse of a quaternion
         return self.conjugate() / self.square_norm()
+
+    def set(self, q = None):
+         if q is not None:
+            # Check if the vairbale is a np.array
+            if isinstance(q, np.ndarray):  # Use Vector directly without parentheses
+                if q.shape[0] != 4:
+                    raise ValueError("quaternion must have exactly 4 elements.")
+                q_aux = q.reshape((4, 1))
+                self.q = q_aux
+
+            # Check for casadi variables
+            elif isinstance(q, cs.MX) or isinstance(q, cs.SX):
+                if q.shape[0] != 4:
+                    raise ValueError("quaternion must have exactly 4 elements.")
+                self.q = q
+            else:
+                raise TypeError("quaternion must be an ndarray or Casadi MX  SX")
+
