@@ -56,3 +56,12 @@ roslaunch dual_quaternion quat_casadi.launch
 <p float="left">
     <img src="videos/trajectory_kine.gif" width="600"  />
  </p>
+
+The results of this formulation are presented in the following images.
+
+<p float="left">
+    <img src="images/quat_error.png" width="600"  />
+ </p>
+<p float="left">
+    <img src="images/norm.png" width="600"  />
+ </p>
