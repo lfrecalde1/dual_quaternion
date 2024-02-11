@@ -499,8 +499,6 @@ class Quaternion():
         # Log mapping
         angle_axis_aux = self.angle_axis()
         angle_axis_aux = angle_axis_aux[:, 0]
-        
-
         return Quaternion(qw= 0.0, qx= (1/2)*(angle_axis_aux[0])*angle_axis_aux[1], qy = (1/2)*(angle_axis_aux[0])*angle_axis_aux[2], qz= (1/2)*(angle_axis_aux[0])*angle_axis_aux[3])
 
 

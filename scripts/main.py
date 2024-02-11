@@ -6,7 +6,9 @@ import casadi as ca
 import numpy as np
 import matplotlib.pyplot as plt
 from dual_quaternion import Quaternion
+from dual_quaternion import plot_states_quaternion, fancy_plots_4, fancy_plots_1, plot_norm_quat, plot_angular_velocities, fancy_plots_3 
 from nav_msgs.msg import Odometry
+
 def get_odometry(odom_msg, dqd, name):
     q_d = dqd.get
     # Function to send the Oritentation of the Quaternion
@@ -28,7 +30,7 @@ def send_odometry(odom_msg, odom_pub):
     odom_pub.publish(odom_msg)
     return None
 
-def quatdot_c(quat, omega):
+def quatdot(quat, omega):
     # Quaternion evolution guaranteeing norm 1 (Improve this section)
     # INPUT
     # quat                                                   - actual quaternion
@@ -46,12 +48,71 @@ def quatdot_c(quat, omega):
     K_quat = 2
     quat_error = 1 - (qw**2 + qx**2 + qy**2 + qz**2)
 
-    q_dot = (1/2)*(omega*quat) + K_quat*quat_error*quat
+    q_dot = (1/2)*(quat*omega) + K_quat*quat_error*quat
+    #q_dot = (1/2)*(quat*omega)
     return q_dot
+
+def f_rk4(quat, omega, ts):
+    # Function that computes 
+    k1 = quatdot(quat, omega)
+    k2 = quatdot(quat + (1/2)*ts*k1, omega)
+    k3 = quatdot(quat + (1/2)*ts*k2, omega)
+    k4 = quatdot(quat + (1)*ts*k3, omega)
+    # Compute forward Euler method
+    quat = quat + (1/6)*ts*(k1 + 2*k2 + 2*k3 + k4)
+    return quat
+
+def reference(t, ts):
+    # Desired Quaternion
+    theta_2 = np.pi
+    n_2 = np.array([0.0, 0.0, 1.0])
+    q2 = np.hstack([np.cos(theta_2 / 2), np.sin(theta_2 / 2) * np.array(n_2)])
+    quat_2 = Quaternion(q = q2)
+
+    Qd = np.zeros((4, t.shape[0]+1), dtype=np.double)
+    Qd[:, 0] = quat_2.get[:, 0]
+
+    Wd = np.zeros((4, t.shape[0]), dtype=np.double)
+    Wd[1, :] = 1*np.sin(0.5*t)
+    Wd[2, :] = 1*np.cos(0.5*t)
+    Wd[3, :] = 2*np.cos(1*t)
+
+    qw = Quaternion(q = Wd[:, 0])
+    for k in range(0, t.shape[0]):
+        # Save Control Actions
+        qw.set(q = Wd[:, k])
+
+        # System Evolution
+        quat_2 = f_rk4(quat_2, qw, ts)
+
+        # Save States of the system
+        Qd[:, k + 1] = quat_2.get[:,0]
+    return Qd, Wd
+
+def control_law(qd, q, kp, w):
+    qd_c = qd.conjugate()
+    # Calculate left error
+    q_e =  qd_c * q
+
+    # Shortest path
+    q_e_data = q_e.get
+    if q_e_data[0, 0] >= 0.0:
+        q_e = -1*q_e
+    else:
+        q_e = 1*q_e
+
+    # Conjugate
+    q_e_c = q_e.conjugate()
+    # Apply log mapping
+    q_e_ln = q_e.ln()
+    
+    U = q_e_ln.vector_dot_product(kp) + q_e_c * w * q_e
+    return U
+
 def main(odom_pub_1, odom_pub_2):
     # Sample Time Defintion
     sample_time = 0.01
-    t_f = 50
+    t_f = 20
 
     # Time defintion aux variable
     t = np.arange(0, t_f + sample_time, sample_time)
@@ -63,35 +124,48 @@ def main(odom_pub_1, odom_pub_2):
     # Message Ros
     rospy.loginfo_once("Quaternion.....")
 
-    # Init Quaternion Axis angle
-    theta = 3.8134
+    # Init Quaternions
+    theta = np.pi/4
     n = np.array([0.4896, 0.2032, 0.8480])
-
-    theta_2 = 0.0
-    n_2 = np.array([0.0, 0.0, 1.0])
-
     q1 = np.hstack([np.cos(theta / 2), np.sin(theta / 2) * np.array(n)])
-    q2 = np.hstack([np.cos(theta_2 / 2), np.sin(theta_2 / 2) * np.array(n_2)])
+    q2, w2 = reference(t, sample_time)
 
+    # Create Quaternions objects
     quat_1 = Quaternion(q = q1)
-    quat_2 = Quaternion(q = q2)
+    quat_2 = Quaternion(q = q2[:, 0])
+    quat_w = Quaternion(q = w2[:, 0])
 
+    # Empty Messages
     quat_1_msg = Odometry()
     quat_2_msg = Odometry()
 
-    # Angular Velocities 
-    w = np.zeros((4, t.shape[0]), dtype=np.double)
-    qw = Quaternion(q = w[:, 0])
+    # Angular Velocities  quaternion 1
+    w1 = np.zeros((4, t.shape[0]), dtype=np.double)
+
+    # Empty matrices
+    Q1 = np.zeros((4, t.shape[0] + 1), dtype=np.double)
+    Q1[:, 0] = quat_1.get[:,0]
+
+    Q2 = np.zeros((4, t.shape[0] + 1), dtype=np.double)
+    Q2[:, 0] = quat_2.get[:, 0]
     
+    kp = Quaternion(q = np.array([0.0, 1.5, 1.5, 1.5]))
 
     # Message 
-    message_ros = "Quaternion "
+    message_ros = "Quaternion Casadi "
 
     for k in range(0, t.shape[0]):
         tic = rospy.get_time()
-        # Set Velocities
-        qw.set(w[:, k])
-        # Update Quaternions
+        # Update Reference
+        quat_2.set(q = q2[:, k])
+        quat_w.set(q = w2[:, k])
+
+        # Control Law
+        U = control_law(quat_2, quat_1, kp, quat_w)
+
+        # Save Control Actions
+        w1[:, k] = U.get[:, 0]
+
         # Send Data throught Ros
         quat_1_msg = get_odometry(quat_1_msg, quat_1, 'quat_1')
         send_odometry(quat_1_msg, odom_pub_1)
@@ -99,13 +173,13 @@ def main(odom_pub_1, odom_pub_2):
         quat_2_msg = get_odometry(quat_2_msg, quat_2, 'quat_2')
         send_odometry(quat_2_msg, odom_pub_2)
 
-        print(quat_1)
-        print(quat_2)
-
 
         # System Evolution
-        qp = quatdot_c(quat_1, qw)
+        quat_1 = f_rk4(quat_1, U, sample_time)
 
+        # Save States of the syst
+        Q1[:, k + 1] = quat_1.get[:,0]
+        Q2[:, k + 1] = quat_2.get[:,0]
 
         # Time restriction Correct
         loop_rate.sleep()
@@ -115,7 +189,24 @@ def main(odom_pub_1, odom_pub_2):
         delta = toc - tic
         rospy.loginfo(message_ros + str(delta))
 
-    return None
+    # Get SX information
+    #Q1 = ca.DM(Q1)
+    #Q1 = np.array(Q1)
+
+    #Q2 = ca.DM(Q2)
+    #Q2 = np.array(Q2)
+
+    fig11, ax11, ax21, ax31, ax41 = fancy_plots_4()
+    plot_states_quaternion(fig11, ax11, ax21, ax31, ax41, Q1[:, :], Q2[:, :], t, "Quaternions Results")
+    plt.show()
+
+    #fig12, ax12 = fancy_plots_1()
+    #plot_norm_quat(fig12, ax12, Q_error_norm, t, "Quaternion Error Norm")
+    #plt.show()
+
+    #fig13, ax13, ax23, ax33 = fancy_plots_3()
+    #plot_angular_velocities(fig13, ax13, ax23, ax33, U, t, "Angular velocities")
+    #plt.show()
 
     # 
     # Symbolic quaternion using Casadi
@@ -128,13 +219,8 @@ def main(odom_pub_1, odom_pub_2):
     #theta2_c = ca.SX([ca.pi/2])
     #n2_c = ca.SX([0.0, 0.0, 1.0])
     #q2_c = ca.vertcat(ca.cos(theta2_c/2), ca.sin(theta2_c/2)@n2_c)
-
-
-
-
-
+    #q2_c = ca.vertcat(ca.cos(theta2_c/2), ca.sin(theta2_c/2)@n2_c)
     return None
-
 if __name__ == '__main__':
     try:
         # Initialization Node
