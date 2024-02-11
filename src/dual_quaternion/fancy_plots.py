@@ -569,7 +569,7 @@ def plot_norm_quat(fig11, ax11, x_sample_real, t, name):
         t = t[0:x_sample_real.shape[1]]
         ax11.set_xlim((t[0], t[-1]))
 
-        ax11.set_xticklabels([])
+        #ax11.set_xticklabels([])
 
         state_1_e_d, = ax11.plot(t[0:t.shape[0]], x_sample_real[0, 0:t.shape[0]],
                     color='#1D2121', lw=1.0, ls="-")

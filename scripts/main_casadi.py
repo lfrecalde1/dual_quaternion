@@ -10,8 +10,8 @@ from dual_quaternion import plot_states_quaternion, fancy_plots_4, fancy_plots_1
 from nav_msgs.msg import Odometry
 
 def get_odometry(odom_msg, dqd, name):
-    q_d = dqd.get
     # Function to send the Oritentation of the Quaternion
+    q_d = dqd.get
     odom_msg.header.stamp = rospy.Time.now()
     odom_msg.header.frame_id = "world"
     odom_msg.child_frame_id = name
@@ -37,7 +37,6 @@ def quatdot(quat, omega):
     # omega                                                  - angular velocities
     # OUTPUT
     # qdot                                                   - rate of change of the quaternion
-    # Split values quaternion
     quat_data = quat.get
     qw = quat_data[0, 0]
     qx = quat_data[1, 0]
@@ -49,7 +48,6 @@ def quatdot(quat, omega):
     quat_error = 1 - (qw**2 + qx**2 + qy**2 + qz**2)
 
     q_dot = (1/2)*(quat*omega) + K_quat*quat_error*quat
-    #q_dot = (1/2)*(quat*omega)
     return q_dot
 
 def f_rk4(quat, omega, ts):
@@ -64,8 +62,8 @@ def f_rk4(quat, omega, ts):
 
 def reference(t, ts):
     # Desired Quaternion
-    theta_2 = np.pi
-    n_2 = np.array([0.0, 0.0, 1.0])
+    theta_2 = -np.pi/4
+    n_2 = np.array([1.0, 0.0, 0.0])
     q2 = np.hstack([np.cos(theta_2 / 2), np.sin(theta_2 / 2) * np.array(n_2)])
     quat_2 = Quaternion(q = q2)
 
@@ -73,7 +71,7 @@ def reference(t, ts):
     Qd[:, 0] = quat_2.get[:, 0]
 
     Wd = np.zeros((4, t.shape[0]), dtype=np.double)
-    Wd[1, :] = 1*np.sin(0.5*t)
+    Wd[1, :] = 0.1
     Wd[2, :] = 1*np.cos(0.5*t)
     Wd[3, :] = 2*np.cos(1*t)
 
@@ -107,7 +105,7 @@ def control_law(qd, q, kp, w):
     q_e_ln = q_e.ln()
     
     U = q_e_ln.vector_dot_product(kp) + q_e_c * w * q_e
-    return U
+    return U, q_e_ln
 
 def main(odom_pub_1, odom_pub_2):
     # Sample Time Defintion
@@ -125,9 +123,9 @@ def main(odom_pub_1, odom_pub_2):
     rospy.loginfo_once("Quaternion.....")
 
     # Init Quaternions
-    theta = np.pi/4
-    n = np.array([0.4896, 0.2032, 0.8480])
-    q1 = np.hstack([np.cos(theta / 2), np.sin(theta / 2) * np.array(n)])
+    theta = ca.SX([3.8134])
+    n = ca.SX([0.0, 0.0, 1.0])
+    q1 = ca.vertcat(ca.cos(theta/2), ca.sin(theta/2)@n)
     q2, w2 = reference(t, sample_time)
 
     # Create Quaternions objects
@@ -140,15 +138,16 @@ def main(odom_pub_1, odom_pub_2):
     quat_2_msg = Odometry()
 
     # Angular Velocities  quaternion 1
-    w1 = np.zeros((4, t.shape[0]), dtype=np.double)
+    w1 = ca.SX.zeros(4, t.shape[0])
 
     # Empty matrices
-    Q1 = np.zeros((4, t.shape[0] + 1), dtype=np.double)
+    Q1 = ca.SX.zeros(4, t.shape[0] + 1)
     Q1[:, 0] = quat_1.get[:,0]
-
-    Q2 = np.zeros((4, t.shape[0] + 1), dtype=np.double)
+    Q2 = ca.SX.zeros(4, t.shape[0] + 1)
     Q2[:, 0] = quat_2.get[:, 0]
-    
+    Qnorm = ca.SX.zeros(1, t.shape[0] + 1)
+
+    # Control Gain
     kp = Quaternion(q = np.array([0.0, 1.5, 1.5, 1.5]))
 
     # Message 
@@ -161,10 +160,12 @@ def main(odom_pub_1, odom_pub_2):
         quat_w.set(q = w2[:, k])
 
         # Control Law
-        U = control_law(quat_2, quat_1, kp, quat_w)
+        U, q_e_ln = control_law(quat_2, quat_1, kp, quat_w)
 
         # Save Control Actions
         w1[:, k] = U.get[:, 0]
+        Qnorm[:, k] = q_e_ln.norm
+
 
         # Send Data throught Ros
         quat_1_msg = get_odometry(quat_1_msg, quat_1, 'quat_1')
@@ -190,23 +191,26 @@ def main(odom_pub_1, odom_pub_2):
         rospy.loginfo(message_ros + str(delta))
 
     # Get SX information
-    #Q1 = ca.DM(Q1)
-    #Q1 = np.array(Q1)
+    Q1 = ca.DM(Q1)
+    Q1 = np.array(Q1)
 
-    #Q2 = ca.DM(Q2)
-    #Q2 = np.array(Q2)
+    Q2 = ca.DM(Q2)
+    Q2 = np.array(Q2)
+
+    w2 = ca.DM(w2)
+    w2 = np.array(w2)
 
     fig11, ax11, ax21, ax31, ax41 = fancy_plots_4()
     plot_states_quaternion(fig11, ax11, ax21, ax31, ax41, Q1[:, :], Q2[:, :], t, "Quaternions Results")
     plt.show()
 
-    #fig12, ax12 = fancy_plots_1()
-    #plot_norm_quat(fig12, ax12, Q_error_norm, t, "Quaternion Error Norm")
-    #plt.show()
+    fig12, ax12 = fancy_plots_1()
+    plot_norm_quat(fig12, ax12, Qnorm, t, "Quaternion Error Norm")
+    plt.show()
 
-    #fig13, ax13, ax23, ax33 = fancy_plots_3()
-    #plot_angular_velocities(fig13, ax13, ax23, ax33, U, t, "Angular velocities")
-    #plt.show()
+    fig13, ax13, ax23, ax33 = fancy_plots_3()
+    plot_angular_velocities(fig13, ax13, ax23, ax33, w1[1:4, :], t, "Angular velocities")
+    plt.show()
 
     # 
     # Symbolic quaternion using Casadi

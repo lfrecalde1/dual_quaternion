@@ -8,40 +8,87 @@ from numbers import Number
 @dataclasses.dataclass
 class Quaternion():
     # Properties of the class
-    q: Vector
+    q: Vector # Property to store the quaternion vector
     def __init__(self, q = None):
+        """
+        Constructor method for the Quaternion class.
+
+        Parameters:
+        - q: Vector representing the quaternion. Can be a NumPy array or a CasADi MX or SX object.
+
+        Raises:
+        - ValueError: If the quaternion vector does not have exactly 4 elements.
+        - TypeError: If the input is not a NumPy array or a CasADi MX or SX object.
+        """
         if q is not None:
-            # Check if the vairbale is a np.array
-            if isinstance(q, np.ndarray):  # Use Vector directly without parentheses
+            # Check if the variable is a NumPy array
+            if isinstance(q, np.ndarray): 
                 if q.shape[0] != 4:
                     raise ValueError("quaternion must have exactly 4 elements.")
                 q_aux = q.reshape((4, 1))
                 self.q = q_aux
 
-            # Check for casadi variables
+            # Check for CasADi variables
             elif isinstance(q, cs.MX) or isinstance(q, cs.SX):
                 if q.shape[0] != 4:
                     raise ValueError("quaternion must have exactly 4 elements.")
                 self.q = q
             else:
-                raise TypeError("quaternion must be an ndarray or Casadi MX  SX")
+                raise TypeError("quaternion must be an ndarray or Casadi MX or SX")
 
     def __getattr__(self, attr):
-        # Funcion that enables the access to the same atributes inside an np.array or numpy object
+        """
+        Custom __getattr__ method for the Quaternion class.
+        This method enables access to the same attributes inside numpy objects or CasADi MX or SX objects.
+        """
         return getattr(self.q, attr)
 
     def __repr__(self) -> str:
+        """
+        Custom __repr__ method for the Quaternion class.
+        This method returns a string representation of the Quaternion object.
+        """
         return f"Quaternion: {self.q}"
 
     def __str__(self) -> str:
+        """
+        Custom __str__ method for the Quaternion class.
+        This method returns a string representation of the Quaternion object.
+        """
         return str(self.q)
 
     @property
     def get(self) -> Vector:
+        """
+        Property method for the Quaternion class.
+        This property allows accessing the underlying quaternion vector.
+        """
         return self.q
 
     def __mul__(self, q2: "Quaternion") -> "Quaternion":
-        # Funtions that operates between quaternions
+        """
+        Custom __mul__ method for the Quaternion class.
+        This method performs multiplication between quaternions.
+
+        Parameters:
+        - q2: The quaternion to be multiplied with the current quaternion.
+
+        Returns:
+        - A new Quaternion object representing the result of the multiplication.
+
+        Raises:
+        - TypeError: If the input is not a Quaternion or a scalar.
+
+        Note:
+        This method supports multiplication between quaternions and scalars.
+        If q2 is a Quaternion, the result is the product of the quaternions.
+        If q2 is a scalar, the result is the quaternion scaled by the scalar.
+
+        Example:
+        If q1 and q2 are Quaternion objects:
+        - q1 * q2 will return the product of q1 and q2 (Quaternion object).
+        - q1 * scalar will return q1 scaled by the scalar (Quaternion object).
+        """
         if isinstance(q2, Quaternion):
             return Quaternion(q = Quaternion.product(self.q, q2.q))
         elif isinstance(q2, Number):
@@ -49,16 +96,57 @@ class Quaternion():
             q_out = q * q2
             return Quaternion(q = q_out)
         else:
-            raise TypeError("Right Multiplication only defined for Quaternions and scalars")
+            raise TypeError("Right Multiplication is only defined for Quaternions and scalars")
 
     def __rmul__(self, q2: Scalar) -> "Quaternion":
+        """
+        Custom __rmul__ method for the Quaternion class.
+        This method performs left multiplication of a scalar with the current quaternion.
+
+        Parameters:
+        - q2: The scalar to be left-multiplied with the current quaternion.
+
+        Returns:
+        - A new Quaternion object representing the result of the left multiplication.
+
+        Raises:
+        - TypeError: If the input is not a scalar.
+
+        Note:
+        This method supports left multiplication of the quaternion by a scalar.
+
+        Example:
+        If q is a Quaternion object and scalar is a scalar value:
+        - scalar * q will return the quaternion q scaled by the scalar (Quaternion object).
+        """
         if isinstance(q2, Number):
             return Quaternion(q=q2 * self.q)
         else:
-            raise TypeError("Left Multiplication only defined for scalars")
+            raise TypeError("Left Multiplication is only defined for scalars")
 
     @staticmethod
     def product(p: Vector, q: Vector) -> Vector:
+        """
+        Static method to compute the product of two quaternions.
+
+        Parameters:
+        - p: Vector representing the first quaternion.
+        - q: Vector representing the second quaternion.
+
+        Returns:
+        - Vector representing the product of the two quaternions.
+
+        Raises:
+        - TypeError: If the elements of both quaternions are not of the same type.
+
+        Note:
+        This method supports the computation of quaternion products for NumPy arrays, CasADi MX, and CasADi SX objects.
+        It performs different operations based on the type of the input quaternions.
+
+        Example:
+        If p and q are vectors representing quaternions:
+        - Quaternion.product(p, q) will return the product of the quaternions.
+        """
         if isinstance(p, np.ndarray) and isinstance(q, np.ndarray):  # Use Vector directly without parentheses
             aux_1 = p[0, 0] * q[0, 0] - np.dot(p[1:4, 0], q[1:4, 0])
             aux_2 = p[0, 0] * q[1:4, 0] + q[0, 0]* p[1:4, 0]+ np.cross(p[1:4, 0], q[1:4, 0])
@@ -81,6 +169,29 @@ class Quaternion():
             raise TypeError("The elements of both quaternions should be of the same type.")
 
     def __add__(self, q2: "Quaternion") -> "Quaternion":
+        """
+        Custom __add__ method for the Quaternion class.
+        This method performs addition between quaternions.
+
+        Parameters:
+        - q2: The quaternion to be added with the current quaternion.
+
+        Returns:
+        - A new Quaternion object representing the result of the addition.
+
+        Raises:
+        - TypeError: If the input is not a Quaternion or a scalar.
+
+        Note:
+        This method supports addition between quaternions and scalars.
+        If q2 is a Quaternion, the result is the sum of the quaternions.
+        If q2 is a scalar or a CasADi MX or SX object, the result is the quaternion incremented by the value.
+
+        Example:
+        If q1 and q2 are Quaternion objects:
+        - q1 + q2 will return the sum of q1 and q2 (Quaternion object).
+        - q1 + scalar will return q1 incremented by the scalar (Quaternion object).
+        """
         if isinstance(q2, Quaternion):
             return Quaternion(q = Quaternion.add(self.q, q2.q))
         elif isinstance(q2, Number) or isinstance(q2, cs.MX) or isinstance(q2, cs.SX):
@@ -88,9 +199,30 @@ class Quaternion():
             q_out = q + q2
             return Quaternion(q = q_out)
         else:
-            raise TypeError("Right add only defined for Quaternions and scalars")
+            raise TypeError("Right addition is only defined for Quaternions and scalars.")
 
     def __radd__(self, q2: "Quaternion") -> "Quaternion":
+        """
+        Custom __radd__ method for the Quaternion class.
+        This method performs left addition of a scalar or quaternion with the current quaternion.
+
+        Parameters:
+        - q2: The scalar or quaternion to be left-added with the current quaternion.
+
+        Returns:
+        - A new Quaternion object representing the result of the left addition.
+
+        Raises:
+        - TypeError: If the input is not a Quaternion or a scalar.
+
+        Note:
+        This method supports left addition of a quaternion or a scalar with the current quaternion.
+
+        Example:
+        If q is a Quaternion object and scalar is a scalar value:
+        - scalar + q will return the quaternion q incremented by the scalar (Quaternion object).
+        - q1 + q2 will return the sum of q1 and q2 (Quaternion object).
+        """
         if isinstance(q2, Quaternion):
             return Quaternion(q = Quaternion.add(q2.q, self.q))
         elif isinstance(q2, Number) or isinstance(q2, cs.MX) or isinstance(q2, cs.SX):
@@ -98,11 +230,30 @@ class Quaternion():
             q_out =  q2 + q
             return Quaternion(q = q_out)
         else:
-            raise TypeError("Left add only defined for Quaternions and scalars")
+            raise TypeError("Left add only is defined for Quaternions and scalars")
 
     @staticmethod
     def add(p: Vector, q: Vector) -> Vector:
-        # Funtion that defines the addition opperation
+        """
+        Static method to compute the addition of two quaternions.
+
+        Parameters:
+        - p: Vector representing the first quaternion.
+        - q: Vector representing the second quaternion.
+
+        Returns:
+        - Vector representing the sum of the two quaternions.
+
+        Raises:
+        - TypeError: If the elements of both quaternions are not of the same type.
+
+        Note:
+        This method supports addition of quaternions represented as NumPy arrays, CasADi MX, and CasADi SX objects.
+
+        Example:
+        If p and q are vectors representing quaternions:
+        - Quaternion.add(p, q) will return the sum of the quaternions.
+        """
         if isinstance(p, np.ndarray) and isinstance(q, np.ndarray):  # Use Vector directly without parentheses
             aux_1 = p + q
             q_product = aux_1
@@ -121,6 +272,29 @@ class Quaternion():
             raise TypeError("The elements of both quaternions should be of the same type.")
             
     def __sub__(self, q2: "Quaternion") -> "Quaternion":
+        """
+        Custom __sub__ method for the Quaternion class.
+        This method performs subtraction between quaternions.
+
+        Parameters:
+        - q2: The quaternion to be subtracted from the current quaternion.
+
+        Returns:
+        - A new Quaternion object representing the result of the subtraction.
+
+        Raises:
+        - TypeError: If the input is not a Quaternion or a scalar.
+
+        Note:
+        This method supports subtraction between quaternions and scalars.
+        If q2 is a Quaternion, the result is the difference between the quaternions.
+        If q2 is a scalar or a CasADi MX or SX object, the result is the quaternion decremented by the value.
+
+        Example:
+        If q1 and q2 are Quaternion objects:
+        - q1 - q2 will return the difference between q1 and q2 (Quaternion object).
+        - q1 - scalar will return q1 decremented by the scalar (Quaternion object).
+        """
         if isinstance(q2, Quaternion):
             return Quaternion(q = Quaternion.sub(self.q, q2.q))
         elif isinstance(q2, Number) or isinstance(q2, cs.MX) or isinstance(q2, cs.SX):
