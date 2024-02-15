@@ -2,7 +2,7 @@
  <!-- Define simple parameters -->
 
 <arg name="lambda"  default="-1.0"  />
- <node pkg = "dual_quaternion" name = "Quaternion_control" type = "main_numpy_operations.py" output = "screen">
+ <node pkg = "dual_quaternion" name = "Quaternion_control" type = "main_numpy.py" output = "screen">
     <param name="lambda_value" type="double" value="$(arg lambda)" />
     </node>
 </launch>

@@ -1,18 +1,20 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 import time
 import rospy
 import numpy as np
 import casadi as ca
 import numpy as np
 import matplotlib.pyplot as plt
-from dual_quaternion.quaternion import Quaternion
-from dual_quaternion.quaternion import DualQuaternion
+from dual_quaternion import Quaternion
+from dual_quaternion import DualQuaternion
+from dual_quaternion import plot_states_quaternion, fancy_plots_4, fancy_plots_1, plot_norm_quat, plot_angular_velocities, fancy_plots_3 
+from nav_msgs.msg import Odometry
 
 
-def main():
+def main(odom_pub_1, odom_pub_2):
     # Sample Time Defintion
-    sample_time = 0.05
-    t_f = 30
+    sample_time = 0.1
+    t_f = 5
 
     # Time defintion aux variable
     t = np.arange(0, t_f + sample_time, sample_time)
@@ -22,48 +24,48 @@ def main():
     loop_rate = rospy.Rate(hz)
 
     # Message Ros
-    rospy.loginfo_once("Dual_Quaternion.....")
+    rospy.loginfo_once("Quaternion.....")
 
-    # Init Quaternion Axis angle
-    theta = np.pi/2
-    n = np.array([0.0, 1.0, 0.0])
+    # Init Quaternions
+    theta1 = 0.0
+    n1 = np.array([0.0, 0.0, 1.0])
+    q1 = np.hstack([np.cos(theta1 / 2), np.sin(theta1 / 2) * np.array(n1)])
+    t1 = np.array([0.0, 1, 2, 3])
 
-    theta_2 = np.pi/2
-    n_2 = np.array([0.0, 1.0, 0.0])
+    theta2 = np.pi/2
+    n2 = np.array([1.0, 0.0, 0.0])
+    q2 = np.hstack([np.cos(theta2 / 2), np.sin(theta2 / 2) * np.array(n2)])
+    t2 = np.array([0, 0, 1, 0])
 
-    # Initial quaternion
-    q1 = np.hstack([np.cos(theta / 2), np.sin(theta / 2) * np.array(n)])
-    t1 = np.array([0.0, 1.0, 2.0, 3.0])
+    theta3 = np.pi/16
+    n3 = np.array([0.0, 0.0, 1.0])
+    q3 = np.hstack([np.cos(theta3 / 2), np.sin(theta3 / 2) * np.array(n3)])
+    t3 = np.array([0, 2.0, 0.0, -1])
 
-    q2 = np.hstack([np.cos(theta_2 / 2), np.sin(theta_2 / 2) * np.array(n_2)])
-    t2 = np.array([0.0, 0, 2.0, 0.0])
-    
+    # Defining of the vectors using casadi
+    #theta = ca.SX([3.81])
+    #n = ca.SX([0.4896, 0.2032, 0.8480])
+    #q1 = ca.vertcat(ca.cos(theta/2), ca.sin(theta/2)@n)
+    #t1 = ca.SX([0.0, 1.0, 2.0, 3])
 
-    # Object quaternion
-    Q1 = DualQuaternion(q = q1, t = t1, name = "dual_1")
+    # Create Quaternions objects
+    #quat_1_r = Quaternion(q = q1)
+    #quat_1_t = Quaternion(q = t1)
 
-    Q2 = DualQuaternion(q = q2, t = t2, name = "dual_2")
+    Q1 = DualQuaternion.from_pose(quat = q1, trans = t1)
+    Q2 = DualQuaternion.from_pose(quat = q2, trans = t2)
+    Q3 = DualQuaternion.from_pose(quat = q3, trans = t3)
+    #Q1 = DualQuaternion(q_real = quat_1_r, q_dual = quat_1_t)
 
-    w1 = [0.0, 0.0, 0.0, 0.0]
-    v1 = [0.0, 0.0, 0.0, 0.0]
-    U1 = np.hstack((w1, v1))
-
-    w2 = [0.0, 0.0, 0.0, 0.1]
-    v2 = [0.0, 0.0, 0.0, 0.0]
-    U2 = np.hstack((w2, v2))
     # Message 
-    message_ros = "Quaternion "
+    message_ros = "DualQuaternion Casadi "
 
     for k in range(0, t.shape[0]):
         tic = rospy.get_time()
-        # Update Quaternions
-        Q2.__adj__(U2)
-        # ODE systems
-        Q1.__ode__(Q1.dual_velocity_body(U1), sample_time)
-        Q2.__ode__(Q2.dual_velocity_body(U2), sample_time)
-        # Send Data
-        Q1.send_odometry()
-        Q2.send_odometry()
+        # Update Reference
+        Q4 = Q1 * Q2 * Q3
+        print(Q4)
+
 
         # Time restriction Correct
         loop_rate.sleep()
@@ -73,18 +75,18 @@ def main():
         delta = toc - tic
         rospy.loginfo(message_ros + str(delta))
 
-    return None
 
+    return None
 if __name__ == '__main__':
     try:
         # Initialization Node
-        rospy.init_node("Dual_quaternions", disable_signals=True, anonymous=True)
-        lambda_value = rospy.get_param('~lambda_value', -1.0)  # Default to None if not provided
-        if lambda_value == -1.0:
-            lambda_value = None
-        else:
-            lambda_value = lambda_value
-        main()
+        rospy.init_node("DualQuaternions", disable_signals=True, anonymous=True)
+        odomety_topic_1 = "/" + "dual_1" + "/odom"
+        odometry_publisher_1 = rospy.Publisher(odomety_topic_1, Odometry, queue_size = 10)
+
+        odomety_topic_2 = "/" + "dual_2" + "/odom"
+        odometry_publisher_2 = rospy.Publisher(odomety_topic_2, Odometry, queue_size = 10)
+        main(odometry_publisher_1, odometry_publisher_2)
     except(rospy.ROSInterruptException, KeyboardInterrupt):
         print("Error System")
         pass

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 import time
 import rospy
 import numpy as np
@@ -62,7 +62,7 @@ def f_rk4(quat, omega, ts):
 
 def reference(t, ts):
     # Desired Quaternion
-    theta_2 = -np.pi/4
+    theta_2 = -np.pi/2
     n_2 = np.array([1.0, 0.0, 0.0])
     q2 = np.hstack([np.cos(theta_2 / 2), np.sin(theta_2 / 2) * np.array(n_2)])
     quat_2 = Quaternion(q = q2)
@@ -95,16 +95,16 @@ def control_law(qd, q, kp, w):
     # Shortest path
     q_e_data = q_e.get
     if q_e_data[0, 0] >= 0.0:
-        q_e = -1*q_e
-    else:
         q_e = 1*q_e
+    else:
+        q_e = -1*q_e
 
     # Conjugate
     q_e_c = q_e.conjugate()
     # Apply log mapping
     q_e_ln = q_e.ln()
     
-    U = q_e_ln.vector_dot_product(kp) + q_e_c * w * q_e
+    U = -2*q_e_ln.vector_dot_product(kp) + q_e_c * w * q_e
     return U, q_e_ln
 
 def main(odom_pub_1, odom_pub_2):
@@ -123,8 +123,8 @@ def main(odom_pub_1, odom_pub_2):
     rospy.loginfo_once("Quaternion.....")
 
     # Init Quaternions
-    theta = np.pi/4
-    n = np.array([0.0, 0.0, 1.0])
+    theta = 3.81
+    n = np.array([0.4896, 0.2032, 0.8480])
     q1 = np.hstack([np.cos(theta / 2), np.sin(theta / 2) * np.array(n)])
     q2, w2 = reference(t, sample_time)
 
