@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 import time
 import rospy
 import numpy as np
@@ -62,21 +62,21 @@ def f_rk4(quat, omega, ts):
 
 def reference(t, ts):
     # Desired Quaternion
-    theta_2 = ca.SX([-ca.pi/4])
-    n = ca.SX([1.0, 0.0, 0.0])
-    q2 = ca.vertcat(ca.cos(theta_2/2), ca.sin(theta_2/2)@n)
+    theta_2 = -np.pi/2
+    n_2 = np.array([1.0, 0.0, 0.0])
+    q2 = np.hstack([np.cos(theta_2 / 2), np.sin(theta_2 / 2) * np.array(n_2)])
     quat_2 = Quaternion(q = q2)
 
-    Qd = ca.SX.zeros(4, t.shape[0]+1)
+    Qd = np.zeros((4, t.shape[0]+1), dtype=np.double)
     Qd[:, 0] = quat_2.get[:, 0]
 
-    Wd = ca.SX.zeros(4, t.shape[0])
+    Wd = np.zeros((4, t.shape[0]), dtype=np.double)
+    Wd[1, :] = 0.1
+    Wd[2, :] = 1*np.cos(0.5*t)
+    Wd[3, :] = 2*np.cos(1*t)
 
     qw = Quaternion(q = Wd[:, 0])
     for k in range(0, t.shape[0]):
-        Wd[1, k] = 0.1
-        Wd[2, k] = 1*ca.cos(0.5*t[k])
-        Wd[3, k] = 2*ca.cos(1*t[k])
         # Save Control Actions
         qw.set(q = Wd[:, k])
 
@@ -90,21 +90,21 @@ def reference(t, ts):
 def control_law(qd, q, kp, w):
     qd_c = qd.conjugate()
     # Calculate left error
-    q_e =  qd_c * q
+    q_e = qd_c * q
 
     # Shortest path
-    # Ask about convergence to -1 0 0 0 
     q_e_data = q_e.get
     if q_e_data[0, 0] >= 0.0:
         q_e = 1*q_e
     else:
         q_e = -1*q_e
-
     # Conjugate
     q_e_c = q_e.conjugate()
+
     # Apply log mapping
     q_e_ln = q_e.ln()
-    
+
+    # Control law
     U = -2*q_e_ln.vector_dot_product(kp) + q_e_c * w * q_e
     return U, q_e_ln
 
@@ -124,9 +124,9 @@ def main(odom_pub_1, odom_pub_2):
     rospy.loginfo_once("Quaternion.....")
 
     # Init Quaternions
-    theta = ca.SX([ca.pi/4])
-    n = ca.SX([0.0, 0.0, 1.0])
-    q1 = ca.vertcat(ca.cos(theta/2), ca.sin(theta/2)@n)
+    theta = 3.81
+    n = np.array([0.4896, 0.2032, 0.8480])
+    q1 = np.hstack([np.cos(theta / 2), np.sin(theta / 2) * np.array(n)])
     q2, w2 = reference(t, sample_time)
 
     # Create Quaternions objects
@@ -139,17 +139,17 @@ def main(odom_pub_1, odom_pub_2):
     quat_2_msg = Odometry()
 
     # Angular Velocities  quaternion 1
-    w1 = ca.SX.zeros(4, t.shape[0])
+    w1 = np.zeros((4, t.shape[0]), dtype=np.double)
 
     # Empty matrices
-    Q1 = ca.SX.zeros(4, t.shape[0] + 1)
+    Q1 = np.zeros((4, t.shape[0] + 1), dtype=np.double)
     Q1[:, 0] = quat_1.get[:,0]
-    Q2 = ca.SX.zeros(4, t.shape[0] + 1)
+    Q2 = np.zeros((4, t.shape[0] + 1), dtype=np.double)
     Q2[:, 0] = quat_2.get[:, 0]
-    Qnorm = ca.SX.zeros(1, t.shape[0] + 1)
+    Qnorm = np.zeros((1, t.shape[0] + 1), dtype=np.double)
 
     # Control Gain
-    kp = Quaternion(q = ca.SX([0.0, 1.5, 1.5, 1.5]))
+    kp = Quaternion(q = np.array([0.0, 1.5, 1.5, 1.5]))
 
     # Message 
     message_ros = "Quaternion Casadi "
@@ -167,12 +167,14 @@ def main(odom_pub_1, odom_pub_2):
         w1[:, k] = U.get[:, 0]
         Qnorm[:, k] = q_e_ln.norm
 
+
         # Send Data throught Ros
         quat_1_msg = get_odometry(quat_1_msg, quat_1, 'quat_1')
         send_odometry(quat_1_msg, odom_pub_1)
 
         quat_2_msg = get_odometry(quat_2_msg, quat_2, 'quat_2')
         send_odometry(quat_2_msg, odom_pub_2)
+
 
         # System Evolution
         quat_1 = f_rk4(quat_1, U, sample_time)
@@ -189,21 +191,6 @@ def main(odom_pub_1, odom_pub_2):
         delta = toc - tic
         rospy.loginfo(message_ros + str(delta))
 
-    # Get SX information
-    Q1 = ca.DM(Q1)
-    Q1 = np.array(Q1)
-
-    Qnorm = ca.DM(Qnorm)
-    Qnorm = np.array(Qnorm)
-
-    Q2 = ca.DM(Q2)
-    Q2 = np.array(Q2)
-
-    w2 = ca.DM(w2)
-    w2 = np.array(w2)
-
-    w1 = ca.DM(w1)
-    w1 = np.array(w1)
 
     fig11, ax11, ax21, ax31, ax41 = fancy_plots_4()
     plot_states_quaternion(fig11, ax11, ax21, ax31, ax41, Q1[:, :], Q2[:, :], t, "Quaternions Results")

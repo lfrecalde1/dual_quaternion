@@ -434,6 +434,19 @@ class Quaternion():
                 z = 1.0
             result = np.vstack((angle, x, y, z))
             return result
+            #if isinstance(q, np.ndarray):  # Use Vector directly without parentheses
+            #if  np.isclose(qw, 1, atol=1.e-12):
+            #    angle = 0.0
+            #    x = 0.0
+            #    y = 0.0
+            #    z = 1.0
+            #else:
+            #    angle = 2.0*np.arccos(qw)
+            #    x = q[1, 0] / np.sqrt(1 - qw*qw)
+            #    y = q[2, 0] / np.sqrt(1 - qw*qw)
+            #    z = q[3, 0] / np.sqrt(1 - qw*qw)
+            #result = np.vstack((angle, x, y, z))
+            #return result
         elif isinstance(q, cs.MX):
             qw = q[0, 0]
             angle = cs.atan2(norm, qw)
