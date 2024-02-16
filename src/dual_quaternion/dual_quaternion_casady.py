@@ -51,10 +51,12 @@ class DualQuaternion():
         t = Quaternion(q = trans)
         q = Quaternion(q = quat)
         q_r = q
+        # Dual Part (1/2) * t * q
+        # Dual Part (1/2) * q * t
         q_d = (1/2)* (t*q)
         return DualQuaternion(q_real = q_r, q_dual = q_d)
 
-    def __mul__(self, q2: "Quaternion") -> "Quaternion":
+    def __mul__(self, q2: "DualQuaternion") -> "DualQuaternion":
         if isinstance(q2, DualQuaternion):
             return DualQuaternion.product(self, q2)
         elif isinstance(q2, Number):
@@ -68,13 +70,16 @@ class DualQuaternion():
 
     def __rmul__(self, q2: Scalar) -> "DualQuaternion":
         if isinstance(q2, Number):
-            return Quaternion(q=q2 * self.q)
+            q1r = self.Qr
+            q1d = self.Qd
+            qr_out =  q2 * q1r
+            qd_out =  q2 * q1d
+            return DualQuaternion(q_real = qr_out, q_dual = qd_out)
         else:
             raise TypeError("Left Multiplication is only defined for scalars")
 
     @staticmethod
     def product(p: "DualQuaternion", q: "DualQuaternion") -> "DualQuaternion":
-
         # Get elements of the dual quaternions
         q1r = p.Qr
         q1d = p.Qd
@@ -144,5 +149,49 @@ class DualQuaternion():
         qr_data = qr.get
         return Quaternion(q = qr_data)
 
+    def __add__(self, q2: "DualQuaternion") -> "DualQuaternion":
+        if isinstance(q2, DualQuaternion):
+            return DualQuaternion.add(self, q2)
+        elif isinstance(q2, Number) or isinstance(q2, cs.MX) or isinstance(q2, cs.SX):
+            q1r = self.Qr
+            q1d = self.Qd
+            qr_out = q1r + q2
+            qd_out = q1d + q2
+            return DualQuaternion(q_real = qr_out, q_dual = qd_out)
+        else:
+            raise TypeError("Right addition is only defined for Quaternions and scalars.")
 
+    def __radd__(self, q2: "DualQuaternion") -> "DualQuaternion":
+        if isinstance(q2, DualQuaternion):
+            return DualQuaternion.add(q2, self)
+        elif isinstance(q2, Number) or isinstance(q2, cs.MX) or isinstance(q2, cs.SX):
+            q1r = self.Qr
+            q1d = self.Qd
+            qr_out = q2 + q1r
+            qd_out = q2 + q1d
+            return DualQuaternion(q_real = qr_out, q_dual = qd_out)
+        else:
+            raise TypeError("Left add only is defined for Quaternions and scalars")
 
+    @staticmethod
+    def add(p: "DualQuaternion", q: "DualQuaternion") -> "DualQuaternion":
+        # Get elements of the dual quaternions
+        q1r = p.Qr
+        q1d = p.Qd
+
+        q2r = q.Qr
+        q2d = q.Qd
+        if isinstance(q1r.get, np.ndarray) and isinstance(q2r.get, np.ndarray):  # Use Vector directly without parentheses
+            real = q1r + q2r
+            dual = q1d + q2d
+
+        elif isinstance(q1r.get, cs.MX) and isinstance(q2r.get, cs.MX):
+            real = q1r + q2r
+            dual = q1d + q2d
+
+        elif isinstance(q1r.get, cs.SX) and isinstance(q2r.get, cs.SX):
+            real = q1r + q2r
+            dual = q1d + q2d
+        else:
+            raise TypeError("The elements of both Dualquaternions should be of the same type.")
+        return DualQuaternion(q_real= real, q_dual= dual)

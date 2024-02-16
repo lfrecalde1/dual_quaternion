@@ -43,10 +43,15 @@ def main(odom_pub_1, odom_pub_2):
     t3 = np.array([0, 2.0, 0.0, -1])
 
     # Defining of the vectors using casadi
-    #theta = ca.SX([3.81])
-    #n = ca.SX([0.4896, 0.2032, 0.8480])
-    #q1 = ca.vertcat(ca.cos(theta/2), ca.sin(theta/2)@n)
-    #t1 = ca.SX([0.0, 1.0, 2.0, 3])
+    #theta1 = ca.SX([0.0])
+    #n1 = ca.SX([0.0, 0.0, 1.0])
+    #q1 = ca.vertcat(ca.cos(theta1/2), ca.sin(theta1/2)@n1)
+    #t1 = ca.SX([0.0, 1.0, 2.0, 3.0])
+
+    #theta2 = ca.SX([ca.pi/2])
+    #n2 = ca.SX([1.0, 0.0, 0.0])
+    #q2 = ca.vertcat(ca.cos(theta2/2), ca.sin(theta2/2)@n2)
+    #t2 = ca.SX([0.0, 0.0, 1.0, 0.0])
 
     # Create Quaternions objects
     #quat_1_r = Quaternion(q = q1)
@@ -63,9 +68,8 @@ def main(odom_pub_1, odom_pub_2):
     for k in range(0, t.shape[0]):
         tic = rospy.get_time()
         # Update Reference
-        Q4 = Q1 * Q2 * Q3
-        print(Q4)
-
+        Q4 = Q1 * Q2
+        print(Q4*2)
 
         # Time restriction Correct
         loop_rate.sleep()
