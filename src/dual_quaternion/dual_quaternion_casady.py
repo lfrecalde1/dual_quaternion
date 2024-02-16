@@ -152,26 +152,26 @@ class DualQuaternion():
     def __add__(self, q2: "DualQuaternion") -> "DualQuaternion":
         if isinstance(q2, DualQuaternion):
             return DualQuaternion.add(self, q2)
-        elif isinstance(q2, Number) or isinstance(q2, cs.MX) or isinstance(q2, cs.SX):
+        elif (isinstance(q2, Number) and isinstance(self.Qr.get, np.ndarray)) or (isinstance(q2, cs.MX) and isinstance(self.Qr.get, cs.MX)) or (isinstance(q2, cs.SX) and isinstance(self.Qr.get, cs.SX)):
             q1r = self.Qr
             q1d = self.Qd
             qr_out = q1r + q2
             qd_out = q1d + q2
             return DualQuaternion(q_real = qr_out, q_dual = qd_out)
         else:
-            raise TypeError("Right addition is only defined for Quaternions and scalars.")
+            raise TypeError("Right addition is only defined for DualQuaternions and scalars.")
 
     def __radd__(self, q2: "DualQuaternion") -> "DualQuaternion":
         if isinstance(q2, DualQuaternion):
             return DualQuaternion.add(q2, self)
-        elif isinstance(q2, Number) or isinstance(q2, cs.MX) or isinstance(q2, cs.SX):
+        elif (isinstance(q2, Number) and isinstance(self.Qr.get, np.ndarray)) or (isinstance(q2, cs.MX) and isinstance(self.Qr.get, cs.MX)) or (isinstance(q2, cs.SX) and isinstance(self.Qr.get, cs.SX)):
             q1r = self.Qr
             q1d = self.Qd
             qr_out = q2 + q1r
             qd_out = q2 + q1d
             return DualQuaternion(q_real = qr_out, q_dual = qd_out)
         else:
-            raise TypeError("Left add only is defined for Quaternions and scalars")
+            raise TypeError("Left addtion is only defined for DualQuaternions and scalars")
 
     @staticmethod
     def add(p: "DualQuaternion", q: "DualQuaternion") -> "DualQuaternion":
@@ -181,6 +181,7 @@ class DualQuaternion():
 
         q2r = q.Qr
         q2d = q.Qd
+
         if isinstance(q1r.get, np.ndarray) and isinstance(q2r.get, np.ndarray):  # Use Vector directly without parentheses
             real = q1r + q2r
             dual = q1d + q2d

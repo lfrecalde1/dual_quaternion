@@ -194,7 +194,7 @@ class Quaternion():
         """
         if isinstance(q2, Quaternion):
             return Quaternion(q = Quaternion.add(self.q, q2.q))
-        elif isinstance(q2, Number) or isinstance(q2, cs.MX) or isinstance(q2, cs.SX):
+        elif (isinstance(q2, Number) and isinstance(self.q, np.ndarray)) or (isinstance(q2, cs.MX) and isinstance(self.q, cs.MX)) or (isinstance(q2, cs.SX) and isinstance(self.q, cs.SX)):
             q = self.q
             q_out = q + q2
             return Quaternion(q = q_out)
@@ -225,7 +225,7 @@ class Quaternion():
         """
         if isinstance(q2, Quaternion):
             return Quaternion(q = Quaternion.add(q2.q, self.q))
-        elif isinstance(q2, Number) or isinstance(q2, cs.MX) or isinstance(q2, cs.SX):
+        elif (isinstance(q2, Number) and isinstance(self.q, np.ndarray)) or (isinstance(q2, cs.MX) and isinstance(self.q, cs.MX)) or (isinstance(q2, cs.SX) and isinstance(self.q, cs.SX)):
             q = self.q
             q_out =  q2 + q
             return Quaternion(q = q_out)

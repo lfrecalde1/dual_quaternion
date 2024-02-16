@@ -61,6 +61,7 @@ def main(odom_pub_1, odom_pub_2):
     Q2 = DualQuaternion.from_pose(quat = q2, trans = t2)
     Q3 = DualQuaternion.from_pose(quat = q3, trans = t3)
     #Q1 = DualQuaternion(q_real = quat_1_r, q_dual = quat_1_t)
+    alpha = 0.2
 
     # Message 
     message_ros = "DualQuaternion Casadi "
@@ -69,7 +70,7 @@ def main(odom_pub_1, odom_pub_2):
         tic = rospy.get_time()
         # Update Reference
         Q4 = Q1 * Q2
-        print(Q4*2)
+        print(Q4*2 + Q2 + alpha)
 
         # Time restriction Correct
         loop_rate.sleep()
