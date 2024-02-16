@@ -55,7 +55,8 @@ class Quaternion():
         Custom __str__ method for the Quaternion class.
         This method returns a string representation of the Quaternion object.
         """
-        return str(self.q)
+        return f'Quaternion(: {self.q})'
+
 
     @property
     def get(self) -> Vector:
@@ -95,10 +96,18 @@ class Quaternion():
             q = self.q
             q_out = q * q2
             return Quaternion(q = q_out)
+        elif isinstance(q2, cs.MX):
+            q = self.q
+            q_out = q * q2
+            return Quaternion(q = q_out)
+        elif isinstance(q2, cs.SX):
+            q = self.q
+            q_out = q * q2
+            return Quaternion(q = q_out)
         else:
             raise TypeError("Right Multiplication is only defined for Quaternions and scalars")
 
-    def __rmul__(self, q2: Scalar) -> "Quaternion":
+    def __rmul__(self, q2) -> "Quaternion":
         """
         Custom __rmul__ method for the Quaternion class.
         This method performs left multiplication of a scalar with the current quaternion.
@@ -120,6 +129,10 @@ class Quaternion():
         - scalar * q will return the quaternion q scaled by the scalar (Quaternion object).
         """
         if isinstance(q2, Number):
+            return Quaternion(q=q2 * self.q)
+        elif isinstance(q2, cs.MX):
+            return Quaternion(q=q2 * self.q)
+        elif isinstance(q2, cs.SX):
             return Quaternion(q=q2 * self.q)
         else:
             raise TypeError("Left Multiplication is only defined for scalars")
@@ -528,5 +541,23 @@ class Quaternion():
             aux_1 = p * q
             q_product = aux_1
             return q_product
+        else:
+            raise TypeError("The elements of both quaternions should be of the same type.")
+
+    def cross(self, p: "Quaternion") -> "Quaternion":
+        q = self.q
+        p = p.get
+        if isinstance(p, np.ndarray) and isinstance(q, np.ndarray):  # Use Vector directly without parentheses
+            product = np.cross(q[1:4, 0], p[1:4, 0])
+            result = np.vstack((0.0, product[0], product[1], product[2]))
+            return Quaternion(q = result)
+
+        elif isinstance(p, cs.MX) and isinstance(q, cs.MX):
+            product = cs.vertcat(0.0, q[2]*p[3] - q[3]*p[2], q[3]*p[1] - q[1]*p[3], q[1]*p[2] - q[2]*p[1])
+            return Quaternion(q = product)
+
+        elif isinstance(p, cs.SX) and isinstance(q, cs.SX):
+            product = cs.vertcat(0.0, q[2]*p[3] - q[3]*p[2], q[3]*p[1] - q[1]*p[3], q[1]*p[2] - q[2]*p[1])
+            return Quaternion(q = product)
         else:
             raise TypeError("The elements of both quaternions should be of the same type.")
