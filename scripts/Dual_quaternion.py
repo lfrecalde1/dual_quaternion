@@ -67,6 +67,7 @@ def f_rk4(quat, omega, ts):
     # Compute forward Euler method
     quat = quat + (1/6)*ts*(k1 + 2*k2 + 2*k3 + k4)
     return quat
+
 def velocity_dual(w, v, dual):
     w = Quaternion(q = w) 
     v = Quaternion(q = v) 
@@ -77,10 +78,28 @@ def velocity_dual(w, v, dual):
     return dual_velocity
 
 
+def control_law(qd, q, kp):
+    qd_c = qd.conjugate()
+    # Calculate left error
+    q_e =  qd_c * q
+
+    # Shortest path
+    q_e_data = q_e.get
+    if q_e_data[0, 0] >= 0.0:
+        q_e = 1*q_e
+    else:
+        q_e = -1*q_e
+
+    # Apply log mapping
+    q_e_ln = q_e.ln()
+    
+    U = -2*q_e_ln.vector_dot_product(kp)
+    return U
+
 def main(odom_pub_1, odom_pub_2):
     # Sample Time Defintion
     sample_time = 0.05
-    t_f = 10
+    t_f = 20
 
     # Time defintion aux variable
     t = np.arange(0, t_f + sample_time, sample_time)
@@ -94,14 +113,14 @@ def main(odom_pub_1, odom_pub_2):
 
     # Init Quaternions
     theta1 = np.pi/2
-    n1 = np.array([0.0, 1.0, 0.0])
+    n1 = np.array([1.0, 0.0, 0.0])
     q1 = np.hstack([np.cos(theta1 / 2), np.sin(theta1 / 2) * np.array(n1)])
     t1 = np.array([0.0, 1, 1, 0.0])
 
     theta2 = np.pi/2
-    n2 = np.array([1.0, 0.0, 0.0])
+    n2 = np.array([0.0, 1.0, 0.0])
     q2 = np.hstack([np.cos(theta2 / 2), np.sin(theta2 / 2) * np.array(n2)])
-    t2 = np.array([0, 0, 1, 0])
+    t2 = np.array([0, -2, -3, 1])
 
     theta3 = np.pi/16
     n3 = np.array([0.0, 0.0, 1.0])
@@ -109,15 +128,15 @@ def main(odom_pub_1, odom_pub_2):
     t3 = np.array([0, 2.0, 0.0, -1])
 
     # Defining of the vectors using casadi
-    #theta1 = ca.SX([ca.pi/2])
-    #n1 = ca.SX([0.0, 1.0, 0.0])
-    #q1 = ca.vertcat(ca.cos(theta1/2), ca.sin(theta1/2)@n1)
-    #t1 = ca.SX([0.0, 1.0, 1.0, 0.0])
+    theta1 = ca.SX([ca.pi/2])
+    n1 = ca.SX([1.0, 0.0, 0.0])
+    q1 = ca.vertcat(ca.cos(theta1/2), ca.sin(theta1/2)@n1)
+    t1 = ca.SX([0.0, 1.0, 1.0, 0.0])
 
-    #theta2 = ca.SX([ca.pi/2])
-    #n2 = ca.SX([1.0, 0.0, 0.0])
-    #q2 = ca.vertcat(ca.cos(theta2/2), ca.sin(theta2/2)@n2)
-    #t2 = ca.SX([0.0, 0.0, 1.0, 0.0])
+    theta2 = ca.SX([ca.pi/2])
+    n2 = ca.SX([0.0, 0.0, 1.0])
+    q2 = ca.vertcat(ca.cos(theta2/2), ca.sin(theta2/2)@n2)
+    t2 = ca.SX([0.0, -2.0, -3.0, 1.0])
 
     #theta3 = ca.SX([ca.pi/16])
     #n3 = ca.SX([0.0, 0.0, 1.0])
@@ -142,29 +161,34 @@ def main(odom_pub_1, odom_pub_2):
     message_ros = "DualQuaternion Casadi "
 
     # Angular y linear Velocity of the system
-    w1 = np.zeros((4, t.shape[0]))
-    w1[2, :] = 0.1
-    w1[1, :] = 0.5
-    v1 = np.zeros((4, t.shape[0]))
-    v1[2, :] = 0.1
+    w1 = ca.SX.zeros(4, t.shape[0])
+    v1 = ca.SX.zeros(4, t.shape[0])
+
+    # Control gain
+    #angular_gain = np.hstack([0.0, 1, 1, 1])
+    #trans_gain = np.array([0, 1, 1, 1])
+
+    angular_gain = ca.SX([0.0, 3.2, 3.2, 3.2])
+    trans_gain = ca.SX([0.0, 1.0, 1.0, 1.0])
+    K = DualQuaternion(q_real = Quaternion(q = angular_gain), q_dual = Quaternion(q = trans_gain))
 
     for k in range(0, t.shape[0]):
         tic = rospy.get_time()
+        U = control_law(Q2, Q1, K)
+        w1[1:4, k] = U.get_real.get[1:4,0] 
+        v1[1:4, k] = U.get_dual.get[1:4,0] 
         dual_velocity = velocity_dual(w1[:, k], v1[:, k], Q1)
 
-        # Update Reference
-        Q4 =  Q1 * Q2
-        
         # Send Data throught Ros
         quat_1_msg = get_odometry(quat_1_msg, Q1, 'quat_1')
         send_odometry(quat_1_msg, odom_pub_1)
 
-        #quat_2_msg = get_odometry(quat_2_msg, Q2, 'quat_2')
-        #send_odometry(quat_2_msg, odom_pub_2)
+        quat_2_msg = get_odometry(quat_2_msg, Q2, 'quat_2')
+        send_odometry(quat_2_msg, odom_pub_2)
 
 
         Q1 = f_rk4(Q1, dual_velocity, sample_time)
-        print(Q1.norm)
+
         # Time restriction Correct
         loop_rate.sleep()
 

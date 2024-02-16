@@ -270,3 +270,44 @@ class DualQuaternion():
         else:
             # Handle case where q_primal or q_dual are not provided
             raise ValueError("Both primal and dual quaternions must be provided")
+
+    def ln(self):
+        q1r = self.Qr
+        trans = self.get_trans
+        trans_aux = (1/2) * trans
+        q1r_ln = q1r.ln()
+        Dual_ln = DualQuaternion(q_real=q1r_ln, q_dual= trans_aux)
+        return Dual_ln
+
+    @staticmethod
+    def vector_dot(p: "DualQuaternion", q: "DualQuaternion") -> "DualQuaternion":
+        # Get elements of the dual quaternions
+        q1r = p.Qr
+        q1d = p.Qd
+
+        q2r = q.Qr
+        q2d = q.Qd
+
+        if isinstance(q1r.get, np.ndarray) and isinstance(q2r.get, np.ndarray):  # Use Vector directly without parentheses
+            real = q1r.get * q2r.get
+            dual = q1d.get * q2d.get
+
+        elif isinstance(q1r.get, cs.MX) and isinstance(q2r.get, cs.MX):
+            real = q1r.get * q2r.get
+            dual = q1d.get * q2d.get
+
+        elif isinstance(q1r.get, cs.SX) and isinstance(q2r.get, cs.SX):
+            real = q1r.get * q2r.get
+            dual = q1d.get * q2d.get
+        else:
+            raise TypeError("The elements of both Dualquaternions should be of the same type.")
+        real_quat = Quaternion(q = real)
+        dual_quat = Quaternion(q = dual)
+        return DualQuaternion(q_real= real_quat, q_dual= dual_quat)
+
+    def vector_dot_product(self, q2):
+        if isinstance(q2, DualQuaternion):
+            product = DualQuaternion.vector_dot(self, q2)
+            return product
+        else:
+            raise TypeError("Vector Dot Product only defined for DualQuaternions")
