@@ -119,16 +119,17 @@ def main(odom_pub_1, odom_pub_2):
     # Message Ros
     rospy.loginfo_once("DualQuaternion.....")
 
-    # Init Quaternions
-    theta1 = 3.8134 
-    n1 = np.array([0.4896, 0.2032, 0.8480])
-    q1 = np.hstack([np.cos(theta1 / 2), np.sin(theta1 / 2) * np.array(n1)])
-    t1 = np.array([0.0, 2, 2, 1.0])
 
-    theta2 = 0.0
-    n2 = np.array([0.0, 0.0, 1.0])
-    q2 = np.hstack([np.cos(theta2 / 2), np.sin(theta2 / 2) * np.array(n2)])
-    t2 = np.array([0, 0.0, 0.0, 0.0])
+    # Defining of the vectors using casadi
+    theta1 = ca.SX([3.8134])
+    n1 = ca.SX([0.4896, 0.2032, 0.8480])
+    q1 = ca.vertcat(ca.cos(theta1/2), ca.sin(theta1/2)@n1)
+    t1 = ca.SX([0.0, 2.0, 2.0, 1.0])
+
+    theta2 = ca.SX([0.0])
+    n2 = ca.SX([0.0, 0.0, 1.0])
+    q2 = ca.vertcat(ca.cos(theta2/2), ca.sin(theta2/2)@n2)
+    t2 = ca.SX([0.0, 0.0, 0.0, 0.0])
 
     Q1 = DualQuaternion.from_pose(quat = q1, trans = t1)
     Q2 = DualQuaternion.from_pose(quat = q2, trans = t2)
@@ -136,27 +137,25 @@ def main(odom_pub_1, odom_pub_2):
     # Odometry Message
     quat_1_msg = Odometry()
     quat_2_msg = Odometry()
-
     # Message 
     message_ros = "DualQuaternion Casadi "
 
     # Angular y linear Velocity of the system
-    w1 = np.zeros((4, t.shape[0]))
-    v1 = np.zeros((4, t.shape[0]))
+    w1 = ca.SX.zeros(4, t.shape[0])
+    v1 = ca.SX.zeros(4, t.shape[0])
 
     # Control gains
-    angular_gain = np.hstack([0.0, 1, 1, 1])
-    trans_gain = np.array([0, 1, 1, 1])
-
+    angular_gain = ca.SX([0.0, 1.0, 1.0, 1.0])
+    trans_gain = ca.SX([0.0, 1.0, 1.0, 1.0])
 
     K = DualQuaternion(q_real = Quaternion(q = angular_gain), q_dual = Quaternion(q = trans_gain))
 
     # Empty matrices
-    Q1_data = np.zeros((8, t.shape[0] + 1), dtype=np.double)
+    Q1_data = ca.SX.zeros(8, t.shape[0] + 1)
     Q1_data[0:4, 0] = Q1.get_quat.get[:, 0]
     Q1_data[4:8, 0] = Q1.get_trans.get[:, 0]
 
-    Q2_data = np.zeros((8, t.shape[0] + 1), dtype=np.double)
+    Q2_data = ca.SX.zeros(8, t.shape[0] + 1)
     Q2_data[0:4, 0] = Q2.get_quat.get[:, 0]
     Q2_data[4:8, 0] = Q2.get_trans.get[:, 0]
 
@@ -189,7 +188,6 @@ def main(odom_pub_1, odom_pub_2):
 
         Q2_data[0:4, k+1] = Q2.get_quat.get[:, 0]
         Q2_data[4:8, k+1] = Q2.get_trans.get[:, 0]
-
         # Time restriction Correct
         loop_rate.sleep()
 
@@ -197,6 +195,18 @@ def main(odom_pub_1, odom_pub_2):
         toc = rospy.get_time()
         delta = toc - tic
         rospy.loginfo(message_ros + str(delta))
+
+    Q1_data = ca.DM(Q1_data)
+    Q1_data = np.array(Q1_data)
+
+    Q2_data = ca.DM(Q2_data)
+    Q2_data = np.array(Q2_data)
+
+    v1 = ca.DM(v1)
+    v1 = np.array(v1)
+
+    w1 = ca.DM(w1)
+    w1 = np.array(w1)
 
     # PLot Results
     fig11, ax11, ax21, ax31, ax41 = fancy_plots_4()
