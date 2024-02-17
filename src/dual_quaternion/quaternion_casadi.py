@@ -96,11 +96,11 @@ class Quaternion():
             q = self.q
             q_out = q * q2
             return Quaternion(q = q_out)
-        elif isinstance(q2, cs.MX):
+        elif (isinstance(q2, cs.MX) and isinstance(self.q, cs.MX)) or (isinstance(q2, Number) and isinstance(self.q, cs.MX)):
             q = self.q
             q_out = q * q2
             return Quaternion(q = q_out)
-        elif isinstance(q2, cs.SX):
+        elif (isinstance(q2, cs.SX) and isinstance(self.q, cs.SX)) or (isinstance(q2, Number) and isinstance(self.q, cs.SX)):
             q = self.q
             q_out = q * q2
             return Quaternion(q = q_out)
@@ -129,11 +129,17 @@ class Quaternion():
         - scalar * q will return the quaternion q scaled by the scalar (Quaternion object).
         """
         if isinstance(q2, Number):
-            return Quaternion(q=q2 * self.q)
-        elif isinstance(q2, cs.MX):
-            return Quaternion(q=q2 * self.q)
-        elif isinstance(q2, cs.SX):
-            return Quaternion(q=q2 * self.q)
+            q = self.q
+            q_out =  q2 * q
+            return Quaternion(q = q_out)
+        elif (isinstance(q2, cs.MX) and isinstance(self.q, cs.MX)) or (isinstance(q2, Number) and isinstance(self.q, cs.MX)):
+            q = self.q
+            q_out =  q2 * q
+            return Quaternion(q = q_out)
+        elif (isinstance(q2, cs.SX) and isinstance(self.q, cs.SX)) or (isinstance(q2, Number) and isinstance(self.q, cs.SX)):
+            q = self.q
+            q_out =  q2 * q
+            return Quaternion(q = q_out)
         else:
             raise TypeError("Left Multiplication is only defined for scalars")
 
@@ -207,7 +213,16 @@ class Quaternion():
         """
         if isinstance(q2, Quaternion):
             return Quaternion(q = Quaternion.add(self.q, q2.q))
-        elif (isinstance(q2, Number) and isinstance(self.q, np.ndarray)) or (isinstance(q2, cs.MX) and isinstance(self.q, cs.MX)) or (isinstance(q2, cs.SX) and isinstance(self.q, cs.SX)):
+        elif (isinstance(q2, Number) and isinstance(self.q, np.ndarray)):
+            q = self.q
+            q_out = q + q2
+            return Quaternion(q = q_out)
+        elif (isinstance(q2, cs.MX) and isinstance(self.q, cs.MX)) or (isinstance(q2, Number) and isinstance(self.q, cs.MX)):
+            q = self.q
+            q_out = q + q2
+            return Quaternion(q = q_out)
+
+        elif (isinstance(q2, cs.SX) and isinstance(self.q, cs.SX)) or (isinstance(q2, Number) and isinstance(self.q, cs.SX)):
             q = self.q
             q_out = q + q2
             return Quaternion(q = q_out)
@@ -238,9 +253,18 @@ class Quaternion():
         """
         if isinstance(q2, Quaternion):
             return Quaternion(q = Quaternion.add(q2.q, self.q))
-        elif (isinstance(q2, Number) and isinstance(self.q, np.ndarray)) or (isinstance(q2, cs.MX) and isinstance(self.q, cs.MX)) or (isinstance(q2, cs.SX) and isinstance(self.q, cs.SX)):
+        elif (isinstance(q2, Number) and isinstance(self.q, np.ndarray)):
             q = self.q
-            q_out =  q2 + q
+            q_out = q2 + q
+            return Quaternion(q = q_out)
+        elif (isinstance(q2, cs.MX) and isinstance(self.q, cs.MX)) or (isinstance(q2, Number) and isinstance(self.q, cs.MX)):
+            q = self.q
+            q_out = q2 + q
+            return Quaternion(q = q_out)
+
+        elif (isinstance(q2, cs.SX) and isinstance(self.q, cs.SX)) or (isinstance(q2, Number) and isinstance(self.q, cs.SX)):
+            q = self.q
+            q_out = q2 + q
             return Quaternion(q = q_out)
         else:
             raise TypeError("Left add only is defined for Quaternions and scalars")
@@ -310,9 +334,17 @@ class Quaternion():
         """
         if isinstance(q2, Quaternion):
             return Quaternion(q = Quaternion.sub(self.q, q2.q))
-        elif isinstance(q2, Number) or isinstance(q2, cs.MX) or isinstance(q2, cs.SX):
+        elif (isinstance(q2, Number) and isinstance(self.q, np.ndarray)):
             q = self.q
-            q_out = q - q2
+            q_out =  q - q2
+            return Quaternion(q = q_out)
+        elif (isinstance(q2, cs.MX) and isinstance(self.q, cs.MX)) or (isinstance(q2, Number) and isinstance(self.q, cs.MX)):
+            q = self.q
+            q_out =  q - q2
+            return Quaternion(q = q_out)
+        elif (isinstance(q2, cs.SX) and isinstance(self.q, cs.SX)) or (isinstance(q2, Number) and isinstance(self.q, cs.SX)):
+            q = self.q
+            q_out =  q - q2
             return Quaternion(q = q_out)
         else:
             raise TypeError("Right sub only defined for Quaternions and scalars")
@@ -320,12 +352,20 @@ class Quaternion():
     def __rsub__(self, q2: "Quaternion") -> "Quaternion":
         if isinstance(q2, Quaternion):
             return Quaternion(q = Quaternion.sub(q2.q, self.q))
-        elif isinstance(q2, Number) or isinstance(q2, cs.MX) or isinstance(q2, cs.SX):
+        elif (isinstance(q2, Number) and isinstance(self.q, np.ndarray)):
+            q = self.q
+            q_out =  q2 - q
+            return Quaternion(q = q_out)
+        elif (isinstance(q2, cs.MX) and isinstance(self.q, cs.MX)) or (isinstance(q2, Number) and isinstance(self.q, cs.MX)):
+            q = self.q
+            q_out =  q2 - q
+            return Quaternion(q = q_out)
+        elif (isinstance(q2, cs.SX) and isinstance(self.q, cs.SX)) or (isinstance(q2, Number) and isinstance(self.q, cs.SX)):
             q = self.q
             q_out =  q2 - q
             return Quaternion(q = q_out)
         else:
-            raise TypeError("Left add only defined for Quaternions and scalars")
+            raise TypeError("Left sub only defined for Quaternions and scalars")
 
     @staticmethod
     def sub(p: Vector, q: Vector) -> Vector:

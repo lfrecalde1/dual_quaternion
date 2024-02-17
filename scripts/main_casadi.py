@@ -47,7 +47,7 @@ def quatdot(quat, omega):
     K_quat = 2
     quat_error = 1 - (qw**2 + qx**2 + qy**2 + qz**2)
 
-    q_dot = (1/2)*(quat*omega) + K_quat*quat_error*quat
+    q_dot = (1/2)*(quat*omega) + quat*K_quat*quat_error
     return q_dot
 
 def f_rk4(quat, omega, ts):

@@ -17,7 +17,7 @@ class DualQuaternion():
         if q_real is not None and q_dual is not None:
             if not all(isinstance(i, Quaternion) for i in [q_real, q_dual]):
                 raise ValueError("Elements of the DualQuaternions should be Quaternions")
-            if (isinstance(q_real.get, np.ndarray) and isinstance(q_dual.get, np.ndarray)) or (isinstance(q_real.get, cs.MX) and isinstance(q_dual.get, cs.MX)) or (isinstance(q_real.get, cs.SX) and isinstance(q_dual.get, cs.SX)):
+            elif (isinstance(q_real.get, np.ndarray) and isinstance(q_dual.get, np.ndarray)) or (isinstance(q_real.get, cs.MX) and isinstance(q_dual.get, cs.MX)) or (isinstance(q_real.get, cs.SX) and isinstance(q_dual.get, cs.SX)):
                 self.Qr = q_real
                 self.Qd = q_dual
             else:
@@ -48,6 +48,7 @@ class DualQuaternion():
 
     @staticmethod
     def from_pose(quat: Vector, trans: Vector) -> "DualQuaternion":
+        # Get  dual Quaternion form a pose a of rigid body
         t = Quaternion(q = trans)
         q = Quaternion(q = quat)
         q_r = q
@@ -59,24 +60,48 @@ class DualQuaternion():
     def __mul__(self, q2: "DualQuaternion") -> "DualQuaternion":
         if isinstance(q2, DualQuaternion):
             return DualQuaternion.product(self, q2)
-        elif isinstance(q2, Number):
+        if (isinstance(q2, Number) and isinstance(self.Qr.get, np.ndarray)):
             q1r = self.Qr
             q1d = self.Qd
-            qr_out = q1r * q2
-            qd_out = q1d * q2
+            qr_out =  q1r * q2
+            qd_out =  q1d * q2
+            return DualQuaternion(q_real = qr_out, q_dual = qd_out)
+        elif(isinstance(q2, cs.MX) and isinstance(self.Qr.get, cs.MX)) or (isinstance(q2, Number) and isinstance(self.Qr.get, cs.MX)):
+            q1r = self.Qr
+            q1d = self.Qd
+            qr_out =  q1r * q2
+            qd_out =  q1d * q2
+            return DualQuaternion(q_real = qr_out, q_dual = qd_out)
+        elif(isinstance(q2, cs.SX) and isinstance(self.Qr.get, cs.SX)) or (isinstance(q2, Number) and isinstance(self.Qr.get, cs.SX)):
+            q1r = self.Qr
+            q1d = self.Qd
+            qr_out =  q1r * q2
+            qd_out =  q1d * q2
             return DualQuaternion(q_real = qr_out, q_dual = qd_out)
         else:
-            raise TypeError("Right Multiplication is only defined for DualQuaternions and scalars")
+            raise TypeError("Right Multiplication Dualquaternion is only defined for DualQuaternions and scalars of the same type")
 
-    def __rmul__(self, q2: Scalar) -> "DualQuaternion":
-        if isinstance(q2, Number):
+    def __rmul__(self, q2) -> "DualQuaternion":
+        if (isinstance(q2, Number) and isinstance(self.Qr.get, np.ndarray)):
+            q1r = self.Qr
+            q1d = self.Qd
+            qr_out =  q2 * q1r
+            qd_out =  q2 * q1d
+            return DualQuaternion(q_real = qr_out, q_dual = qd_out)
+        elif(isinstance(q2, cs.MX) and isinstance(self.Qr.get, cs.MX)) or (isinstance(q2, Number) and isinstance(self.Qr.get, cs.MX)):
+            q1r = self.Qr
+            q1d = self.Qd
+            qr_out =  q2 * q1r
+            qd_out =  q2 * q1d
+            return DualQuaternion(q_real = qr_out, q_dual = qd_out)
+        elif(isinstance(q2, cs.SX) and isinstance(self.Qr.get, cs.SX)) or (isinstance(q2, Number) and isinstance(self.Qr.get, cs.SX)):
             q1r = self.Qr
             q1d = self.Qd
             qr_out =  q2 * q1r
             qd_out =  q2 * q1d
             return DualQuaternion(q_real = qr_out, q_dual = qd_out)
         else:
-            raise TypeError("Left Multiplication is only defined for scalars")
+            raise TypeError("Left Multiplication Dualquaternion is only defined for scalars of the same type")
 
     @staticmethod
     def product(p: "DualQuaternion", q: "DualQuaternion") -> "DualQuaternion":
@@ -166,7 +191,19 @@ class DualQuaternion():
     def __add__(self, q2: "DualQuaternion") -> "DualQuaternion":
         if isinstance(q2, DualQuaternion):
             return DualQuaternion.add(self, q2)
-        elif (isinstance(q2, Number) and isinstance(self.Qr.get, np.ndarray)) or (isinstance(q2, cs.MX) and isinstance(self.Qr.get, cs.MX)) or (isinstance(q2, cs.SX) and isinstance(self.Qr.get, cs.SX)):
+        elif (isinstance(q2, Number) and isinstance(self.Qr.get, np.ndarray)):
+            q1r = self.Qr
+            q1d = self.Qd
+            qr_out = q1r + q2
+            qd_out = q1d + q2
+            return DualQuaternion(q_real = qr_out, q_dual = qd_out)
+        elif(isinstance(q2, cs.MX) and isinstance(self.Qr.get, cs.MX)) or (isinstance(q2, Number) and isinstance(self.Qr.get, cs.MX)):
+            q1r = self.Qr
+            q1d = self.Qd
+            qr_out = q1r + q2
+            qd_out = q1d + q2
+            return DualQuaternion(q_real = qr_out, q_dual = qd_out)
+        elif(isinstance(q2, cs.SX) and isinstance(self.Qr.get, cs.SX)) or (isinstance(q2, Number) and isinstance(self.Qr.get, cs.SX)):
             q1r = self.Qr
             q1d = self.Qd
             qr_out = q1r + q2
@@ -178,7 +215,19 @@ class DualQuaternion():
     def __radd__(self, q2: "DualQuaternion") -> "DualQuaternion":
         if isinstance(q2, DualQuaternion):
             return DualQuaternion.add(q2, self)
-        elif (isinstance(q2, Number) and isinstance(self.Qr.get, np.ndarray)) or (isinstance(q2, cs.MX) and isinstance(self.Qr.get, cs.MX)) or (isinstance(q2, cs.SX) and isinstance(self.Qr.get, cs.SX)):
+        elif (isinstance(q2, Number) and isinstance(self.Qr.get, np.ndarray)):
+            q1r = self.Qr
+            q1d = self.Qd
+            qr_out = q2 + q1r
+            qd_out = q2 + q1d
+            return DualQuaternion(q_real = qr_out, q_dual = qd_out)
+        elif(isinstance(q2, cs.MX) and isinstance(self.Qr.get, cs.MX)) or (isinstance(q2, Number) and isinstance(self.Qr.get, cs.MX)):
+            q1r = self.Qr
+            q1d = self.Qd
+            qr_out = q2 + q1r
+            qd_out = q2 + q1d
+            return DualQuaternion(q_real = qr_out, q_dual = qd_out)
+        elif(isinstance(q2, cs.SX) and isinstance(self.Qr.get, cs.SX)) or (isinstance(q2, Number) and isinstance(self.Qr.get, cs.SX)):
             q1r = self.Qr
             q1d = self.Qd
             qr_out = q2 + q1r
@@ -214,7 +263,19 @@ class DualQuaternion():
     def __sub__(self, q2: "DualQuaternion") -> "DualQuaternion":
         if isinstance(q2, DualQuaternion):
             return  DualQuaternion.sub(self, q2)
-        elif (isinstance(q2, Number) and isinstance(self.Qr.get, np.ndarray)) or (isinstance(q2, cs.MX) and isinstance(self.Qr.get, cs.MX)) or (isinstance(q2, cs.SX) and isinstance(self.Qr.get, cs.SX)):
+        elif (isinstance(q2, Number) and isinstance(self.Qr.get, np.ndarray)):
+            q1r = self.Qr
+            q1d = self.Qd
+            qr_out = q1r - q2
+            qd_out = q1d - q2
+            return DualQuaternion(q_real = qr_out, q_dual = qd_out)
+        elif(isinstance(q2, cs.MX) and isinstance(self.Qr.get, cs.MX)) or (isinstance(q2, Number) and isinstance(self.Qr.get, cs.MX)):
+            q1r = self.Qr
+            q1d = self.Qd
+            qr_out = q1r - q2
+            qd_out = q1d - q2
+            return DualQuaternion(q_real = qr_out, q_dual = qd_out)
+        elif(isinstance(q2, cs.SX) and isinstance(self.Qr.get, cs.SX)) or (isinstance(q2, Number) and isinstance(self.Qr.get, cs.SX)):
             q1r = self.Qr
             q1d = self.Qd
             qr_out = q1r - q2
@@ -226,7 +287,19 @@ class DualQuaternion():
     def __rsub__(self, q2: "DualQuaternion") -> "DualQuaternion":
         if isinstance(q2, Quaternion):
             return  DualQuaternion.sub(q2, self)
-        elif (isinstance(q2, Number) and isinstance(self.Qr.get, np.ndarray)) or (isinstance(q2, cs.MX) and isinstance(self.Qr.get, cs.MX)) or (isinstance(q2, cs.SX) and isinstance(self.Qr.get, cs.SX)):
+        elif (isinstance(q2, Number) and isinstance(self.Qr.get, np.ndarray)):
+            q1r = self.Qr
+            q1d = self.Qd
+            qr_out = q2 - q1r
+            qd_out = q2 - q1d
+            return DualQuaternion(q_real = qr_out, q_dual = qd_out)
+        elif(isinstance(q2, cs.MX) and isinstance(self.Qr.get, cs.MX)) or (isinstance(q2, Number) and isinstance(self.Qr.get, cs.MX)):
+            q1r = self.Qr
+            q1d = self.Qd
+            qr_out = q2 - q1r
+            qd_out = q2 - q1d
+            return DualQuaternion(q_real = qr_out, q_dual = qd_out)
+        elif(isinstance(q2, cs.SX) and isinstance(self.Qr.get, cs.SX)) or (isinstance(q2, Number) and isinstance(self.Qr.get, cs.SX)):
             q1r = self.Qr
             q1d = self.Qd
             qr_out = q2 - q1r
@@ -258,11 +331,13 @@ class DualQuaternion():
         else:
             raise TypeError("The elements of both Dualquaternions should be of the same type.")
         return DualQuaternion(q_real= real, q_dual= dual)
+
     def set(self, q_real = None, q_dual = None):
+        # Set new elements of the Dualquaternion elements
         if q_real is not None and q_dual is not None:
             if not all(isinstance(i, Quaternion) for i in [q_real, q_dual]):
                 raise ValueError("Elements of the DualQuaternions should be Quaternions")
-            if (isinstance(q_real.get, np.ndarray) and isinstance(q_dual.get, np.ndarray)) or (isinstance(q_real.get, cs.MX) and isinstance(q_dual.get, cs.MX)) or (isinstance(q_real.get, cs.SX) and isinstance(q_dual.get, cs.SX)):
+            elif (isinstance(q_real.get, np.ndarray) and isinstance(q_dual.get, np.ndarray)) or (isinstance(q_real.get, cs.MX) and isinstance(q_dual.get, cs.MX)) or (isinstance(q_real.get, cs.SX) and isinstance(q_dual.get, cs.SX)):
                 self.Qr = q_real
                 self.Qd = q_dual
             else:
@@ -272,10 +347,14 @@ class DualQuaternion():
             raise ValueError("Both primal and dual quaternions must be provided")
 
     def ln(self):
+        # Log mapping of the dualQuaternion
         q1r = self.Qr
+        # Get translation of the dual quaternion
         trans = self.get_trans
         trans_aux = (1/2) * trans
+        # Get the log mapping of the quaterion inside the DualQuaternion
         q1r_ln = q1r.ln()
+
         Dual_ln = DualQuaternion(q_real=q1r_ln, q_dual= trans_aux)
         return Dual_ln
 
@@ -287,7 +366,7 @@ class DualQuaternion():
 
         q2r = q.Qr
         q2d = q.Qd
-
+        # Check for the type of variable of both elements
         if isinstance(q1r.get, np.ndarray) and isinstance(q2r.get, np.ndarray):  # Use Vector directly without parentheses
             real = q1r.get * q2r.get
             dual = q1d.get * q2d.get
@@ -301,8 +380,11 @@ class DualQuaternion():
             dual = q1d.get * q2d.get
         else:
             raise TypeError("The elements of both Dualquaternions should be of the same type.")
+
+        # Creation of the quaternions
         real_quat = Quaternion(q = real)
         dual_quat = Quaternion(q = dual)
+
         return DualQuaternion(q_real= real_quat, q_dual= dual_quat)
 
     def vector_dot_product(self, q2):

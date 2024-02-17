@@ -48,10 +48,8 @@ def quatdot(quat, omega):
     quat_error = 1 - norm_r
     dual_error = norm_d
 
-    # TODo There is s bug with the multiplication with quaternions and scalar
     aux_1 = quat_data * (K_quat*quat_error)
     aux_2 = dual_data * (K_quat*dual_error)
-
 
     aux_dual = DualQuaternion(q_real = aux_1, q_dual = aux_2)
 
@@ -128,31 +126,31 @@ def main(odom_pub_1, odom_pub_2):
     t3 = np.array([0, 2.0, 0.0, -1])
 
     # Defining of the vectors using casadi
-    theta1 = ca.SX([ca.pi/2])
-    n1 = ca.SX([1.0, 0.0, 0.0])
-    q1 = ca.vertcat(ca.cos(theta1/2), ca.sin(theta1/2)@n1)
-    t1 = ca.SX([0.0, 1.0, 1.0, 0.0])
+    #theta1 = ca.SX([ca.pi/2])
+    #n1 = ca.SX([1.0, 0.0, 0.0])
+    #q1 = ca.vertcat(ca.cos(theta1/2), ca.sin(theta1/2)@n1)
+    #t1 = ca.SX([0.0, 1.0, 1.0, 0.0])
 
-    theta2 = ca.SX([ca.pi/2])
-    n2 = ca.SX([0.0, 0.0, 1.0])
-    q2 = ca.vertcat(ca.cos(theta2/2), ca.sin(theta2/2)@n2)
-    t2 = ca.SX([0.0, -2.0, -3.0, 1.0])
+    #theta2 = ca.SX([ca.pi/2])
+    #n2 = ca.SX([0.0, 0.0, 1.0])
+    #q2 = ca.vertcat(ca.cos(theta2/2), ca.sin(theta2/2)@n2)
+    #t2 = ca.SX([0.0, -2.0, -3.0, 1.0])
 
-    #theta3 = ca.SX([ca.pi/16])
-    #n3 = ca.SX([0.0, 0.0, 1.0])
+    #theta3 = ca.MX([ca.pi/16])
+    #n3 = ca.MX([0.0, 0.0, 1.0])
     #q3 = ca.vertcat(ca.cos(theta3/2), ca.sin(theta3/2)@n3)
-    #t3 = ca.SX([0.0, 2.0, 0.0, -1.0])
+    #t3 = ca.MX([0.0, 2.0, 0.0, -1.0])
 
     # Create Quaternions objects
-    #quat_1_r = Quaternion(q = q1)
+    #quat_1_r = Quaternion(q = q3)
     #quat_1_t = Quaternion(q = t1)
 
     Q1 = DualQuaternion.from_pose(quat = q1, trans = t1)
     Q2 = DualQuaternion.from_pose(quat = q2, trans = t2)
     Q3 = DualQuaternion.from_pose(quat = q3, trans = t3)
     #Q1 = DualQuaternion(q_real = quat_1_r, q_dual = quat_1_t)
-    #alpha = ca.SX([0.2])
-    alpha = 0.2
+    #alpha = ca.MX([0.2])
+    #alpha = 0.2
 
     # Odometry Message
     quat_1_msg = Odometry()
@@ -161,22 +159,31 @@ def main(odom_pub_1, odom_pub_2):
     message_ros = "DualQuaternion Casadi "
 
     # Angular y linear Velocity of the system
-    w1 = ca.SX.zeros(4, t.shape[0])
-    v1 = ca.SX.zeros(4, t.shape[0])
+    w1 = np.zeros((4, t.shape[0]))
+    v1 = np.zeros((4, t.shape[0]))
+
+    #w1 = ca.SX.zeros(4, t.shape[0])
+    #v1 = ca.SX.zeros(4, t.shape[0])
 
     # Control gain
-    #angular_gain = np.hstack([0.0, 1, 1, 1])
-    #trans_gain = np.array([0, 1, 1, 1])
+    angular_gain = np.hstack([0.0, 1, 1, 1])
+    trans_gain = np.array([0, 1, 1, 1])
 
-    angular_gain = ca.SX([0.0, 3.2, 3.2, 3.2])
-    trans_gain = ca.SX([0.0, 1.0, 1.0, 1.0])
+    #angular_gain = ca.SX([0.0, 3.2, 3.2, 3.2])
+    #trans_gain = ca.SX([0.0, 1.0, 1.0, 1.0])
     K = DualQuaternion(q_real = Quaternion(q = angular_gain), q_dual = Quaternion(q = trans_gain))
 
     for k in range(0, t.shape[0]):
         tic = rospy.get_time()
+
+        # COntrol Law
         U = control_law(Q2, Q1, K)
+
+        # Save Values Control Law
         w1[1:4, k] = U.get_real.get[1:4,0] 
         v1[1:4, k] = U.get_dual.get[1:4,0] 
+
+        # COmpute dual velocity
         dual_velocity = velocity_dual(w1[:, k], v1[:, k], Q1)
 
         # Send Data throught Ros
