@@ -306,7 +306,7 @@ def plot_linear_velocities(fig11, ax11, ax21, ax31, x, t, name):
 
         ax11.set_ylabel(r"$[m/s]$", rotation='vertical')
         ax11.legend([state_1_e],
-                [ r'$w_x$'],
+                [ r'$v_x$'],
                 loc="best",
                 frameon=True, fancybox=True, shadow=False, ncol=2,
                 borderpad=0.5, labelspacing=0.5, handlelength=3, handletextpad=0.1,
@@ -315,7 +315,7 @@ def plot_linear_velocities(fig11, ax11, ax21, ax31, x, t, name):
 
         ax21.set_ylabel(r"$[m/s]$", rotation='vertical')
         ax21.legend([state_2_e],
-                [r'$w_y$'],
+                [r'$v_y$'],
                 loc="best",
                 frameon=True, fancybox=True, shadow=False, ncol=2,
                 borderpad=0.5, labelspacing=0.5, handlelength=3, handletextpad=0.1,
@@ -325,7 +325,7 @@ def plot_linear_velocities(fig11, ax11, ax21, ax31, x, t, name):
     
         ax31.set_ylabel(r"$[m/s]$", rotation='vertical')
         ax31.legend([state_3_e],
-                [r'$w_z$'],
+                [r'$v_z$'],
                 loc="best",
                 frameon=True, fancybox=True, shadow=False, ncol=2,
                 borderpad=0.5, labelspacing=0.5, handlelength=3, handletextpad=0.1,

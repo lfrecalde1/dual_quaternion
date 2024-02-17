@@ -180,7 +180,7 @@ def main(odom_pub_1, odom_pub_2):
         send_odometry(quat_2_msg, odom_pub_2)
 
 
-        Q1 = f_rk4(Q1, dual_velocity, sample_time)
+        Q1 = f_rk4(Q1, U, sample_time)
 
         # Save information
         Q1_data[0:4, k +1] = Q1.get_quat.get[:, 0]

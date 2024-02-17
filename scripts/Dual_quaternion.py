@@ -9,6 +9,52 @@ from dual_quaternion import Quaternion
 from dual_quaternion import DualQuaternion
 from dual_quaternion import plot_states_quaternion, plot_states_position, fancy_plots_4, fancy_plots_1, plot_norm_quat, plot_angular_velocities, plot_linear_velocities, fancy_plots_3 
 from nav_msgs.msg import Odometry
+def reference(t, ts):
+    # Init Quaternions
+    theta1 = np.pi/2
+    n1 = np.array([0.0, 0.0, 1.0])
+    q1 = np.hstack([np.cos(theta1 / 2), np.sin(theta1 / 2) * np.array(n1)])
+    t1 = np.array([0.0, 1, 1, 0.0])
+
+
+    Q1 = DualQuaternion.from_pose(quat = q1, trans = t1)
+
+    # Angular y linear Velocity of the system
+    w1 = np.zeros((4, t.shape[0]))
+    v1 = np.zeros((4, t.shape[0]))
+
+    w1[1, :] = 0.0
+    w1[2, :] = 0.0
+    w1[3, :] = 0.5
+
+    v1[1, :] = 0.5
+    v1[2, :] = 0.5
+    v1[3, :] = 0.0
+
+    # Empty matrices
+    Q1_data = np.zeros((8, t.shape[0] + 1), dtype=np.double)
+    Q1_data[0:4, 0] = Q1.get_quat.get[:, 0]
+    Q1_data[4:8, 0] = Q1.get_trans.get[:, 0]
+
+    w1_dual_data = np.zeros((4, t.shape[0] + 1), dtype=np.double)
+    v1_dual_data = np.zeros((4, t.shape[0] + 1), dtype=np.double)
+
+
+    for k in range(0, t.shape[0]):
+
+        # Compute dual velocity
+        dual_velocity = velocity_dual(w1[:, k], v1[:, k], Q1)
+        w1_dual_data[:, k] = dual_velocity.get_real.get[:, 0]
+        v1_dual_data[:, k] = dual_velocity.get_dual.get[:, 0]
+
+
+        Q1 = f_rk4(Q1, dual_velocity, ts)
+
+        # Save information
+        Q1_data[0:4, k +1] = Q1.get_quat.get[:, 0]
+        Q1_data[4:8, k+1] = Q1.get_trans.get[:, 0]
+
+    return Q1_data, w1_dual_data, v1_dual_data
 
 def get_odometry(odom_msg, dqd, name):
     # Function to send the Oritentation of the Quaternion
@@ -76,7 +122,7 @@ def velocity_dual(w, v, dual):
     return dual_velocity
 
 
-def control_law(qd, q, kp):
+def control_law(qd, q, kp, wd, vd):
     #  Control Error
     qd_quat = qd.get_quat
     qd_quat_c = qd_quat.conjugate()
@@ -100,8 +146,14 @@ def control_law(qd, q, kp):
 
     # Apply log mapping
     q_e_ln = q_e.ln()
+
+    # Conjugate
+    q_e_c = q_e.conjugate()
+
+    #dual_velocity_d = velocity_dual(wd, vd, q)
+    dual_velocity_d = DualQuaternion(q_real = Quaternion(q = wd), q_dual = Quaternion(q = vd))
     
-    U = -2*q_e_ln.vector_dot_product(kp)
+    U = -2*q_e_ln.vector_dot_product(kp) + q_e_c * dual_velocity_d * q_e
     return U
 
 def main(odom_pub_1, odom_pub_2):
@@ -125,13 +177,10 @@ def main(odom_pub_1, odom_pub_2):
     q1 = np.hstack([np.cos(theta1 / 2), np.sin(theta1 / 2) * np.array(n1)])
     t1 = np.array([0.0, 2, 2, 1.0])
 
-    theta2 = 0.0
-    n2 = np.array([0.0, 0.0, 1.0])
-    q2 = np.hstack([np.cos(theta2 / 2), np.sin(theta2 / 2) * np.array(n2)])
-    t2 = np.array([0, 0.0, 0.0, 0.0])
+    Q2_data, wd, vd = reference(t, sample_time)
+
 
     Q1 = DualQuaternion.from_pose(quat = q1, trans = t1)
-    Q2 = DualQuaternion.from_pose(quat = q2, trans = t2)
 
     # Odometry Message
     quat_1_msg = Odometry()
@@ -145,8 +194,8 @@ def main(odom_pub_1, odom_pub_2):
     v1 = np.zeros((4, t.shape[0]))
 
     # Control gains
-    angular_gain = np.hstack([0.0, 1, 1, 1])
-    trans_gain = np.array([0, 1, 1, 1])
+    angular_gain = np.hstack([0.0, 2, 2, 2])
+    trans_gain = np.array([0, 2, 2, 2])
 
 
     K = DualQuaternion(q_real = Quaternion(q = angular_gain), q_dual = Quaternion(q = trans_gain))
@@ -156,15 +205,12 @@ def main(odom_pub_1, odom_pub_2):
     Q1_data[0:4, 0] = Q1.get_quat.get[:, 0]
     Q1_data[4:8, 0] = Q1.get_trans.get[:, 0]
 
-    Q2_data = np.zeros((8, t.shape[0] + 1), dtype=np.double)
-    Q2_data[0:4, 0] = Q2.get_quat.get[:, 0]
-    Q2_data[4:8, 0] = Q2.get_trans.get[:, 0]
-
     for k in range(0, t.shape[0]):
         tic = rospy.get_time()
+        Q2 = DualQuaternion.from_pose(quat = Q2_data[0:4, k], trans = Q2_data[4:8, k])
 
         # COntrol Law
-        U = control_law(Q2, Q1, K)
+        U = control_law(Q2, Q1, K, wd[:, k], vd[:, k])
 
         # Save Values Control Law
         w1[1:4, k] = U.get_real.get[1:4,0] 
@@ -181,14 +227,11 @@ def main(odom_pub_1, odom_pub_2):
         send_odometry(quat_2_msg, odom_pub_2)
 
 
-        Q1 = f_rk4(Q1, dual_velocity, sample_time)
+        Q1 = f_rk4(Q1, U, sample_time)
 
         # Save information
         Q1_data[0:4, k +1] = Q1.get_quat.get[:, 0]
         Q1_data[4:8, k+1] = Q1.get_trans.get[:, 0]
-
-        Q2_data[0:4, k+1] = Q2.get_quat.get[:, 0]
-        Q2_data[4:8, k+1] = Q2.get_trans.get[:, 0]
 
         # Time restriction Correct
         loop_rate.sleep()
