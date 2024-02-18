@@ -55,6 +55,7 @@ class DualQuaternion():
         # Dual Part (1/2) * t * q
         # Dual Part (1/2) * q * t
         q_d = (1/2)* (q*t)
+        #q_d = (1/2)* (t*q)
         return DualQuaternion(q_real = q_r, q_dual = q_d)
 
     def __mul__(self, q2: "DualQuaternion") -> "DualQuaternion":
@@ -167,6 +168,7 @@ class DualQuaternion():
         qr_c = qr.conjugate()
         qd = self.Qd
         t = 2*qr_c * qd
+        #t = 2* qd * qr_c
         t_data = t.get
         return Quaternion(q = t_data)
 

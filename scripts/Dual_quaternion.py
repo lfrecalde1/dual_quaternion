@@ -9,27 +9,49 @@ from dual_quaternion import Quaternion
 from dual_quaternion import DualQuaternion
 from dual_quaternion import plot_states_quaternion, plot_states_position, fancy_plots_4, fancy_plots_1, plot_norm_quat, plot_angular_velocities, plot_linear_velocities, fancy_plots_3 
 from nav_msgs.msg import Odometry
+from scipy.spatial.transform import Rotation as R
+
 def reference(t, ts):
-    # Init Quaternions
-    theta1 = np.pi/2
-    n1 = np.array([0.0, 0.0, 1.0])
-    q1 = np.hstack([np.cos(theta1 / 2), np.sin(theta1 / 2) * np.array(n1)])
-    t1 = np.array([0.0, 1, 1, 0.0])
-
-
-    Q1 = DualQuaternion.from_pose(quat = q1, trans = t1)
 
     # Angular y linear Velocity of the system
     w1 = np.zeros((4, t.shape[0]))
     v1 = np.zeros((4, t.shape[0]))
+    v1p = np.zeros((4, t.shape[0]))
+
+    v1[1, :] = -4*0.5*np.sin(0.5*t)
+    v1[2, :] = 4*0.5*np.cos(0.5*t)
+    v1[3, :] = 0.0
+    
+    v1p[1, :] = -4*0.5*0.5*np.cos(0.5*t)
+    v1p[2, :] = -4*0.5*0.5*np.sin(0.5*t)
+
+    #v1[1, :] = -4*0.5*np.sin(0.5*t)
+    #v1[2, :] = 0.5
+    #v1[3, :] = 0.0
+
+    #v1p[1, :] = -4*0.5*0.5*np.cos(0.5*t)
+    #v1p[2, :] = 0
+
+
+    # Compute angular displacement
+    theta = np.arctan2(v1[2,:], v1[1, :])
+
+    # Compute angular velocity
+    theta_p = (1. / ((v1[2, :] / v1[1, :]) ** 2 + 1)) * ((v1p[2, :] * v1[1, :] - v1[2, :] * v1p[1, :]) / v1[1, :] ** 2)
+    theta_p[0] = 0
 
     w1[1, :] = 0.0
     w1[2, :] = 0.0
-    w1[3, :] = 0.5
+    w1[3, :] = theta_p
 
-    v1[1, :] = 0.5
-    v1[2, :] = 0.5
-    v1[3, :] = 0.0
+    r = R.from_euler('zyx',[theta[0], 0, 0], degrees=False)
+    r_q = r.as_quat()
+
+    # Init Quaternions
+    q1 = np.hstack([r_q[3], r_q[0], r_q[1], r_q[2]])
+    t1 = np.array([0.0, 4.0, 0.0, 0.0])
+
+    Q1 = DualQuaternion.from_pose(quat = q1, trans = t1)
 
     # Empty matrices
     Q1_data = np.zeros((8, t.shape[0] + 1), dtype=np.double)
@@ -43,12 +65,12 @@ def reference(t, ts):
     for k in range(0, t.shape[0]):
 
         # Compute dual velocity
-        dual_velocity = velocity_dual(w1[:, k], v1[:, k], Q1)
-        w1_dual_data[:, k] = dual_velocity.get_real.get[:, 0]
-        v1_dual_data[:, k] = dual_velocity.get_dual.get[:, 0]
+        dual_velocity_values = dual_velocity(w1[:, k], v1[:, k], Q1)
+        w1_dual_data[:, k] = dual_velocity_values.get_real.get[:, 0]
+        v1_dual_data[:, k] = dual_velocity_values.get_dual.get[:, 0]
 
 
-        Q1 = f_rk4(Q1, dual_velocity, ts)
+        Q1 = f_rk4(Q1, dual_velocity_values, ts)
 
         # Save information
         Q1_data[0:4, k +1] = Q1.get_quat.get[:, 0]
@@ -112,7 +134,7 @@ def f_rk4(quat, omega, ts):
     quat = quat + (1/6)*ts*(k1 + 2*k2 + 2*k3 + k4)
     return quat
 
-def velocity_dual(w, v, dual):
+def dual_velocity(w, v, dual):
     w = Quaternion(q = w) 
     v = Quaternion(q = v) 
     p = dual.get_trans
@@ -121,6 +143,16 @@ def velocity_dual(w, v, dual):
     dual_velocity = DualQuaternion(q_real = real, q_dual = dual)
     return dual_velocity
 
+def linear_velocity_body(dual_velocity, Q_current):
+    w = dual_velocity.get_real
+    dual = dual_velocity.get_dual
+    p = Q_current.get_trans
+    quat = Q_current.get_quat
+    quat_c = quat.conjugate()
+    v = dual - w.cross(p)
+    v_body = quat_c * v * quat
+
+    return v_body.get[1:4, 0]
 
 def control_law(qd, q, kp, wd, vd):
     #  Control Error
@@ -130,12 +162,12 @@ def control_law(qd, q, kp, wd, vd):
     qe_quat = qd_quat_c * q_quat
     qe_quat_c = qe_quat.conjugate()
     p_e = q.get_trans - qe_quat_c * qd.get_trans * qe_quat
-    q_e = DualQuaternion.from_pose(quat = qe_quat.get, trans = p_e.get)
+    #q_e = DualQuaternion.from_pose(quat = qe_quat.get, trans = p_e.get)
 
     # Control error complete
     qd_c = qd.conjugate()
     # Calculate left error
-    #q_e =  qd_c * q
+    q_e =  qd_c * q
 
     # Shortest path
     q_e_data = q_e.get
@@ -158,7 +190,7 @@ def control_law(qd, q, kp, wd, vd):
 
 def main(odom_pub_1, odom_pub_2):
     # Sample Time Defintion
-    sample_time = 0.05
+    sample_time = 0.03
     t_f = 20
 
     # Time defintion aux variable
@@ -172,10 +204,10 @@ def main(odom_pub_1, odom_pub_2):
     rospy.loginfo_once("DualQuaternion.....")
 
     # Init Quaternions
-    theta1 = 3.8134 
-    n1 = np.array([0.4896, 0.2032, 0.8480])
+    theta1 = 0
+    n1 = np.array([0, 0, 1])
     q1 = np.hstack([np.cos(theta1 / 2), np.sin(theta1 / 2) * np.array(n1)])
-    t1 = np.array([0.0, 2, 2, 1.0])
+    t1 = np.array([0.0, 0, 0, 0.0])
 
     Q2_data, wd, vd = reference(t, sample_time)
 
@@ -194,8 +226,8 @@ def main(odom_pub_1, odom_pub_2):
     v1 = np.zeros((4, t.shape[0]))
 
     # Control gains
-    angular_gain = np.hstack([0.0, 2, 2, 2])
-    trans_gain = np.array([0, 2, 2, 2])
+    angular_gain = np.hstack([0.0, 1, 1, 1])
+    trans_gain = np.array([0, 1.5, 1.5, 1.5])
 
 
     K = DualQuaternion(q_real = Quaternion(q = angular_gain), q_dual = Quaternion(q = trans_gain))
@@ -214,10 +246,10 @@ def main(odom_pub_1, odom_pub_2):
 
         # Save Values Control Law
         w1[1:4, k] = U.get_real.get[1:4,0] 
-        v1[1:4, k] = U.get_dual.get[1:4,0] 
+        v1[1:4, k] =  linear_velocity_body(U, Q1)
 
         # Compute dual velocity
-        dual_velocity = velocity_dual(w1[:, k], v1[:, k], Q1)
+        dual_velocity_values = dual_velocity(w1[:, k], v1[:, k], Q1)
 
         # Send Data throught Ros
         quat_1_msg = get_odometry(quat_1_msg, Q1, 'quat_1')
