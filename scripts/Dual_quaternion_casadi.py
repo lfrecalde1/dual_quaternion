@@ -29,6 +29,7 @@ def reference(t, ts):
     v1[2, :] = 0.5
     v1[3, :] = 0.0
 
+    # Linear accelerations
     v1p[1, :] = -4*0.5*0.5*np.cos(0.5*t)
     v1p[2, :] = 0
 
@@ -40,10 +41,12 @@ def reference(t, ts):
     theta_p = (1. / ((v1[2, :] / v1[1, :]) ** 2 + 1)) * ((v1p[2, :] * v1[1, :] - v1[2, :] * v1p[1, :]) / v1[1, :] ** 2)
     theta_p[0] = 0
 
+    # Update angular velocities
     w1[1, :] = 0.0
     w1[2, :] = 0.0
     w1[3, :] = theta_p
 
+    #Compute initial quaternion based on the defined trajectory
     r = R.from_euler('zyx',[theta[0], 0, 0], degrees=False)
     r_q = r.as_quat()
 
@@ -51,6 +54,7 @@ def reference(t, ts):
     q1 = np.hstack([r_q[3], r_q[0], r_q[1], r_q[2]])
     t1 = np.array([0.0, 4.0, 0.0, 0.0])
 
+    # Init DualQuaternion
     Q1 = DualQuaternion.from_pose(quat = q1, trans = t1)
 
     # Empty matrices
@@ -58,6 +62,7 @@ def reference(t, ts):
     Q1_data[0:4, 0] = Q1.get_quat.get[:, 0]
     Q1_data[4:8, 0] = Q1.get_trans.get[:, 0]
 
+    # Empty matrices
     w1_dual_data = np.zeros((4, t.shape[0] + 1), dtype=np.double)
     v1_dual_data = np.zeros((4, t.shape[0] + 1), dtype=np.double)
 
@@ -188,7 +193,8 @@ def control_law(qd, q, kp, wd, vd):
     q_e_c = q_e.conjugate()
 
     dual_velocity_d = DualQuaternion(q_real = Quaternion(q = wd), q_dual = Quaternion(q = vd))
-    
+
+    # Control Law 
     U = -2*q_e_ln.vector_dot_product(kp) + q_e_c * dual_velocity_d * q_e
 
     return U
@@ -214,9 +220,10 @@ def main(odom_pub_1, odom_pub_2):
     q1 = ca.vertcat(ca.cos(theta1/2), ca.sin(theta1/2)@n1)
     t1 = ca.SX([0.0, 0.0, 0.0, 0.0])
 
-
+    # Get Trajectory
     Q2_data, wd, vd = reference(t, sample_time)
 
+    # Init Dualquaternion
     Q1 = DualQuaternion.from_pose(quat = q1, trans = t1)
 
     # Odometry Message
@@ -246,7 +253,7 @@ def main(odom_pub_1, odom_pub_2):
         Q2 = DualQuaternion.from_pose(quat = Q2_data[0:4, k], trans = Q2_data[4:8, k])
 
 
-        # COntrol Law
+        # Control Law
         U = control_law(Q2, Q1, K, wd[:, k], vd[:, k])
 
         # Save Values Control Law
