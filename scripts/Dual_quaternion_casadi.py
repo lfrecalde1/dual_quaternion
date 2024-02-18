@@ -200,7 +200,7 @@ def control_law(qd, q, kp, wd, vd):
     return U
 def main(odom_pub_1, odom_pub_2):
     # Sample Time Defintion
-    sample_time = 0.03
+    sample_time = 0.01
     t_f = 20
 
     # Time defintion aux variable
@@ -215,10 +215,10 @@ def main(odom_pub_1, odom_pub_2):
 
 
     # Defining of the vectors using casadi
-    theta1 = ca.SX([0.0])
-    n1 = ca.SX([0.0, 0.0, 1.0])
+    theta1 = ca.SX([3.81])
+    n1 = ca.SX([0.4896, 0.2032, 0.8480])
     q1 = ca.vertcat(ca.cos(theta1/2), ca.sin(theta1/2)@n1)
-    t1 = ca.SX([0.0, 0.0, 0.0, 0.0])
+    t1 = ca.SX([0.0, 2.0, 2.0, 1.0])
 
     # Get Trajectory
     Q2_data, wd, vd = reference(t, sample_time)
