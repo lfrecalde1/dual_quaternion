@@ -65,3 +65,25 @@ The results of this formulation are presented in the following images.
 <p float="left">
     <img src="images/norm.png" width="600"  />
  </p>
+
+## Differential Kinematics DualQuaternions Control
+
+To run the controller taking the shortest path based on numpy, execute the following command:
+
+
+```bash
+roslaunch dual_quaternion dualquaternion.launch
+```
+
+<p float="left">
+    <img src="videos/DualQuat_trajectory_1.gif" width="600"  />
+ </p>
+
+To run the controller taking the shortest path based on Casadi, execute the following command:
+
+```bash
+roslaunch dual_quaternion dualquaternion_casadi.launch
+```
+<p float="left">
+    <img src="videos/Dualquat_trajectory_2.gif" width="600"  />
+ </p>
