@@ -144,24 +144,29 @@ def dual_velocity(w, v, dual):
     return dual_velocity
 
 def linear_velocity_body(dual_velocity, Q_current):
-    w = dual_velocity.get_real
+    # Get Real and dual values 
+    real = dual_velocity.get_real
     dual = dual_velocity.get_dual
+
+    # Compute the Linear Velocity
     p = Q_current.get_trans
     quat = Q_current.get_quat
     quat_c = quat.conjugate()
-    v = dual - w.cross(p)
+    v = dual - real.cross(p)
+
+    # Transformation to the body frame
     v_body = quat_c * v * quat
 
     return v_body.get[1:4, 0]
 
 def control_law(qd, q, kp, wd, vd):
     #  Control Error
-    qd_quat = qd.get_quat
-    qd_quat_c = qd_quat.conjugate()
-    q_quat = q.get_quat
-    qe_quat = qd_quat_c * q_quat
-    qe_quat_c = qe_quat.conjugate()
-    p_e = q.get_trans - qe_quat_c * qd.get_trans * qe_quat
+    #qd_quat = qd.get_quat
+    #qd_quat_c = qd_quat.conjugate()
+    #q_quat = q.get_quat
+    #qe_quat = qd_quat_c * q_quat
+    #qe_quat_c = qe_quat.conjugate()
+    #p_e = q.get_trans - qe_quat_c * qd.get_trans * qe_quat
     #q_e = DualQuaternion.from_pose(quat = qe_quat.get, trans = p_e.get)
 
     # Control error complete
@@ -182,10 +187,10 @@ def control_law(qd, q, kp, wd, vd):
     # Conjugate
     q_e_c = q_e.conjugate()
 
-    #dual_velocity_d = velocity_dual(wd, vd, q)
     dual_velocity_d = DualQuaternion(q_real = Quaternion(q = wd), q_dual = Quaternion(q = vd))
     
     U = -2*q_e_ln.vector_dot_product(kp) + q_e_c * dual_velocity_d * q_e
+
     return U
 def main(odom_pub_1, odom_pub_2):
     # Sample Time Defintion

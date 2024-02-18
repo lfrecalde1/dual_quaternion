@@ -144,12 +144,17 @@ def dual_velocity(w, v, dual):
     return dual_velocity
 
 def linear_velocity_body(dual_velocity, Q_current):
-    w = dual_velocity.get_real
+    # Get Real and dual values 
+    real = dual_velocity.get_real
     dual = dual_velocity.get_dual
+
+    # Compute the Linear Velocity
     p = Q_current.get_trans
     quat = Q_current.get_quat
     quat_c = quat.conjugate()
-    v = dual - w.cross(p)
+    v = dual - real.cross(p)
+
+    # Transformation to the body frame
     v_body = quat_c * v * quat
 
     return v_body.get[1:4, 0]
