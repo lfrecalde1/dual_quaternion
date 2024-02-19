@@ -274,9 +274,12 @@ class DualQuaternion():
         # Calculate the norm of the real part directly.
         real_norm = qr.norm
         # Compute an auxiliary value for the dual norm.
-        dual_norm_aux = qr.T@qd
+        dual_norm_aux = qr.T@(qd/real_norm)
         # Calculate the dual norm by dividing the auxiliary value by the real part's norm.
-        dual_norm = dual_norm_aux[0, 0]/real_norm
+        dual_norm = (dual_norm_aux[0, 0])*(dual_norm_aux[0, 0])
+        #dual_norm = (dual_norm_aux[0, 0])
+        #dual_norm = qd.norm
+        #print(dual_norm)
         return real_norm, dual_norm
     
     @property
@@ -510,13 +513,32 @@ class DualQuaternion():
     def ln(self):
         # Log mapping of the dualQuaternion
         q1r = self.Qr
-        # Get translation of the dual quaternion
-        trans = self.get_trans
-        trans_aux = (1/2) * trans
+        q1d = self.Qd
         # Get the log mapping of the quaterion inside the DualQuaternion
         q1r_ln = q1r.ln()
 
-        Dual_ln = DualQuaternion(q_real=q1r_ln, q_dual= trans_aux)
+        if isinstance(q1r.get, np.ndarray) and isinstance(q1d.get, np.ndarray):  # Use Vector directly without parentheses
+            # Get translation of the dual quaternion
+            trans = self.get_trans.get
+            p = np.linalg.norm(trans)
+            s = trans/p
+            trans_aux = (1/2) * p*s
+
+        elif isinstance(q1r.get, cs.MX) and isinstance(q1d.get, cs.MX):
+            # Get translation of the dual quaternion
+            trans = self.get_trans.get
+            p = cs.norm_2(trans)
+            s = trans/p
+            trans_aux = (1/2) * p *s
+        elif isinstance(q1r.get, cs.SX) and isinstance(q1d.get, cs.SX):
+            # Get translation of the dual quaternion
+            trans = self.get_trans.get
+            p = cs.norm_2(trans)
+            s = trans/p
+            trans_aux = (1/2) * p *s
+        else:
+            raise TypeError("The elements of both Dualquaternions should be of the same type.")
+        Dual_ln = DualQuaternion(q_real=q1r_ln, q_dual= Quaternion(q = trans_aux))
         return Dual_ln
 
     @staticmethod

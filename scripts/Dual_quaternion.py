@@ -7,7 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from dual_quaternion import Quaternion
 from dual_quaternion import DualQuaternion
-from dual_quaternion import plot_states_quaternion, plot_states_position, fancy_plots_4, fancy_plots_1, plot_norm_quat, plot_angular_velocities, plot_linear_velocities, fancy_plots_3 
+from dual_quaternion import plot_states_quaternion, plot_states_position, fancy_plots_4, fancy_plots_1, plot_norm_quat, plot_angular_velocities, plot_linear_velocities, fancy_plots_3, plot_norm_real, plot_norm_dual
 from nav_msgs.msg import Odometry
 from scipy.spatial.transform import Rotation as R
 
@@ -166,12 +166,12 @@ def linear_velocity_body(dual_velocity, Q_current):
 
 def control_law(qd, q, kp, wd, vd):
     #  Control Error
-    qd_quat = qd.get_quat
-    qd_quat_c = qd_quat.conjugate()
-    q_quat = q.get_quat
-    qe_quat = qd_quat_c * q_quat
-    qe_quat_c = qe_quat.conjugate()
-    p_e = q.get_trans - qe_quat_c * qd.get_trans * qe_quat
+    #qd_quat = qd.get_quat
+    #qd_quat_c = qd_quat.conjugate()
+    #q_quat = q.get_quat
+    #qe_quat = qd_quat_c * q_quat
+    #qe_quat_c = qe_quat.conjugate()
+    #p_e = q.get_trans - qe_quat_c * qd.get_trans * qe_quat
     #q_e = DualQuaternion.from_pose(quat = qe_quat.get, trans = p_e.get)
 
     # Control error complete
@@ -196,7 +196,7 @@ def control_law(qd, q, kp, wd, vd):
     dual_velocity_d = DualQuaternion(q_real = Quaternion(q = wd), q_dual = Quaternion(q = vd))
     
     U = -2*q_e_ln.vector_dot_product(kp) + q_e_c * dual_velocity_d * q_e
-    return U
+    return U, q_e_ln
 
 def main(odom_pub_1, odom_pub_2):
     # Sample Time Defintion
@@ -247,13 +247,22 @@ def main(odom_pub_1, odom_pub_2):
     Q1_data[0:4, 0] = Q1.get_quat.get[:, 0]
     Q1_data[4:8, 0] = Q1.get_trans.get[:, 0]
 
+    # Norm of the Dualquaternion error
+    norm_quat = np.zeros((1, t.shape[0]), dtype=np.double)
+    norm_trans = np.zeros((1, t.shape[0]), dtype=np.double)
+
     for k in range(0, t.shape[0]):
         tic = rospy.get_time()
         # Update Desired Quaaternion
         Q2 = DualQuaternion.from_pose(quat = Q2_data[0:4, k], trans = Q2_data[4:8, k])
 
         # Control Law using Dualquaternions
-        U = control_law(Q2, Q1, K, wd[:, k], vd[:, k])
+        U, qe_ln = control_law(Q2, Q1, K, wd[:, k], vd[:, k])
+
+        # Norm of the Dualquaternion Error
+        norm_q, norm_t = qe_ln.norm
+        norm_quat[:, k] = norm_q
+        norm_trans[:, k] = norm_t
 
         # Save Values Control Law
         w1[1:4, k] = U.get_real.get[1:4,0] 
@@ -299,6 +308,14 @@ def main(odom_pub_1, odom_pub_2):
 
     fig14, ax14, ax24, ax34 = fancy_plots_3()
     plot_linear_velocities(fig14, ax14, ax24, ax34, v1[1:4, :], t, "Linear velocities")
+    plt.show()
+
+    fig15, ax15 = fancy_plots_1()
+    plot_norm_real(fig15, ax15, norm_quat, t, "Quaternion Error Norm")
+    plt.show()
+
+    fig16, ax16 = fancy_plots_1()
+    plot_norm_dual(fig16, ax16, norm_trans, t, "Translation Error Norm")
     plt.show()
     return None
 if __name__ == '__main__':

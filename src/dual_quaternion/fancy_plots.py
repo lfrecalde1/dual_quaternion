@@ -272,7 +272,7 @@ def plot_states_position(fig11, ax11, ax21, ax31, x, xd, t, name):
     
         ax31.set_ylabel(r"$[m]$", rotation='vertical')
         ax31.legend([state_3_e, state_3_e_d],
-                [r'$z$', r'$z$'],
+                [r'$z$', r'$z_d$'],
                 loc="best",
                 frameon=True, fancybox=True, shadow=False, ncol=2,
                 borderpad=0.5, labelspacing=0.5, handlelength=3, handletextpad=0.1,
@@ -630,6 +630,54 @@ def plot_norm_quat(fig11, ax11, x_sample_real, t, name):
         ax11.set_ylabel(r"$[rad]$", rotation='vertical')
         ax11.legend([state_1_e_d],
                 [r'$||q_e||$'],
+                loc="best",
+                frameon=True, fancybox=True, shadow=False, ncol=2,
+                borderpad=0.5, labelspacing=0.5, handlelength=3, handletextpad=0.1,
+                borderaxespad=0.3, columnspacing=2)
+        ax11.grid(color='#949494', linestyle='-.', linewidth=0.5)
+        ax11.set_xlabel(r"$\textrm{Time}[s]$", labelpad=5)
+
+        fig11.savefig(name + ".pdf")
+        fig11.savefig(name + ".png")
+        return None
+
+def plot_norm_real(fig11, ax11, x_sample_real, t, name):
+        t = t[0:x_sample_real.shape[1]]
+        ax11.set_xlim((t[0], t[-1]))
+
+        #ax11.set_xticklabels([])
+
+        state_1_e_d, = ax11.plot(t[0:t.shape[0]], x_sample_real[0, 0:t.shape[0]],
+                    color='#1D2121', lw=1.0, ls="-")
+
+
+        ax11.set_ylabel(r"$\textrm{Error value associated with the real part}$", rotation='vertical')
+        ax11.legend([state_1_e_d],
+                [r'$||\ln(\mathbf{q}^{*}_d \circ \mathbf{q})||$'],
+                loc="best",
+                frameon=True, fancybox=True, shadow=False, ncol=2,
+                borderpad=0.5, labelspacing=0.5, handlelength=3, handletextpad=0.1,
+                borderaxespad=0.3, columnspacing=2)
+        ax11.grid(color='#949494', linestyle='-.', linewidth=0.5)
+        ax11.set_xlabel(r"$\textrm{Time}[s]$", labelpad=5)
+
+        fig11.savefig(name + ".pdf")
+        fig11.savefig(name + ".png")
+        return None
+
+def plot_norm_dual(fig11, ax11, x_sample_real, t, name):
+        t = t[0:x_sample_real.shape[1]]
+        ax11.set_xlim((t[0], t[-1]))
+
+        #ax11.set_xticklabels([])
+
+        state_1_e_d, = ax11.plot(t[0:t.shape[0]], x_sample_real[0, 0:t.shape[0]],
+                    color='#1D2121', lw=1.0, ls="-")
+
+
+        ax11.set_ylabel(r"$\textrm{Error value associated with the dual part}$", rotation='vertical')
+        ax11.legend([state_1_e_d],
+                [r'$||\ln(\mathbf{p}^b - \textrm{Ad}_{\mathbf{q}^{*}_e} \mathbf{p}^{b}_d)||$'],
                 loc="best",
                 frameon=True, fancybox=True, shadow=False, ncol=2,
                 borderpad=0.5, labelspacing=0.5, handlelength=3, handletextpad=0.1,
