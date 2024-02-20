@@ -91,8 +91,8 @@ class DualQuaternion():
         # This represents the translation component of the DualQuaternion.
         # Dual Part (1/2) * t * q   
         # Dual Part (1/2) * q * t
-        q_d = (1/2)* (q*t)
-        #q_d = (1/2)* (t*q)
+        #q_d = (1/2)* (q*t)
+        q_d = (1/2)* (t*q)
         return DualQuaternion(q_real = q_r, q_dual = q_d)
 
     def __mul__(self, q2: "DualQuaternion") -> "DualQuaternion":
@@ -271,16 +271,42 @@ class DualQuaternion():
          # Access the real and dual parts of the DualQuaternion.
         qr = self.Qr
         qd = self.Qd
-        # Calculate the norm of the real part directly.
-        real_norm = qr.norm
-        # Compute an auxiliary value for the dual norm.
-        dual_norm_aux = qr.T@(qd/real_norm)
-        # Calculate the dual norm by dividing the auxiliary value by the real part's norm.
-        dual_norm = (dual_norm_aux[0, 0])*(dual_norm_aux[0, 0])
-        #dual_norm = (dual_norm_aux[0, 0])
-        #dual_norm = qd.norm
-        #print(dual_norm)
-        return real_norm, dual_norm
+        if isinstance(qr.get, np.ndarray) and isinstance(qd.get, np.ndarray):  # Use Vector directly without parentheses
+            # Calculate the norm of the real part directly.
+            real_norm = qr.norm
+            # Compute an auxiliary value for the dual norm.
+            dual_norm_aux = qr.T@(qd/real_norm)
+            # Calculate the dual norm by dividing the auxiliary value by the real part's norm.
+            dual_norm = np.abs(dual_norm_aux[0, 0])
+            #dual_norm = (dual_norm_aux[0, 0])
+            #dual_norm = qd.norm
+            #print(dual_norm)
+            return real_norm, dual_norm
+
+        elif isinstance(qr.get, cs.MX) and isinstance(qd.get, cs.MX):
+            # Calculate the norm of the real part directly.
+            real_norm = qr.norm
+            # Compute an auxiliary value for the dual norm.
+            dual_norm_aux = qr.T@(qd/real_norm)
+            # Calculate the dual norm by dividing the auxiliary value by the real part's norm.
+            dual_norm = cs.fabs(dual_norm_aux[0, 0])
+            #dual_norm = (dual_norm_aux[0, 0])
+            #dual_norm = qd.norm
+            #print(dual_norm)
+            return real_norm, dual_norm
+        elif isinstance(qr.get, cs.SX) and isinstance(qd.get, cs.SX):
+            # Calculate the norm of the real part directly.
+            real_norm = qr.norm
+            # Compute an auxiliary value for the dual norm.
+            dual_norm_aux = qr.T@(qd/real_norm)
+            # Calculate the dual norm by dividing the auxiliary value by the real part's norm.
+            dual_norm = cs.fabs(dual_norm_aux[0, 0])
+            #dual_norm = (dual_norm_aux[0, 0])
+            #dual_norm = qd.norm
+            #print(dual_norm)
+            return real_norm, dual_norm
+        else:
+            raise TypeError("The elements of both Dualquaternions should be of the same type.")
     
     @property
     def get_trans(self) -> "Quaternion":
@@ -303,8 +329,8 @@ class DualQuaternion():
         qd = self.Qd
         # Calculate the translation component 't' using the formula 't = 2 * qr_c * qd.
         # This is based on the dual quaternion representation of rigid body transformations.
-        t = 2*qr_c * qd
-        #t = 2* qd * qr_c
+        #t = 2*qr_c * qd
+        t = 2* qd * qr_c
 
         # Retrieve the data of 't' to construct a new Quaternion representing the translation.
         t_data = t.get

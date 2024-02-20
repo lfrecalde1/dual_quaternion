@@ -1,4 +1,4 @@
-# Dual Quaternion ROS
+# Dual Quaternion Numpy and CasADi
 
 This is a brief explanation of how to install and run this package on another machine.
 
@@ -31,6 +31,70 @@ Since the creation of the conda virtual environment, it should be activated befo
 catkin_make -DPYTHON_EXECUTABLE=~/miniconda3/envs/dual_quat/bin/python
 source devel/setup.bash
 ```
+## Tutorial: DualQuaternion Operations
+### Conjugate
+
+### Norm
+
+### Addition
+
+### Retrieving Elements of the DualQuaternion (Real, Dual, Quaternion, and Translation)
+
+## Tutorial Rigid Body
+### Defining Different Rigid Body Frames
+
+This section explains how to use the library to define the pose of a rigid body as a DualQuaternion object and how to display its information within rviz
+
+The proper way to define the pose of a rigid body is described below:
+
+```python
+#Defining the Orientation Using Quaternions
+theta1 = ca.SX([np.pi/2])
+n1 = ca.SX([0.0, 0.0, 1.0])
+q1 = ca.vertcat(ca.cos(theta1/2), ca.sin(theta1/2)@n1)
+
+# Defining the translation
+t1 = ca.SX([0.0, 1.0, 1.0, 0.0])
+
+#Defining the Orientation Using Quaternions
+theta2 = ca.SX([ca.pi/4])
+n2 = ca.SX([1.0, 0.0, 0.0])
+q2 = ca.vertcat(ca.cos(theta2/2), ca.sin(theta2/2)@n2)
+
+# Defining the translation
+t2 = ca.SX([0.0, 0.0, 2.0, 0.0])
+
+# Init Dualquaternion
+Q1 = DualQuaternion.from_pose(quat = q1, trans = t1)
+Q2 = DualQuaternion.from_pose(quat = q2, trans = t2)
+```
+The proper representations of these body frames are presented below:
+<p float="left">
+    <img src="images/Tutorial_1_1.png" width="600"  />
+ </p>
+
+It is also possible to verify the norm of the DualQuaternion elements; the user can obtain the norm using the following commands:
+
+```python
+#Obtaining the norm of the DualQuaternion elements
+Q1_norm = Q1.norm
+Q2_norm = Q2.norm
+```
+
+The norm property of the elements returns the is a dual number whose real part and dual part are both positive
+### Sequential Pose Transformations
+
+In order to perform sequential pose transformations, it is only necessary to multiply the DualQuaternions. For instance, the user can define the following transformation:"
+```python
+# Computing a sequential transformation
+Q3 = Q1 * Q2
+```
+The result of this operation can be visualized in the following image:
+<p float="left">
+    <img src="images/Tutorial_1_2.png" width="600"  />
+ </p>
+
+
 ## Differential Kinematics Quaternions Control
 
 It is possible to execute quaternion-based kinematic control, where the purpose is to converge to a desired orientation.
@@ -87,3 +151,5 @@ roslaunch dual_quaternion dualquaternion_casadi.launch
 <p float="left">
     <img src="videos/Dualquat_trajectory_2.gif" width="600"  />
  </p>
+
+ 
