@@ -559,6 +559,34 @@ class Quaternion():
         else:
             raise TypeError("Internal problem with the definition of the Quaternion, it should be a np.array, cs.MX or cs.SX.")
 
+    def ln_trans(self):
+        # Log mapping
+        q = self.q
+        angle_axis_aux = self.angle_axis
+        if isinstance(q, np.ndarray):  # Use Vector directly without parentheses
+            angle = q[0, 0]
+            x = q[1, 0]
+            y = q[2, 0]
+            z = q[3, 0]
+            result = np.vstack((0.0, (1/2)*x, (1/2)*y, (1/2)*z))
+            return Quaternion(q = result)
+        elif isinstance(q, cs.MX):
+            angle = q[0, 0]
+            x = q[1, 0]
+            y = q[2, 0]
+            z = q[3, 0]
+            result = cs.vertcat(0.0, (1/2)*x, (1/2)*y, (1/2)*z)
+            return Quaternion(q = result)
+        elif isinstance(q, cs.SX):
+            angle = q[0, 0]
+            x = q[1, 0]
+            y = q[2, 0]
+            z = q[3, 0]
+            result = cs.vertcat(0.0, (1/2)*x, (1/2)*y, (1/2)*z)
+            return Quaternion(q = result)
+        else:
+            raise TypeError("Internal problem with the definition of the Quaternion, it should be a np.array, cs.MX or cs.SX.")
+
     def vector_dot_product(self, q2):
         if isinstance(q2, Quaternion):
             q_rot = Quaternion.vector_dot(self.q, q2.q)

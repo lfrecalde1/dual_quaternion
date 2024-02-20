@@ -25,7 +25,7 @@ def reference(t, ts):
     #v1p[1, :] = -4*0.5*0.5*np.cos(0.5*t)
     #v1p[2, :] = -4*0.5*0.5*np.sin(0.5*t)
 
-    v1[1, :] = 0.0
+    v1[1, :] = 0.5
     v1[2, :] = 0.0
     v1[3, :] = 0.0
 
@@ -36,7 +36,7 @@ def reference(t, ts):
 
     # Compute angular displacement
     #theta = np.arctan2(v1[2,:], v1[1, :])
-    theta = np.pi/2
+    theta = 0.0
 
     # Compute angular velocity
     theta_p = (1. / ((v1[2, :] / v1[1, :]) ** 2 + 1)) * ((v1p[2, :] * v1[1, :] - v1[2, :] * v1p[1, :]) / v1[1, :] ** 2)
@@ -46,7 +46,7 @@ def reference(t, ts):
     w1[1, :] = 0.0
     w1[2, :] = 0.0
     #w1[3, :] = theta_p
-    w1[3, :] = 0.1
+    w1[3, :] = 0.5
 
     #Compute initial quaternion based on the defined trajectory
     #r = R.from_euler('zyx',[theta[0], 0, 0], degrees=False)
@@ -54,9 +54,9 @@ def reference(t, ts):
 
     # Init Quaternions
     #q1 = np.hstack([r_q[3], r_q[0], r_q[1], r_q[2]])
-    n = np.array([0.0, 1.0, 0.0])
+    n = np.array([0.0, 0.0, 1.0])
     q1 = np.hstack([np.cos(theta / 2), np.sin(theta / 2) * np.array(n)])
-    t1 = np.array([0.0, 1.0, 1.0, 0.0])
+    t1 = np.array([0.0, 0.0, 0.0, 0.0])
 
     # Init DualQuaternion
     Q1 = DualQuaternion.from_pose(quat = q1, trans = t1)
@@ -170,18 +170,18 @@ def linear_velocity_body(dual_velocity, Q_current):
 
 def control_law(qd, q, kp, wd, vd):
     #  Control Error
-    #qd_quat = qd.get_quat
-    #qd_quat_c = qd_quat.conjugate()
-    #q_quat = q.get_quat
-    #qe_quat = qd_quat_c * q_quat
-    #qe_quat_c = qe_quat.conjugate()
-    #p_e = q.get_trans - qe_quat_c * qd.get_trans * qe_quat
-    #q_e = DualQuaternion.from_pose(quat = qe_quat.get, trans = p_e.get)
+    qd_quat = qd.get_quat
+    qd_quat_c = qd_quat.conjugate()
+    q_quat = q.get_quat
+    qe_quat = qd_quat_c * q_quat
+    qe_quat_c = qe_quat.conjugate()
+    p_e = qd_quat_c * (q.get_trans - qd.get_trans)*qd_quat
+    q_e = DualQuaternion.from_pose(quat = qe_quat.get, trans = p_e.get)
 
     # Control error complete
     qd_c = qd.conjugate()
     # Calculate left error
-    q_e =  qd_c * q
+    #q_e =  qd_c * q
 
     # Shortest path
     q_e_data = q_e.get
@@ -200,8 +200,9 @@ def control_law(qd, q, kp, wd, vd):
 
     # Control Law 
     U = -2*q_e_ln.vector_dot_product(kp) + q_e_c * dual_velocity_d * q_e
+    #U = -2*q_e_ln.vector_dot_product(kp)
 
-    return U, q_e_ln
+    return U, qe_quat.ln(), p_e.ln_trans()
 def main(odom_pub_1, odom_pub_2):
     # Sample Time Defintion
     sample_time = 0.01
@@ -262,12 +263,12 @@ def main(odom_pub_1, odom_pub_2):
 
 
         # Control Law
-        U, qe_ln = control_law(Q2, Q1, K, wd[:, k], vd[:, k])
+        U, qe_ln, pe_ln = control_law(Q2, Q1, K, wd[:, k], vd[:, k])
 
         # Norm of the Dualquaternion Error
-        norm_q, norm_t = qe_ln.norm
-        norm_quat[:, k] = norm_q
-        norm_trans[:, k] = norm_t
+        #norm_q, norm_t = qe_ln.norm
+        norm_quat[:, k] = qe_ln.norm
+        norm_trans[:, k] = pe_ln.norm
 
         # Save Values Control Law
         w1[1:4, k] = U.get_real.get[1:4,0] 
