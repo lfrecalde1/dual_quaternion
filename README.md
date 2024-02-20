@@ -94,7 +94,11 @@ The result of this operation can be visualized in the following image:
     <img src="images/Tutorial_1_2.png" width="600"  />
  </p>
 
+It is posible to replicate theese results by executing the following commad:
 
+```bash
+python Tutorial_1.py
+```
 ## Differential Kinematics Quaternions Control
 
 It is possible to execute quaternion-based kinematic control, where the purpose is to converge to a desired orientation.
