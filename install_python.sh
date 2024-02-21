@@ -12,3 +12,4 @@ pip install pyyaml
 pip install -U rospkg
 pip install empy
 sudo apt install -y ros-noetic-moveit
+pip install jupyter
