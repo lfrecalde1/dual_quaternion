@@ -39,7 +39,7 @@ def send_odometry(odom_msg, odom_pub):
     return None
 
 
-def main(odom_pub_1, odom_pub_2, odom_pub_3):
+def main(odom_pub_1, odom_pub_2, odom_pub_3, odom_pub_4):
     # Sample Time Defintion
     sample_time = 0.01
     t_f = 20
@@ -61,20 +61,28 @@ def main(odom_pub_1, odom_pub_2, odom_pub_3):
     t1 = ca.SX([0.0, 0.0, 0.0, 0.0])
 
     # Defining of the vectors using casadi
-    theta2 = ca.SX([ca.pi/4])
-    n2 = ca.SX([1.0, 0.0, 0.0])
+    theta2 = ca.SX([ca.pi/2])
+    n2 = ca.SX([0.0, 0.0, 1.0])
     q2 = ca.vertcat(ca.cos(theta2/2), ca.sin(theta2/2)@n2)
-    t2 = ca.SX([0.0, 0.0, 2.0, 0.0])
+    t2 = ca.SX([0.0, 2.0, 0.0, 0.0])
+
+    # Defining of the vectors using casadi
+    theta3 = ca.SX([-ca.pi/4])
+    n3 = ca.SX([0.0, 0.0, 1.0])
+    q3 = ca.vertcat(ca.cos(theta3/2), ca.sin(theta3/2)@n3)
+    t3 = ca.SX([0.0, 3, 0.0, 0.0])
 
 
     # Init Dualquaternion
     Q1 = DualQuaternion.from_pose(quat = q1, trans = t1)
     Q2 = DualQuaternion.from_pose(quat = q2, trans = t2)
+    Q3 = DualQuaternion.from_pose(quat = q3, trans = t3)
 
     # Odometry Message
     quat_1_msg = Odometry()
     quat_2_msg = Odometry()
     quat_3_msg = Odometry()
+    quat_4_msg = Odometry()
     # Message 
     message_ros = "DualQuaternion Casadi "
 
@@ -92,17 +100,19 @@ def main(odom_pub_1, odom_pub_2, odom_pub_3):
     for k in range(0, t.shape[0]):
         tic = rospy.get_time()
         # Computing a sequential transformation
-        Q3 = Q1 * Q2
+        Q4 = Q1 * Q2 * Q3
 
         # Obtaining the norm ot the DualQuaternion elements
         Q1_norm = Q1.norm
         Q2_norm = Q2.norm
         Q3_norm = Q3.norm
+        Q4_norm = Q4.norm
         print(Q1_norm)
         print(Q2_norm)
-        print(Q3_norm)
-        print(Q3.get_trans.get[:, 0])
-        print(Q3.get_quat.get[:, 0])
+        print(Q4_norm)
+        print(Q4.get_trans.get[:, 0])
+        print(Q4.get_quat.get[:, 0])
+        print(Q4.get[:, 0])
 
         # Send Data throught Ros
         quat_1_msg = get_odometry(quat_1_msg, Q1, 'quat_1')
@@ -113,6 +123,9 @@ def main(odom_pub_1, odom_pub_2, odom_pub_3):
 
         quat_3_msg = get_odometry(quat_3_msg, Q3, 'quat_3')
         send_odometry(quat_3_msg, odom_pub_3)
+
+        quat_4_msg = get_odometry(quat_4_msg, Q4, 'quat_4')
+        send_odometry(quat_4_msg, odom_pub_4)
 
         # Save information
         Q1_data[0:4, k +1] = Q1.get_quat.get[:, 0]
@@ -153,7 +166,10 @@ if __name__ == '__main__':
 
         odomety_topic_3 = "/" + "dual_3" + "/odom"
         odometry_publisher_3 = rospy.Publisher(odomety_topic_3, Odometry, queue_size = 10)
-        main(odometry_publisher_1, odometry_publisher_2, odometry_publisher_3)
+
+        odomety_topic_4 = "/" + "dual_4" + "/odom"
+        odometry_publisher_4 = rospy.Publisher(odomety_topic_4, Odometry, queue_size = 10)
+        main(odometry_publisher_1, odometry_publisher_2, odometry_publisher_3, odometry_publisher_4)
     except(rospy.ROSInterruptException, KeyboardInterrupt):
         print("Error System")
         pass
