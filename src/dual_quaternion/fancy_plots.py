@@ -677,7 +677,7 @@ def plot_norm_dual(fig11, ax11, x_sample_real, t, name):
 
         ax11.set_ylabel(r"$\textrm{Error value associated with the dual part}$", rotation='vertical')
         ax11.legend([state_1_e_d],
-                [r'$||\ln(\mathbf{p}^b - \textrm{Ad}_{\mathbf{q}^{*}_e} \mathbf{p}^{b}_d)||$'],
+                [r'$||\ln(\mathbf{p}^b - \textrm{Ad}_{\mathbf{q}_e} \mathbf{p}^{b}_d)||$'],
                 loc="best",
                 frameon=True, fancybox=True, shadow=False, ncol=2,
                 borderpad=0.5, labelspacing=0.5, handlelength=3, handletextpad=0.1,
