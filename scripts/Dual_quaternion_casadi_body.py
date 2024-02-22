@@ -18,25 +18,25 @@ def reference(t, ts):
     v1 = np.zeros((4, t.shape[0]))
     v1p = np.zeros((4, t.shape[0]))
 
-    #v1[1, :] = -4*0.5*np.sin(0.5*t)
-    #v1[2, :] = 4*0.5*np.cos(0.5*t)
+    v1[1, :] = -4*0.5*np.sin(0.5*t)
+    v1[2, :] = 4*0.5*np.cos(0.5*t)
     #v1[3, :] = 0.0
-    #
-    #v1p[1, :] = -4*0.5*0.5*np.cos(0.5*t)
-    #v1p[2, :] = -4*0.5*0.5*np.sin(0.5*t)
+    ##
+    v1p[1, :] = -4*0.5*0.5*np.cos(0.5*t)
+    v1p[2, :] = -4*0.5*0.5*np.sin(0.5*t)
 
-    v1[1, :] = 0.5
-    v1[2, :] = 0.0
-    v1[3, :] = 0.0
+    #v1[1, :] = 0.0
+    #v1[2, :] = 0.0
+    #v1[3, :] = 0.0
 
     # Linear accelerations
-    v1p[1, :] = 0.0
-    v1p[2, :] = 0.0
+    #v1p[1, :] = 0.0
+    #v1p[2, :] = 0.0
 
 
     # Compute angular displacement
-    #theta = np.arctan2(v1[2,:], v1[1, :])
-    theta = np.pi/2
+    theta = np.arctan2(v1[2,:], v1[1, :])
+    #theta = np.pi/2
 
     # Compute angular velocity
     theta_p = (1. / ((v1[2, :] / v1[1, :]) ** 2 + 1)) * ((v1p[2, :] * v1[1, :] - v1[2, :] * v1p[1, :]) / v1[1, :] ** 2)
@@ -45,17 +45,17 @@ def reference(t, ts):
     # Update angular velocities
     w1[1, :] = 0.0
     w1[2, :] = 0.0
-    w1[3, :] = 0.0
+    w1[3, :] = theta_p
     #w1[3, :] = 0.0
 
     #Compute initial quaternion based on the defined trajectory
-    #r = R.from_euler('zyx',[theta[0], 0, 0], degrees=False)
-    #r_q = r.as_quat()
+    r = R.from_euler('zyx',[theta[0], 0, 0], degrees=False)
+    r_q = r.as_quat()
 
     # Init Quaternions
-    #q1 = np.hstack([r_q[3], r_q[0], r_q[1], r_q[2]])
-    n = np.array([0.0, 0.0, 1.0])
-    q1 = np.hstack([np.cos(theta / 2), np.sin(theta / 2) * np.array(n)])
+    q1 = np.hstack([r_q[3], r_q[0], r_q[1], r_q[2]])
+    #n = np.array([0.0, 0.0, 1.0])
+    #q1 = np.hstack([np.cos(theta / 2), np.sin(theta / 2) * np.array(n)])
     t1 = np.array([0.0, 4.0, 0.0, 0.0])
 
     # Init DualQuaternion
@@ -169,8 +169,10 @@ def dual_velocity(w, v, dual):
     w = Quaternion(q = w) 
     v = Quaternion(q = v) 
     p = dual.get_trans
+    q = dual.get_quat
+    q_c = q.conjugate()
     real = w
-    dual = v + w.cross(p)
+    dual = q_c * v * q 
     dual_velocity = DualQuaternion(q_real = real, q_dual = dual)
     return dual_velocity
 
@@ -183,7 +185,7 @@ def linear_velocity_body(dual_velocity, Q_current):
     p = Q_current.get_trans
     quat = Q_current.get_quat
     quat_c = quat.conjugate()
-    v = dual - real.cross(p)
+    v = dual
 
     # Transformation to the body frame
     v_body = quat_c * v * quat
@@ -217,9 +219,9 @@ def control_law(qd, q, kp, wd, vd):
     q_e = DualQuaternion.from_pose(quat = qe_quat.get, trans = p_e.get)
 
     # Control error complete
-    #qd_c = qd.conjugate()
+    qd_c = qd.conjugate()
     # Calculate left error
-    #q_e =  qd_c * q
+    q_e =  qd_c * q
 
     # Shortest path
     q_e_data = q_e.get

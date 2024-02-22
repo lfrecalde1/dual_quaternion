@@ -62,7 +62,7 @@ def main(odom_pub_1, odom_pub_2, odom_pub_3):
 
     # Defining of the vectors using casadi
     theta2 = ca.SX([ca.pi/4])
-    n2 = ca.SX([1.0, 0.0, 0.0])
+    n2 = ca.SX([0.0, 0.0, 1.0])
     q2 = ca.vertcat(ca.cos(theta2/2), ca.sin(theta2/2)@n2)
     t2 = ca.SX([0.0, 0.0, 2.0, 0.0])
 
