@@ -216,9 +216,9 @@ def control_law(qd, q, kp, wd, vd):
     q_e = DualQuaternion.from_pose(quat = qe_quat.get, trans = p_e.get)
 
     # Control error complete
-    #qd_c = qd.conjugate()
+    qd_c = qd.conjugate()
     # Calculate left error
-    #q_e =  q * qd_c
+    q_e =  q * qd_c
 
     # Shortest path
     q_e_data = q_e.get
@@ -278,7 +278,7 @@ def main(odom_pub_1, odom_pub_2):
     v1 = ca.SX.zeros(4, t.shape[0])
 
     # Control gains
-    angular_gain = ca.SX([0.0, 2.0, 2.0, 2.0])
+    angular_gain = ca.SX([0.0, 1.0, 1.0, 1.0])
     trans_gain = ca.SX([0.0, 1.0, 1.0, 1.0])
 
     # Dualquaternion gain

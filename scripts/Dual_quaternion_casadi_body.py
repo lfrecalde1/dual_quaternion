@@ -54,8 +54,7 @@ def reference(t, ts):
 
     # Init Quaternions
     q1 = np.hstack([r_q[3], r_q[0], r_q[1], r_q[2]])
-    #n = np.array([0.0, 0.0, 1.0])
-    #q1 = np.hstack([np.cos(theta / 2), np.sin(theta / 2) * np.array(n)])
+    #n = np.array([0.0, 0.0, 1.0]q1 = np.hstack([np.cos(theta / 2), np.sin(theta / 2) * np.array(n)])
     t1 = np.array([0.0, 4.0, 0.0, 0.0])
 
     # Init DualQuaternion
@@ -221,7 +220,7 @@ def control_law(qd, q, kp, wd, vd):
     # Control error complete
     qd_c = qd.conjugate()
     # Calculate left error
-    q_e =  qd_c * q
+    #q_e =  qd_c * q
 
     # Shortest path
     q_e_data = q_e.get
@@ -259,10 +258,10 @@ def main(odom_pub_1, odom_pub_2):
     rospy.loginfo_once("DualQuaternion.....")
 
     # Defining of the vectors using casadi
-    theta1 = ca.SX([0])
-    n1 = ca.SX([0.0, 0.0, 1.0])
+    theta1 = ca.SX([3.81])
+    n1 = ca.SX([0.4896, 0.2032, 0.8480])
     q1 = ca.vertcat(ca.cos(theta1/2), ca.sin(theta1/2)@n1)
-    t1 = ca.SX([0.0, 0.0, 2.0, 0.0])
+    t1 = ca.SX([0.0, 2.0, 2.0, 1.0])
 
     # Get Trajectory
     Q2_data, wd, vd, Q2_data_i = reference(t, sample_time)
@@ -281,7 +280,7 @@ def main(odom_pub_1, odom_pub_2):
     v1 = ca.SX.zeros(4, t.shape[0])
 
     # Control gains
-    angular_gain = ca.SX([0.0, 2.0, 2.0, 2.0])
+    angular_gain = ca.SX([0.0, 1.0, 1.0, 1.0])
     trans_gain = ca.SX([0.0, 1.0, 1.0, 1.0])
 
     # Dualquaternion gain

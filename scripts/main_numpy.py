@@ -90,7 +90,7 @@ def reference(t, ts):
 def control_law(qd, q, kp, w):
     qd_c = qd.conjugate()
     # Calculate left error
-    q_e =  qd_c * q
+    q_e =   qd_c * q
 
     # Shortest path
     q_e_data = q_e.get

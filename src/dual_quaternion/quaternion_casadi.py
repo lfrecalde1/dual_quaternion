@@ -92,20 +92,28 @@ class Quaternion():
         """
         if isinstance(q2, Quaternion):
             return Quaternion(q = Quaternion.product(self.q, q2.q))
+
         elif isinstance(q2, Number):
             q = self.q
             q_out = q * q2
             return Quaternion(q = q_out)
-        elif (isinstance(q2, cs.MX) and isinstance(self.q, cs.MX)) or (isinstance(q2, Number) and isinstance(self.q, cs.MX)):
-            q = self.q
-            q_out = q * q2
-            return Quaternion(q = q_out)
-        elif (isinstance(q2, cs.SX) and isinstance(self.q, cs.SX)) or (isinstance(q2, Number) and isinstance(self.q, cs.SX)):
-            q = self.q
-            q_out = q * q2
-            return Quaternion(q = q_out)
+        elif (isinstance(q2, cs.MX) and isinstance(self.q, cs.MX)):
+            if q2.shape[0]==1:
+                q = self.q
+                q_out = q * q2
+                return Quaternion(q = q_out)
+            else:
+                raise TypeError("Left Multiplication is only defined for Quaternions and scalars of the same type")
+
+        elif (isinstance(q2, cs.SX) and isinstance(self.q, cs.SX)):
+            if q2.shape[0]==1:
+                q = self.q
+                q_out = q * q2
+                return Quaternion(q = q_out)
+            else:
+                raise TypeError("Left Multiplication is only defined for Quaternions and scalars of the smae type")
         else:
-            raise TypeError("Right Multiplication is only defined for Quaternions and scalars")
+            raise TypeError("Left Multiplication is only defined for Quaternions and scalars")
 
     def __rmul__(self, q2) -> "Quaternion":
         """
@@ -132,16 +140,23 @@ class Quaternion():
             q = self.q
             q_out =  q2 * q
             return Quaternion(q = q_out)
-        elif (isinstance(q2, cs.MX) and isinstance(self.q, cs.MX)) or (isinstance(q2, Number) and isinstance(self.q, cs.MX)):
-            q = self.q
-            q_out =  q2 * q
-            return Quaternion(q = q_out)
-        elif (isinstance(q2, cs.SX) and isinstance(self.q, cs.SX)) or (isinstance(q2, Number) and isinstance(self.q, cs.SX)):
-            q = self.q
-            q_out =  q2 * q
-            return Quaternion(q = q_out)
+        elif (isinstance(q2, cs.MX) and isinstance(self.q, cs.MX)):
+            if q2.shape[0]==1:
+                q = self.q
+                q_out =  q2 * q
+                return Quaternion(q = q_out)
+            else:
+                raise TypeError("Right Multiplication is only defined for scalars of the same type")
+
+        elif (isinstance(q2, cs.SX) and isinstance(self.q, cs.SX)):
+            if q2.shape[0]==1:
+                q = self.q
+                q_out =  q2 * q
+                return Quaternion(q = q_out)
+            else:
+                raise TypeError("Right Multiplication is only defined for scalars of the same type")
         else:
-            raise TypeError("Left Multiplication is only defined for scalars")
+            raise TypeError("Right Multiplication is only defined for scalars of the same type")
 
     @staticmethod
     def product(p: Vector, q: Vector) -> Vector:
@@ -185,22 +200,21 @@ class Quaternion():
             #aux_1 = p[0, 0] * q[0, 0] - cs.dot(p[1:4, 0], q[1:4, 0])
             #aux_2 = p[0, 0] * q[1:4, 0] + q[0, 0]* p[1:4, 0]+ cs.cross(p[1:4, 0], q[1:4, 0])
             #q_product = cs.vertcat(aux_1, aux_2)
-            H_plus = np.array([[p[0, 0], -p[1, 0], -p[2, 0], -p[3, 0]],
-                               [p[1, 0], p[0, 0], -p[3, 0], p[2, 0]],
-                               [p[2, 0], p[3, 0], p[0, 0], -p[1, 0]],
-                               [p[3, 0], -p[2, 0], p[1, 0], p[0, 0]]])
+            H_plus = cs.vertcat(cs.horzcat(p[0, 0], -p[1, 0], -p[2, 0], -p[3, 0]),
+                                cs.horzcat(p[1, 0], p[0, 0], -p[3, 0], p[2, 0]),
+                                cs.horzcat(p[2, 0], p[3, 0], p[0, 0], -p[1, 0]),
+                                cs.horzcat(p[3, 0], -p[2, 0], p[1, 0], p[0, 0]))
             q_product = H_plus@q
-
             return q_product
 
         elif isinstance(p, cs.SX) and isinstance(q, cs.SX):
             #aux_1 = p[0, 0] * q[0, 0] - cs.dot(p[1:4, 0], q[1:4, 0])
             #aux_2 = p[0, 0] * q[1:4, 0] + q[0, 0]* p[1:4, 0]+ cs.cross(p[1:4, 0], q[1:4, 0])
             #q_product = cs.vertcat(aux_1, aux_2)
-            H_plus = np.array([[p[0, 0], -p[1, 0], -p[2, 0], -p[3, 0]],
-                               [p[1, 0], p[0, 0], -p[3, 0], p[2, 0]],
-                               [p[2, 0], p[3, 0], p[0, 0], -p[1, 0]],
-                               [p[3, 0], -p[2, 0], p[1, 0], p[0, 0]]])
+            H_plus = cs.vertcat(cs.horzcat(p[0, 0], -p[1, 0], -p[2, 0], -p[3, 0]),
+                                cs.horzcat(p[1, 0], p[0, 0], -p[3, 0], p[2, 0]),
+                                cs.horzcat(p[2, 0], p[3, 0], p[0, 0], -p[1, 0]),
+                                cs.horzcat(p[3, 0], -p[2, 0], p[1, 0], p[0, 0]))
             q_product = H_plus@q
             return q_product
         else:
@@ -232,21 +246,23 @@ class Quaternion():
         """
         if isinstance(q2, Quaternion):
             return Quaternion(q = Quaternion.add(self.q, q2.q))
-        elif (isinstance(q2, Number) and isinstance(self.q, np.ndarray)):
-            q = self.q
-            q_out = q + q2
-            return Quaternion(q = q_out)
-        elif (isinstance(q2, cs.MX) and isinstance(self.q, cs.MX)) or (isinstance(q2, Number) and isinstance(self.q, cs.MX)):
+
+        elif (isinstance(q2, Number)):
             q = self.q
             q_out = q + q2
             return Quaternion(q = q_out)
 
-        elif (isinstance(q2, cs.SX) and isinstance(self.q, cs.SX)) or (isinstance(q2, Number) and isinstance(self.q, cs.SX)):
+        elif (isinstance(q2, cs.MX) and isinstance(self.q, cs.MX)):
+            q = self.q
+            q_out = q + q2
+            return Quaternion(q = q_out)
+
+        elif (isinstance(q2, cs.SX) and isinstance(self.q, cs.SX)):
             q = self.q
             q_out = q + q2
             return Quaternion(q = q_out)
         else:
-            raise TypeError("Right addition is only defined for Quaternions and scalars.")
+            raise TypeError("Right addition is only defined for Quaternions and scalars of the same type.")
 
     def __radd__(self, q2: "Quaternion") -> "Quaternion":
         """
@@ -272,19 +288,22 @@ class Quaternion():
         """
         if isinstance(q2, Quaternion):
             return Quaternion(q = Quaternion.add(q2.q, self.q))
-        elif (isinstance(q2, Number) and isinstance(self.q, np.ndarray)):
-            q = self.q
-            q_out = q2 + q
-            return Quaternion(q = q_out)
-        elif (isinstance(q2, cs.MX) and isinstance(self.q, cs.MX)) or (isinstance(q2, Number) and isinstance(self.q, cs.MX)):
+
+        elif (isinstance(q2, Number)):
             q = self.q
             q_out = q2 + q
             return Quaternion(q = q_out)
 
-        elif (isinstance(q2, cs.SX) and isinstance(self.q, cs.SX)) or (isinstance(q2, Number) and isinstance(self.q, cs.SX)):
+        elif (isinstance(q2, cs.MX) and isinstance(self.q, cs.MX)):
             q = self.q
             q_out = q2 + q
             return Quaternion(q = q_out)
+
+        elif (isinstance(q2, cs.SX) and isinstance(self.q, cs.SX)):
+            q = self.q
+            q_out = q2 + q
+            return Quaternion(q = q_out)
+
         else:
             raise TypeError("Left add only is defined for Quaternions and scalars")
 
@@ -353,36 +372,44 @@ class Quaternion():
         """
         if isinstance(q2, Quaternion):
             return Quaternion(q = Quaternion.sub(self.q, q2.q))
-        elif (isinstance(q2, Number) and isinstance(self.q, np.ndarray)):
+
+        elif (isinstance(q2, Number)):
             q = self.q
             q_out =  q - q2
             return Quaternion(q = q_out)
-        elif (isinstance(q2, cs.MX) and isinstance(self.q, cs.MX)) or (isinstance(q2, Number) and isinstance(self.q, cs.MX)):
+
+        elif (isinstance(q2, cs.MX) and isinstance(self.q, cs.MX)):
             q = self.q
             q_out =  q - q2
             return Quaternion(q = q_out)
-        elif (isinstance(q2, cs.SX) and isinstance(self.q, cs.SX)) or (isinstance(q2, Number) and isinstance(self.q, cs.SX)):
+
+        elif (isinstance(q2, cs.SX) and isinstance(self.q, cs.SX)):
             q = self.q
             q_out =  q - q2
             return Quaternion(q = q_out)
+
         else:
             raise TypeError("Right sub only defined for Quaternions and scalars")
 
     def __rsub__(self, q2: "Quaternion") -> "Quaternion":
         if isinstance(q2, Quaternion):
             return Quaternion(q = Quaternion.sub(q2.q, self.q))
-        elif (isinstance(q2, Number) and isinstance(self.q, np.ndarray)):
+
+        elif (isinstance(q2, Number)):
             q = self.q
             q_out =  q2 - q
             return Quaternion(q = q_out)
-        elif (isinstance(q2, cs.MX) and isinstance(self.q, cs.MX)) or (isinstance(q2, Number) and isinstance(self.q, cs.MX)):
+
+        elif (isinstance(q2, cs.MX) and isinstance(self.q, cs.MX)):
             q = self.q
             q_out =  q2 - q
             return Quaternion(q = q_out)
-        elif (isinstance(q2, cs.SX) and isinstance(self.q, cs.SX)) or (isinstance(q2, Number) and isinstance(self.q, cs.SX)):
+
+        elif (isinstance(q2, cs.SX) and isinstance(self.q, cs.SX)):
             q = self.q
             q_out =  q2 - q
             return Quaternion(q = q_out)
+
         else:
             raise TypeError("Left sub only defined for Quaternions and scalars")
 
@@ -648,3 +675,51 @@ class Quaternion():
             return Quaternion(q = product)
         else:
             raise TypeError("The elements of both quaternions should be of the same type.")
+
+    @property
+    def H_plus(self) -> "Vector":
+        p = self.q
+        if isinstance(p, np.ndarray):  # Use Vector directly without parentheses
+            H_plus = np.array([[p[0, 0], -p[1, 0], -p[2, 0], -p[3, 0]],
+                               [p[1, 0], p[0, 0], -p[3, 0], p[2, 0]],
+                               [p[2, 0], p[3, 0], p[0, 0], -p[1, 0]],
+                               [p[3, 0], -p[2, 0], p[1, 0], p[0, 0]]])
+            return H_plus
+        elif isinstance(p, cs.MX):
+            H_plus = cs.vertcat(cs.horzcat(p[0, 0], -p[1, 0], -p[2, 0], -p[3, 0]),
+                                cs.horzcat(p[1, 0], p[0, 0], -p[3, 0], p[2, 0]),
+                                cs.horzcat(p[2, 0], p[3, 0], p[0, 0], -p[1, 0]),
+                                cs.horzcat(p[3, 0], -p[2, 0], p[1, 0], p[0, 0]))
+            return H_plus
+        elif isinstance(p, cs.SX):
+            H_plus = cs.vertcat(cs.horzcat(p[0, 0], -p[1, 0], -p[2, 0], -p[3, 0]),
+                                cs.horzcat(p[1, 0], p[0, 0], -p[3, 0], p[2, 0]),
+                                cs.horzcat(p[2, 0], p[3, 0], p[0, 0], -p[1, 0]),
+                                cs.horzcat(p[3, 0], -p[2, 0], p[1, 0], p[0, 0]))
+            return H_plus
+        else:
+            raise TypeError("Internal problem with the definition of the Quaternion, it should be a np.array, cs.MX or cs.SX.")
+
+    @property
+    def H_minus(self) -> "Vector":
+        p = self.q
+        if isinstance(p, np.ndarray):  # Use Vector directly without parentheses
+            H_minus = np.array([[p[0, 0], -p[1, 0], -p[2, 0], -p[3, 0]],
+                               [p[1, 0], p[0, 0], p[3, 0], -p[2, 0]],
+                               [p[2, 0], -p[3, 0], p[0, 0], p[1, 0]],
+                               [p[3, 0], p[2, 0], -p[1, 0], p[0, 0]]])
+            return H_minus
+        elif isinstance(p, cs.MX):
+            H_minus = cs.vertcat(cs.horzcat(p[0, 0], -p[1, 0], -p[2, 0], -p[3, 0]),
+                                cs.horzcat(p[1, 0], p[0, 0], p[3, 0], -p[2, 0]),
+                                cs.horzcat(p[2, 0], -p[3, 0], p[0, 0], p[1, 0]),
+                                cs.horzcat(p[3, 0], p[2, 0], -p[1, 0], p[0, 0]))
+            return H_minus
+        elif isinstance(p, cs.SX):
+            H_minus = cs.vertcat(cs.horzcat(p[0, 0], -p[1, 0], -p[2, 0], -p[3, 0]),
+                                cs.horzcat(p[1, 0], p[0, 0], p[3, 0], -p[2, 0]),
+                                cs.horzcat(p[2, 0], -p[3, 0], p[0, 0], p[1, 0]),
+                                cs.horzcat(p[3, 0], p[2, 0], -p[1, 0], p[0, 0]))
+            return H_minus
+        else:
+            raise TypeError("Internal problem with the definition of the Quaternion, it should be a np.array, cs.MX or cs.SX.")

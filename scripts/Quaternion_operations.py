@@ -73,26 +73,27 @@ def main(odom_pub_1, odom_pub_2):
     Q2 = ca.SX.zeros(4, t.shape[0] + 1)
     Q2[:, 0] = quat_2.get[:, 0]
 
+    scalar = 0.1
 
     # Message 
     message_ros = "Quaternion Casadi "
 
     for k in range(0, t.shape[0]):
         tic = rospy.get_time()
-        quat_3 = quat_2 * quat_1
+        quat_3 =   quat_1 * scalar
         print(quat_1)
         print("-------------------")
+        i = quat_3.shape[0]
         print(quat_3)
-
+        print(i)
+        print(type(quat_3))
 
         # Send Data throught Ros
-        quat_1_msg = get_odometry(quat_1_msg, quat_1, 'quat_1')
-        send_odometry(quat_1_msg, odom_pub_1)
+        #quat_1_msg = get_odometry(quat_1_msg, quat_1, 'quat_1')
+        #send_odometry(quat_1_msg, odom_pub_1)
 
-        quat_2_msg = get_odometry(quat_2_msg, quat_2, 'quat_2')
-        send_odometry(quat_2_msg, odom_pub_2)
-
-
+        #quat_2_msg = get_odometry(quat_2_msg, quat_2, 'quat_2')
+        #send_odometry(quat_2_msg, odom_pub_2)
 
         # Save States of the syst
         Q1[:, k + 1] = quat_1.get[:,0]

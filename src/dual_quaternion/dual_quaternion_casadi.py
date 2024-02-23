@@ -108,27 +108,34 @@ class DualQuaternion():
         if isinstance(q2, DualQuaternion):
              # If q2 is a DualQuaternion, return the product of self and q2 using the defined product method.
             return DualQuaternion.product(self, q2)
-        if (isinstance(q2, Number) and isinstance(self.Qr.get, np.ndarray)):
+        elif (isinstance(q2, Number)):
             # Scalar multiplication with a Number, applicable when the Dualquaternion's numerical type is np.ndarray.
             q1r = self.Qr
             q1d = self.Qd
             qr_out =  q1r * q2
             qd_out =  q1d * q2
             return DualQuaternion(q_real = qr_out, q_dual = qd_out)
-        elif(isinstance(q2, cs.MX) and isinstance(self.Qr.get, cs.MX)) or (isinstance(q2, Number) and isinstance(self.Qr.get, cs.MX)):
+        elif(isinstance(q2, cs.MX) and isinstance(self.Qr.get, cs.MX)):
+            if q2.shape[0]==1:
             # Handle multiplication with cs.MX types or scalar multiplication when the Dualquaternion's type is cs.MX.
-            q1r = self.Qr
-            q1d = self.Qd
-            qr_out =  q1r * q2
-            qd_out =  q1d * q2
-            return DualQuaternion(q_real = qr_out, q_dual = qd_out)
-        elif(isinstance(q2, cs.SX) and isinstance(self.Qr.get, cs.SX)) or (isinstance(q2, Number) and isinstance(self.Qr.get, cs.SX)):
-            # Handle multiplication with cs.SX types or scalar multiplication when the quaternion's type is cs.SX.
-            q1r = self.Qr
-            q1d = self.Qd
-            qr_out =  q1r * q2
-            qd_out =  q1d * q2
-            return DualQuaternion(q_real = qr_out, q_dual = qd_out)
+                q1r = self.Qr
+                q1d = self.Qd
+                qr_out =  q1r * q2
+                qd_out =  q1d * q2
+                return DualQuaternion(q_real = qr_out, q_dual = qd_out)
+            else:
+                raise TypeError("Left Multiplication with DualQuaternion is only defined for DualQuaternions and scalars of the same type.")
+
+        elif(isinstance(q2, cs.SX) and isinstance(self.Qr.get, cs.SX)):
+            if q2.shape[0]==1:
+                # Handle multiplication with cs.SX types or scalar multiplication when the quaternion's type is cs.SX.
+                q1r = self.Qr
+                q1d = self.Qd
+                qr_out =  q1r * q2
+                qd_out =  q1d * q2
+                return DualQuaternion(q_real = qr_out, q_dual = qd_out)
+            else:
+                raise TypeError("Left Multiplication with DualQuaternion is only defined for DualQuaternions and scalars of the same type.")
         else:
             raise TypeError("Left Multiplication with DualQuaternion is only defined for DualQuaternions and scalars of the same type.")
 
@@ -144,29 +151,38 @@ class DualQuaternion():
         Returns:
         - DualQuaternion: The result of the multiplication, a new DualQuaternion instance with both real and dual parts multiplied by q2.
         """
-        if (isinstance(q2, Number) and isinstance(self.Qr.get, np.ndarray)):
+        if (isinstance(q2, Number)):
             # Scalar multiplication with a Number when the quaternion's type is np.ndarray.
             q1r = self.Qr
             q1d = self.Qd
             qr_out =  q2 * q1r
             qd_out =  q2 * q1d
             return DualQuaternion(q_real = qr_out, q_dual = qd_out)
-        elif(isinstance(q2, cs.MX) and isinstance(self.Qr.get, cs.MX)) or (isinstance(q2, Number) and isinstance(self.Qr.get, cs.MX)):
-            # Handles multiplication with cs.MX types or scalar multiplication when the quaternion's type is cs.MX.
-            q1r = self.Qr
-            q1d = self.Qd
-            qr_out =  q2 * q1r
-            qd_out =  q2 * q1d
-            return DualQuaternion(q_real = qr_out, q_dual = qd_out)
-        elif(isinstance(q2, cs.SX) and isinstance(self.Qr.get, cs.SX)) or (isinstance(q2, Number) and isinstance(self.Qr.get, cs.SX)):
+
+        elif(isinstance(q2, cs.MX) and isinstance(self.Qr.get, cs.MX)):
+            if q2.shape[0]==1:
+                # Handles multiplication with cs.MX types or scalar multiplication when the quaternion's type is cs.MX.
+                q1r = self.Qr
+                q1d = self.Qd
+                qr_out =  q2 * q1r
+                qd_out =  q2 * q1d
+                return DualQuaternion(q_real = qr_out, q_dual = qd_out)
+            else:
+                raise TypeError("Right Multiplication with DualQuaternion is only defined for scalars of the same type.")
+
+        elif(isinstance(q2, cs.SX) and isinstance(self.Qr.get, cs.SX)):
             # Handles multiplication with cs.SX types or scalar multiplication when the quaternion's type is cs.SX.
-            q1r = self.Qr
-            q1d = self.Qd
-            qr_out =  q2 * q1r
-            qd_out =  q2 * q1d
-            return DualQuaternion(q_real = qr_out, q_dual = qd_out)
+            if q2.shape[0]==1:
+                q1r = self.Qr
+                q1d = self.Qd
+                qr_out =  q2 * q1r
+                qd_out =  q2 * q1d
+                return DualQuaternion(q_real = qr_out, q_dual = qd_out)
+            else:
+                raise TypeError("Right Multiplication with DualQuaternion is only defined for scalars of the same type.")
+
         else:
-            raise TypeError("Left Multiplication with DualQuaternion is only defined for scalars of the same type.")
+            raise TypeError("Right Multiplication with DualQuaternion is only defined for scalars of the same type.")
 
     @staticmethod
     def product(p: "DualQuaternion", q: "DualQuaternion") -> "DualQuaternion":
@@ -381,19 +397,19 @@ class DualQuaternion():
     def __add__(self, q2: "DualQuaternion") -> "DualQuaternion":
         if isinstance(q2, DualQuaternion):
             return DualQuaternion.add(self, q2)
-        elif (isinstance(q2, Number) and isinstance(self.Qr.get, np.ndarray)):
+        elif (isinstance(q2, Number)):
             q1r = self.Qr
             q1d = self.Qd
             qr_out = q1r + q2
             qd_out = q1d + q2
             return DualQuaternion(q_real = qr_out, q_dual = qd_out)
-        elif(isinstance(q2, cs.MX) and isinstance(self.Qr.get, cs.MX)) or (isinstance(q2, Number) and isinstance(self.Qr.get, cs.MX)):
+        elif(isinstance(q2, cs.MX) and isinstance(self.Qr.get, cs.MX)):
             q1r = self.Qr
             q1d = self.Qd
             qr_out = q1r + q2
             qd_out = q1d + q2
             return DualQuaternion(q_real = qr_out, q_dual = qd_out)
-        elif(isinstance(q2, cs.SX) and isinstance(self.Qr.get, cs.SX)) or (isinstance(q2, Number) and isinstance(self.Qr.get, cs.SX)):
+        elif(isinstance(q2, cs.SX) and isinstance(self.Qr.get, cs.SX)):
             q1r = self.Qr
             q1d = self.Qd
             qr_out = q1r + q2
@@ -405,19 +421,19 @@ class DualQuaternion():
     def __radd__(self, q2: "DualQuaternion") -> "DualQuaternion":
         if isinstance(q2, DualQuaternion):
             return DualQuaternion.add(q2, self)
-        elif (isinstance(q2, Number) and isinstance(self.Qr.get, np.ndarray)):
+        elif (isinstance(q2, Number)):
             q1r = self.Qr
             q1d = self.Qd
             qr_out = q2 + q1r
             qd_out = q2 + q1d
             return DualQuaternion(q_real = qr_out, q_dual = qd_out)
-        elif(isinstance(q2, cs.MX) and isinstance(self.Qr.get, cs.MX)) or (isinstance(q2, Number) and isinstance(self.Qr.get, cs.MX)):
+        elif(isinstance(q2, cs.MX) and isinstance(self.Qr.get, cs.MX)):
             q1r = self.Qr
             q1d = self.Qd
             qr_out = q2 + q1r
             qd_out = q2 + q1d
             return DualQuaternion(q_real = qr_out, q_dual = qd_out)
-        elif(isinstance(q2, cs.SX) and isinstance(self.Qr.get, cs.SX)) or (isinstance(q2, Number) and isinstance(self.Qr.get, cs.SX)):
+        elif(isinstance(q2, cs.SX) and isinstance(self.Qr.get, cs.SX)):
             q1r = self.Qr
             q1d = self.Qd
             qr_out = q2 + q1r
@@ -453,19 +469,19 @@ class DualQuaternion():
     def __sub__(self, q2: "DualQuaternion") -> "DualQuaternion":
         if isinstance(q2, DualQuaternion):
             return  DualQuaternion.sub(self, q2)
-        elif (isinstance(q2, Number) and isinstance(self.Qr.get, np.ndarray)):
+        elif (isinstance(q2, Number)) :
             q1r = self.Qr
             q1d = self.Qd
             qr_out = q1r - q2
             qd_out = q1d - q2
             return DualQuaternion(q_real = qr_out, q_dual = qd_out)
-        elif(isinstance(q2, cs.MX) and isinstance(self.Qr.get, cs.MX)) or (isinstance(q2, Number) and isinstance(self.Qr.get, cs.MX)):
+        elif(isinstance(q2, cs.MX) and isinstance(self.Qr.get, cs.MX)):
             q1r = self.Qr
             q1d = self.Qd
             qr_out = q1r - q2
             qd_out = q1d - q2
             return DualQuaternion(q_real = qr_out, q_dual = qd_out)
-        elif(isinstance(q2, cs.SX) and isinstance(self.Qr.get, cs.SX)) or (isinstance(q2, Number) and isinstance(self.Qr.get, cs.SX)):
+        elif(isinstance(q2, cs.SX) and isinstance(self.Qr.get, cs.SX)):
             q1r = self.Qr
             q1d = self.Qd
             qr_out = q1r - q2
@@ -477,19 +493,19 @@ class DualQuaternion():
     def __rsub__(self, q2: "DualQuaternion") -> "DualQuaternion":
         if isinstance(q2, Quaternion):
             return  DualQuaternion.sub(q2, self)
-        elif (isinstance(q2, Number) and isinstance(self.Qr.get, np.ndarray)):
+        elif (isinstance(q2, Number)):
             q1r = self.Qr
             q1d = self.Qd
             qr_out = q2 - q1r
             qd_out = q2 - q1d
             return DualQuaternion(q_real = qr_out, q_dual = qd_out)
-        elif(isinstance(q2, cs.MX) and isinstance(self.Qr.get, cs.MX)) or (isinstance(q2, Number) and isinstance(self.Qr.get, cs.MX)):
+        elif(isinstance(q2, cs.MX) and isinstance(self.Qr.get, cs.MX)):
             q1r = self.Qr
             q1d = self.Qd
             qr_out = q2 - q1r
             qd_out = q2 - q1d
             return DualQuaternion(q_real = qr_out, q_dual = qd_out)
-        elif(isinstance(q2, cs.SX) and isinstance(self.Qr.get, cs.SX)) or (isinstance(q2, Number) and isinstance(self.Qr.get, cs.SX)):
+        elif(isinstance(q2, cs.SX) and isinstance(self.Qr.get, cs.SX)):
             q1r = self.Qr
             q1d = self.Qd
             qr_out = q2 - q1r
