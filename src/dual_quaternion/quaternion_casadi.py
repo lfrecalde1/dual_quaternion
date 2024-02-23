@@ -167,22 +167,41 @@ class Quaternion():
         - Quaternion.product(p, q) will return the product of the quaternions.
         """
         if isinstance(p, np.ndarray) and isinstance(q, np.ndarray):  # Use Vector directly without parentheses
-            aux_1 = p[0, 0] * q[0, 0] - np.dot(p[1:4, 0], q[1:4, 0])
-            aux_2 = p[0, 0] * q[1:4, 0] + q[0, 0]* p[1:4, 0]+ np.cross(p[1:4, 0], q[1:4, 0])
-            q_product = np.vstack((aux_1, aux_2[0], aux_2[1], aux_2[2]))
+            #aux_1 = p[0, 0] * q[0, 0] - np.dot(p[1:4, 0], q[1:4, 0])
+            #aux_2 = p[0, 0] * q[1:4, 0] + q[0, 0]* p[1:4, 0]+ np.cross(p[1:4, 0], q[1:4, 0])
+            #q_product = np.vstack((aux_1, aux_2[0], aux_2[1], aux_2[2]))
+            #q_product = q_product.reshape((4, 1))
+
+            # New Product
+            H_plus = np.array([[p[0, 0], -p[1, 0], -p[2, 0], -p[3, 0]],
+                               [p[1, 0], p[0, 0], -p[3, 0], p[2, 0]],
+                               [p[2, 0], p[3, 0], p[0, 0], -p[1, 0]],
+                               [p[3, 0], -p[2, 0], p[1, 0], p[0, 0]]])
+            q_product = H_plus@q
             q_product = q_product.reshape((4, 1))
             return q_product
 
         elif isinstance(p, cs.MX) and isinstance(q, cs.MX):
-            aux_1 = p[0, 0] * q[0, 0] - cs.dot(p[1:4, 0], q[1:4, 0])
-            aux_2 = p[0, 0] * q[1:4, 0] + q[0, 0]* p[1:4, 0]+ cs.cross(p[1:4, 0], q[1:4, 0])
-            q_product = cs.vertcat(aux_1, aux_2)
+            #aux_1 = p[0, 0] * q[0, 0] - cs.dot(p[1:4, 0], q[1:4, 0])
+            #aux_2 = p[0, 0] * q[1:4, 0] + q[0, 0]* p[1:4, 0]+ cs.cross(p[1:4, 0], q[1:4, 0])
+            #q_product = cs.vertcat(aux_1, aux_2)
+            H_plus = np.array([[p[0, 0], -p[1, 0], -p[2, 0], -p[3, 0]],
+                               [p[1, 0], p[0, 0], -p[3, 0], p[2, 0]],
+                               [p[2, 0], p[3, 0], p[0, 0], -p[1, 0]],
+                               [p[3, 0], -p[2, 0], p[1, 0], p[0, 0]]])
+            q_product = H_plus@q
+
             return q_product
 
         elif isinstance(p, cs.SX) and isinstance(q, cs.SX):
-            aux_1 = p[0, 0] * q[0, 0] - cs.dot(p[1:4, 0], q[1:4, 0])
-            aux_2 = p[0, 0] * q[1:4, 0] + q[0, 0]* p[1:4, 0]+ cs.cross(p[1:4, 0], q[1:4, 0])
-            q_product = cs.vertcat(aux_1, aux_2)
+            #aux_1 = p[0, 0] * q[0, 0] - cs.dot(p[1:4, 0], q[1:4, 0])
+            #aux_2 = p[0, 0] * q[1:4, 0] + q[0, 0]* p[1:4, 0]+ cs.cross(p[1:4, 0], q[1:4, 0])
+            #q_product = cs.vertcat(aux_1, aux_2)
+            H_plus = np.array([[p[0, 0], -p[1, 0], -p[2, 0], -p[3, 0]],
+                               [p[1, 0], p[0, 0], -p[3, 0], p[2, 0]],
+                               [p[2, 0], p[3, 0], p[0, 0], -p[1, 0]],
+                               [p[3, 0], -p[2, 0], p[1, 0], p[0, 0]]])
+            q_product = H_plus@q
             return q_product
         else:
             raise TypeError("The elements of both quaternions should be of the same type.")
