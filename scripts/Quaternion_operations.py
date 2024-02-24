@@ -47,15 +47,13 @@ def main(odom_pub_1, odom_pub_2):
 
     # Init Quaternions
 
-    theta1 = ca.SX([ca.pi/4])
-    n1 = ca.SX([0.0, 0.0, 1.0])
+    theta1 = ca.SX([ca.pi/8])
+    n1 = ca.SX([1.0, 0.0, 0.0])
     q1 = ca.vertcat(ca.cos(theta1/2), ca.sin(theta1/2)@n1)
-    q1 = ca.SX([5, 28, 86, 99])
 
-    theta2 = ca.SX([ca.pi/4])
-    n2 = ca.SX([0.0, 0.0, 1.0])
+    theta2 = ca.SX([ca.pi/2])
+    n2 = ca.SX([1.0, 0.0, 0.0])
     q2 = ca.vertcat(ca.cos(theta2/2), ca.sin(theta2/2)@n2)
-    q2 = ca.SX([-2, 0, 0, 25])
 
     # Create Quaternions objects
     quat_1 = Quaternion(q = q1)
@@ -80,13 +78,9 @@ def main(odom_pub_1, odom_pub_2):
 
     for k in range(0, t.shape[0]):
         tic = rospy.get_time()
-        quat_3 =   quat_1 * scalar
-        print(quat_1)
+        quat_3 =   quat_1 * quat_2
         print("-------------------")
-        i = quat_3.shape[0]
         print(quat_3)
-        print(i)
-        print(type(quat_3))
 
         # Send Data throught Ros
         #quat_1_msg = get_odometry(quat_1_msg, quat_1, 'quat_1')

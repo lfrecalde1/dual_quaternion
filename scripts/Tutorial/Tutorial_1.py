@@ -55,13 +55,13 @@ def main(odom_pub_1, odom_pub_2, odom_pub_3):
     rospy.loginfo_once("DualQuaternion.....")
 
     # Defining of the vectors using casadi
-    theta1 = ca.SX([np.pi/2])
+    theta1 = ca.SX([np.pi])
     n1 = ca.SX([0.0, 0.0, 1.0])
     q1 = ca.vertcat(ca.cos(theta1/2), ca.sin(theta1/2)@n1)
-    t1 = ca.SX([0.0, 0.0, 0.0, 0.0])
+    t1 = ca.SX([0.0, 1, -1.0, 0.0])
 
     # Defining of the vectors using casadi
-    theta2 = ca.SX([ca.pi/4])
+    theta2 = ca.SX([ca.pi/2])
     n2 = ca.SX([0.0, 0.0, 1.0])
     q2 = ca.vertcat(ca.cos(theta2/2), ca.sin(theta2/2)@n2)
     t2 = ca.SX([0.0, 0.0, 2.0, 0.0])
@@ -98,11 +98,11 @@ def main(odom_pub_1, odom_pub_2, odom_pub_3):
         Q1_norm = Q1.norm
         Q2_norm = Q2.norm
         Q3_norm = Q3.norm
-        print(Q1_norm)
-        print(Q2_norm)
-        print(Q3_norm)
+        print("----------------")
         print(Q3.get_trans.get[:, 0])
         print(Q3.get_quat.get[:, 0])
+        print(Q3)
+        print("----------------")
 
         # Send Data throught Ros
         quat_1_msg = get_odometry(quat_1_msg, Q1, 'quat_1')
