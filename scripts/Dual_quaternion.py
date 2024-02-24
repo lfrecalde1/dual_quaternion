@@ -18,54 +18,66 @@ def reference(t, ts):
     v1 = np.zeros((4, t.shape[0]))
     v1p = np.zeros((4, t.shape[0]))
 
-    v1[1, :] = -4*0.5*np.sin(0.5*t)
-    v1[2, :] = 4*0.5*np.cos(0.5*t)
+    #v1[1, :] = -4*0.5*np.sin(0.5*t)
+    #v1[2, :] = 4*0.5*np.cos(0.5*t)
+    #v1[3, :] = 0.0
+    #
+    #v1p[1, :] = -4*0.5*0.5*np.cos(0.5*t)
+    #v1p[2, :] = -4*0.5*0.5*np.sin(0.5*t)
+
+    v1[1, :] = 0.0
+    v1[2, :] = 0.0
     v1[3, :] = 0.0
 
-    # COmpute Linear Acceleration    
-    v1p[1, :] = -4*0.5*0.5*np.cos(0.5*t)
-    v1p[2, :] = -4*0.5*0.5*np.sin(0.5*t)
-
-    #v1[1, :] = -4*0.5*np.sin(0.5*t)
-    #v1[2, :] = 0.5
-    #v1[3, :] = 0.0
-
-    #v1p[1, :] = -4*0.5*0.5*np.cos(0.5*t)
-    #v1p[2, :] = 0
+    # Linear accelerations
+    v1p[1, :] = 0.0
+    v1p[2, :] = 0.0
 
 
     # Compute angular displacement
-    theta = np.arctan2(v1[2,:], v1[1, :])
+    #theta = np.arctan2(v1[2,:], v1[1, :])
+    theta = np.pi/2
 
     # Compute angular velocity
-    theta_p = (1. / ((v1[2, :] / v1[1, :]) ** 2 + 1)) * ((v1p[2, :] * v1[1, :] - v1[2, :] * v1p[1, :]) / v1[1, :] ** 2)
-    theta_p[0] = 0
+    #theta_p = (1. / ((v1[2, :] / v1[1, :]) ** 2 + 1)) * ((v1p[2, :] * v1[1, :] - v1[2, :] * v1p[1, :]) / v1[1, :] ** 2)
+    #theta_p[0] = 0
 
     # Update angular velocities
     w1[1, :] = 0.0
     w1[2, :] = 0.0
-    w1[3, :] = theta_p
+    w1[3, :] = 0.0
 
-    # Get the initial Rotation of the defined Trajectory
-    r = R.from_euler('zyx',[theta[0], 0, 0], degrees=False)
-    r_q = r.as_quat()
+    #Compute initial quaternion based on the defined trajectory
+    #r = R.from_euler('zyx',[theta[0], 0, 0], degrees=False)
+    #r_q = r.as_quat()
 
     # Init Quaternions
-    q1 = np.hstack([r_q[3], r_q[0], r_q[1], r_q[2]])
-    t1 = np.array([0.0, 4.0, 0.0, 0.0])
+    #q1 = np.hstack([r_q[3], r_q[0], r_q[1], r_q[2]])
+    n = np.array([0.0, 0.0, 1.0])
+    q1 = np.hstack([np.cos(theta / 2), np.sin(theta / 2) * np.array(n)])
+    t1 = np.array([0.0, 2.0, -2.0, 1.0])
 
-    # Init DualQuaternions
+    # Init DualQuaternion
     Q1 = DualQuaternion.from_pose(quat = q1, trans = t1)
+    Q1_quat = Q1.get_real
+    Q1_quat = Q1.get_real
+    t1_i = Q1_quat.conjugate() * Q1.get_trans * Q1_quat
+    Q1_i = DualQuaternion(q_real = Q1_quat, q_dual = t1_i)
+
+
 
     # Empty matrices
     Q1_data = np.zeros((8, t.shape[0] + 1), dtype=np.double)
     Q1_data[0:4, 0] = Q1.get_quat.get[:, 0]
     Q1_data[4:8, 0] = Q1.get_trans.get[:, 0]
 
-    # Empty Vectors
+    Q1_data_i = np.zeros((8, t.shape[0] + 1), dtype=np.double)
+    Q1_data_i[0:4, 0] = Q1_i.get_quat.get[:, 0]
+    Q1_data_i[4:8, 0] = Q1_i.get_trans.get[:, 0]
+
+    # Empty matrices
     w1_dual_data = np.zeros((4, t.shape[0] + 1), dtype=np.double)
     v1_dual_data = np.zeros((4, t.shape[0] + 1), dtype=np.double)
-
 
     for k in range(0, t.shape[0]):
 
@@ -116,7 +128,7 @@ def quatdot(quat, omega):
     dual_data =  quat.get_dual
 
     # Auxiliary variable in order to avoid numerical issues
-    norm_r, norm_d = quat.norm
+    norm_r, norm_d = quat.norm_dual
     K_quat = 2
     quat_error = 1 - norm_r
     dual_error = norm_d
@@ -187,7 +199,7 @@ def control_law(qd, q, kp, wd, vd):
         q_e = -1*q_e
 
     # Apply log mapping
-    q_e_ln = q_e.ln()
+    q_e_ln = q_e.ln_dual()
 
     # Conjugate
     q_e_c = q_e.conjugate()
@@ -214,10 +226,10 @@ def main(odom_pub_1, odom_pub_2):
     rospy.loginfo_once("DualQuaternion.....")
 
     # Init Quaternions
-    theta1 = 3.81
-    n1 = np.array([0.4896, 0.2032, 0.8480])
+    theta1 = 0
+    n1 = np.array([0.0, 0.0, 1])
     q1 = np.hstack([np.cos(theta1 / 2), np.sin(theta1 / 2) * np.array(n1)])
-    t1 = np.array([0.0, 2.0, 2.0, 4.0])
+    t1 = np.array([0.0, 2.0, 2.0, 1.0])
 
     Q2_data, wd, vd = reference(t, sample_time)
 
@@ -260,7 +272,7 @@ def main(odom_pub_1, odom_pub_2):
         U, qe_ln = control_law(Q2, Q1, K, wd[:, k], vd[:, k])
 
         # Norm of the Dualquaternion Error
-        norm_q, norm_t = qe_ln.norm
+        norm_q, norm_t = qe_ln.norm_dual
         norm_quat[:, k] = norm_q
         norm_trans[:, k] = norm_t
 
