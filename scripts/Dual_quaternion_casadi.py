@@ -228,7 +228,7 @@ def control_law(qd, q, kp, wd, vd):
         q_e = -1*q_e
 
     # Apply log mapping
-    q_e_ln = q_e.ln_dual()
+    q_e_ln = q_e.ln_control()
 
     # Conjugate
     q_e_c = q_e.conjugate()
@@ -239,7 +239,7 @@ def control_law(qd, q, kp, wd, vd):
     U = -2*q_e_ln.vector_dot_product(kp) + q_e * dual_velocity_d * q_e_c
     #U = -2*q_e_ln.vector_dot_product(kp)
 
-    return U, qe_quat.ln(), p_e.ln_trans()
+    return U, qe_quat.ln(), p_e.ln_trans(), q_e.ln_control()
 def main(odom_pub_1, odom_pub_2):
     # Sample Time Defintion
     sample_time = 0.01
@@ -256,8 +256,8 @@ def main(odom_pub_1, odom_pub_2):
     rospy.loginfo_once("DualQuaternion.....")
 
     # Defining of the vectors using casadi
-    theta1 = ca.SX([3.8134])
-    n1 = ca.SX([0.4896, 0.2032, 0.8480])
+    theta1 = ca.SX([ca.pi/2])
+    n1 = ca.SX([0.0, 0.0, 1.0])
     q1 = ca.vertcat(ca.cos(theta1/2), ca.sin(theta1/2)@n1)
     t1 = ca.SX([0.0, 2.0, 2.0, -3.0])
 
@@ -300,12 +300,12 @@ def main(odom_pub_1, odom_pub_2):
 
 
         # Control Law
-        U, qe_ln, pe_ln = control_law(Q2, Q1, K, wd[:, k], vd[:, k])
+        U, qe_ln, pe_ln, q_e_ln = control_law(Q2, Q1, K, wd[:, k], vd[:, k])
 
         # Norm of the Dualquaternion Error
-        #norm_q, norm_t = qe_ln.norm
-        norm_quat[:, k] = qe_ln.norm
-        norm_trans[:, k] = pe_ln.norm
+        norm_q, norm_t = q_e_ln.norm_dual_control
+        norm_quat[:, k] = norm_q
+        norm_trans[:, k] = norm_t
 
         # Save Values Control Law
         w1[1:4, k] = angular_velocity_body(U, Q1)

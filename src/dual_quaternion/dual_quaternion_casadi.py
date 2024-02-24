@@ -277,7 +277,7 @@ class DualQuaternion():
         return DualQuaternion(q_real= qr_conjugate, q_dual = qd_conjugate)
 
     @property
-    def norm_dual(self):
+    def norm_dual_control(self):
         """
         Calculates the norms of the real and dual parts of the DualQuaternion.
 
@@ -290,10 +290,50 @@ class DualQuaternion():
 
         if isinstance(qr.get, np.ndarray) and isinstance(qd.get, np.ndarray):  # Use Vector directly without parentheses
             real_norm = qr.norm
-            # Compute an auxiliary value for the dual norm.
-            dual_norm_aux = (qr.T@qd)/real_norm
             # Calculate the dual norm by dividing the auxiliary value by the real part's norm.
-            dual_norm = np.abs(dual_norm_aux[0, 0])
+            dual_norm = qd.norm
+            #dual_norm = (dual_norm_aux[0, 0])
+            #dual_norm = qd.norm
+            #print(dual_norm)
+            return real_norm, dual_norm
+
+        elif isinstance(qr.get, cs.MX) and isinstance(qd.get, cs.MX):
+            real_norm = qr.norm
+            # Calculate the dual norm by dividing the auxiliary value by the real part's norm.
+            dual_norm = qd.norm
+            #dual_norm = (dual_norm_aux[0, 0])
+            #dual_norm = qd.norm
+            #print(dual_norm)
+            return real_norm, dual_norm
+
+        elif isinstance(qr.get, cs.SX) and isinstance(qd.get, cs.SX):
+            real_norm = qr.norm
+            # Calculate the dual norm by dividing the auxiliary value by the real part's norm.
+            dual_norm = qd.norm
+            #dual_norm = (dual_norm_aux[0, 0])
+            #dual_norm = qd.norm
+            #print(dual_norm)
+            return real_norm, dual_norm
+        else:
+            raise TypeError("The elements of both Dualquaternions should be of the same type.")
+    @property
+    def norm_dual(self):
+        """
+        Calculates the norms of the real and dual parts of the DualQuaternion.
+
+        Returns:
+        - Tuple[Scalar, Scalar]: A tuple containing the norm of the real part and the calculated value for the dual part
+        """
+         # Access the real and dual parts of the DualQuaternion.
+        qr = self.Qr
+        qd = self.Qd
+
+        if isinstance(qr.get, np.ndarray) and isinstance(qd.get, np.ndarray):  # Use Vector directly without parentheses
+            real_norm = qr.square_norm
+            # Compute an auxiliary value for the dual norm.
+            dual_norm_aux = 2*(qr.get.T@qd.get)/1
+            # Calculate the dual norm by dividing the auxiliary value by the real part's norm.
+            dual_norm = dual_norm_aux[0, 0]
             #dual_norm = (dual_norm_aux[0, 0])
             #dual_norm = qd.norm
             #print(dual_norm)
@@ -301,11 +341,11 @@ class DualQuaternion():
 
         elif isinstance(qr.get, cs.MX) and isinstance(qd.get, cs.MX):
             # Calculate the norm of the real part directly.
-            real_norm = qr.norm
+            real_norm = qr.square_norm
             # Compute an auxiliary value for the dual norm.
-            dual_norm_aux = (qr.get.T@qd.get)/real_norm
+            dual_norm_aux = 2*(qr.get.T@qd.get)/1
             # Calculate the dual norm by dividing the auxiliary value by the real part's norm.
-            dual_norm = cs.fabs(dual_norm_aux[0, 0])
+            dual_norm = dual_norm_aux[0, 0]
             #dual_norm = (dual_norm_aux[0, 0])
             #dual_norm = qd.norm
             #print(dual_norm)
@@ -314,11 +354,11 @@ class DualQuaternion():
             return real_norm, dual_norm
         elif isinstance(qr.get, cs.SX) and isinstance(qd.get, cs.SX):
             # Calculate the norm of the real part directly.
-            real_norm = qr.norm
+            real_norm = qr.square_norm
             # Compute an auxiliary value for the dual norm.
-            dual_norm_aux = (qr.get.T@qd.get)/real_norm
+            dual_norm_aux = 2*(qr.get.T@qd.get)/1
             # Calculate the dual norm by dividing the auxiliary value by the real part's norm.
-            dual_norm = cs.fabs(dual_norm_aux[0, 0])
+            dual_norm = dual_norm_aux[0, 0]
             #dual_norm = (dual_norm_aux[0, 0])
             #dual_norm = qd.norm
             #print(dual_norm)
@@ -554,6 +594,74 @@ class DualQuaternion():
             # Handle case where q_primal or q_dual are not provided
             raise ValueError("Both primal and dual quaternions must be provided")
 
+    def ln_control(self):
+        # Log mapping of the dualQuaternion
+        q1r = self.Qr
+        q1d = self.Qd
+        # Get the log mapping of the quaterion inside the DualQuaternion
+        dual_axis = self.axis_angle_dual()
+
+        # Get real and dual values
+        axis_angle_real = dual_axis.get_real.get
+        axis_angle_dual = dual_axis.get_dual.get
+
+
+
+        if isinstance(q1r.get, np.ndarray) and isinstance(q1d.get, np.ndarray):  # Use Vector directly without parentheses
+            # Get translation of the dual quaternion
+            theta = axis_angle_real[0, 0]
+            n = axis_angle_real[1:4, 0]
+
+            p = axis_angle_dual[0, 0]
+            trans = axis_angle_dual[1:4, 0]
+
+            # Dual Part
+            s = trans/p
+            ps = (1/2) * p * s
+            result_ps = np.vstack((0.0, ps[0], ps[1], ps[2]))
+
+            # Real Part
+            ntheta = (1/2)*theta * n
+            result_ntheta = np.vstack((0.0, ntheta[0], ntheta[1], ntheta[2]))
+
+
+        elif isinstance(q1r.get, cs.MX) and isinstance(q1d.get, cs.MX):
+            # Get translation of the dual quaternion
+            theta = axis_angle_real[0, 0]
+            n = axis_angle_real[1:4, 0]
+
+            p = axis_angle_dual[0, 0]
+            trans = axis_angle_dual[1:4, 0]
+
+            # Dual Part
+            s = trans/p
+            ps = (1/2) * p * s
+            result_ps = cs.vertcat(0.0, ps[0, 0], ps[1, 0], ps[2, 0])
+
+            # Real Part
+            ntheta = (1/2)*theta * n
+            result_ntheta = cs.vertcat(0.0, ntheta[0, 0], ntheta[1, 0], ntheta[2, 0])
+        elif isinstance(q1r.get, cs.SX) and isinstance(q1d.get, cs.SX):
+            # Get translation of the dual quaternion
+            theta = axis_angle_real[0, 0]
+            n = axis_angle_real[1:4, 0]
+
+            p = axis_angle_dual[0, 0]
+            trans = axis_angle_dual[1:4, 0]
+
+            # Dual Part
+            s = trans/p
+            ps = (1/2) * p * s
+            result_ps = cs.vertcat(0.0, ps[0, 0], ps[1, 0], ps[2, 0])
+
+            # Real Part
+            ntheta = (1/2)* theta * n
+            result_ntheta = cs.vertcat(0.0, ntheta[0, 0], ntheta[1, 0], ntheta[2, 0])
+        else:
+            raise TypeError("The elements of both Dualquaternions should be of the same type.")
+        Dual_ln = DualQuaternion(q_real= Quaternion(q = result_ntheta), q_dual= Quaternion(q = result_ps))
+        return Dual_ln
+
     def ln_dual(self):
         # Log mapping of the dualQuaternion
         q1r = self.Qr
@@ -619,7 +727,7 @@ class DualQuaternion():
             result_ntheta = cs.vertcat(0.0, ntheta[0, 0], ntheta[1, 0], ntheta[2, 0])
         else:
             raise TypeError("The elements of both Dualquaternions should be of the same type.")
-        Dual_ln = DualQuaternion(q_real=Quaternion(q = result_ntheta), q_dual= Quaternion(q = result_ps))
+        Dual_ln = DualQuaternion.from_pose(quat= result_ntheta, trans= result_ps)
         return Dual_ln
 
     def axis_angle_dual(self)->"DualQuaternion":
