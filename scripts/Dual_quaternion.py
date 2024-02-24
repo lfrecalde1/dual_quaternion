@@ -226,10 +226,10 @@ def main(odom_pub_1, odom_pub_2):
     rospy.loginfo_once("DualQuaternion.....")
 
     # Init Quaternions
-    theta1 = 0
-    n1 = np.array([0.0, 0.0, 1])
+    theta1 = 3.81
+    n1 = np.array([0.4896, 0.2032, 0.8480])
     q1 = np.hstack([np.cos(theta1 / 2), np.sin(theta1 / 2) * np.array(n1)])
-    t1 = np.array([0.0, 2.0, 2.0, 1.0])
+    t1 = np.array([0.0, 2.0, 2.0, -3.0])
 
     Q2_data, wd, vd = reference(t, sample_time)
 
@@ -248,8 +248,8 @@ def main(odom_pub_1, odom_pub_2):
     v1 = np.zeros((4, t.shape[0]))
 
     # Control gains
-    angular_gain = np.hstack([0.0, 1, 1, 1])
-    trans_gain = np.array([0, 1., 1., 1.])
+    angular_gain = np.hstack([0.0, 2, 2, 2])
+    trans_gain = np.array([0, 2., 2., 2.])
 
     # Control Gain represented as a DualQuaternion
     K = DualQuaternion(q_real = Quaternion(q = angular_gain), q_dual = Quaternion(q = trans_gain))

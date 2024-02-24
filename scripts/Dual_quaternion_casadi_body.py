@@ -262,7 +262,7 @@ def main(odom_pub_1, odom_pub_2):
     theta1 = ca.SX([0.0])
     n1 = ca.SX([0.0, 0.0, 1.0])
     q1 = ca.vertcat(ca.cos(theta1/2), ca.sin(theta1/2)@n1)
-    t1 = ca.SX([0.0, 2.0, 2.0, 1.0])
+    t1 = ca.SX([0.0, 2.0, 2.0, 3.0])
 
     # Get Trajectory
     Q2_data, wd, vd, Q2_data_i = reference(t, sample_time)
@@ -281,8 +281,8 @@ def main(odom_pub_1, odom_pub_2):
     v1 = ca.SX.zeros(4, t.shape[0])
 
     # Control gains
-    angular_gain = ca.SX([0.0, 1.0, 1.0, 1.0])
-    trans_gain = ca.SX([0.0, 1.0, 1.0, 1.0])
+    angular_gain = ca.SX([0.0, 2.0, 2.0, 2.0])
+    trans_gain = ca.SX([0.0, 2.0, 2.0, 2.0])
 
     # Dualquaternion gain
     K = DualQuaternion(q_real = Quaternion(q = angular_gain), q_dual = Quaternion(q = trans_gain))
