@@ -14,11 +14,12 @@ from dual_quaternion import plot_states_quaternion, plot_states_position, fancy_
 def get_odometry(odom_msg, dqd, name):
     # Function to send the Oritentation of the Quaternion
     # Get Information from the DualQuaternion
-    t_d = dqd.get_trans
-    t_d_data = t_d.get
 
     q_d = dqd.get_quat
     q_d_data = q_d.get
+
+    t_d = dqd.get_trans
+    t_d_data = t_d.get
 
     odom_msg.header.stamp = rospy.Time.now()
     odom_msg.header.frame_id = "world"

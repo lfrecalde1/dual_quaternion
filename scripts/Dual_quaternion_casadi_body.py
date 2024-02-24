@@ -230,7 +230,7 @@ def control_law(qd, q, kp, wd, vd):
         q_e = -1*q_e
 
     # Apply log mapping
-    q_e_ln = q_e.ln_dual()
+    q_e_ln = q_e.ln_control()
 
     # Conjugate
     q_e_c = q_e.conjugate()
