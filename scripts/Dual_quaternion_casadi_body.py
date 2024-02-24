@@ -171,7 +171,7 @@ def dual_velocity(w, v, dual):
     q = dual.get_quat
     q_c = q.conjugate()
     real = w
-    dual = q_c * v * q 
+    dual = (q_c * v * q) 
     dual_velocity = DualQuaternion(q_real = real, q_dual = dual)
     return dual_velocity
 
