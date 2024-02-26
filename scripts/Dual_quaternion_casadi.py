@@ -88,8 +88,8 @@ def reference(t, ts):
         w_quat_s = Q1_quat * w_quat * Q1_quat.conjugate()
         w_quat_s_data = w_quat_s.get[:, 0]
         # Compute dual velocity
-        dual_velocity_values = dual_velocity(w_quat_s_data, v1[:, k], Q1)
-        #dual_velocity_values = dual_velocity(w1[:, k], v1[:, k], Q1)
+        #dual_velocity_values = dual_velocity(w_quat_s_data, v1[:, k], Q1)
+        dual_velocity_values = dual_velocity(w1[:, k], v1[:, k], Q1)
         w1_dual_data[:, k] = dual_velocity_values.get_real.get[:, 0]
         v1_dual_data[:, k] = dual_velocity_values.get_dual.get[:, 0]
 

@@ -19,16 +19,16 @@ def reference(t, ts):
     v1 = np.zeros((4, t.shape[0]))
     v1p = np.zeros((4, t.shape[0]))
 
-    v1[1, :] = -4*0.5*np.sin(0.5*t)
-    v1[2, :] = 4*0.5*np.cos(0.5*t)
-    v1[3, :] = 0.0
+    #v1[1, :] = -4*0.5*np.sin(0.5*t)
+    #v1[2, :] = 4*0.5*np.cos(0.5*t)
+    #v1[3, :] = 0.0
     #
     #v1p[1, :] = -4*0.5*0.5*np.cos(0.5*t)
     #v1p[2, :] = -4*0.5*0.5*np.sin(0.5*t)
 
-    #v1[1, :] = 0.5
-    #v1[2, :] = 0.0
-    #v1[3, :] = 0.0
+    v1[1, :] = 0.1
+    v1[2, :] = 0.0
+    v1[3, :] = 0.0
 
     # Linear accelerations
     v1p[1, :] = 0.0
@@ -37,16 +37,16 @@ def reference(t, ts):
 
     # Compute angular displacement
     #theta = np.arctan2(v1[2,:], v1[1, :])
-    theta = np.pi/2
+    theta = -np.pi/2
 
     # Compute angular velocity
     #theta_p = (1. / ((v1[2, :] / v1[1, :]) ** 2 + 1)) * ((v1p[2, :] * v1[1, :] - v1[2, :] * v1p[1, :]) / v1[1, :] ** 2)
     #theta_p[0] = 0
 
     # Update angular velocities
-    w1[1, :] = 0.5
+    w1[1, :] = 0.0
     w1[2, :] = 0.0
-    w1[3, :] = 0.0
+    w1[3, :] = 0.5
 
     #Compute initial quaternion based on the defined trajectory
     #r = R.from_euler('zyx',[theta[0], 0, 0], degrees=False)
@@ -56,7 +56,7 @@ def reference(t, ts):
     #q1 = np.hstack([r_q[3], r_q[0], r_q[1], r_q[2]])
     n = np.array([0.0, 0.0, 1.0])
     q1 = np.hstack([np.cos(theta / 2), np.sin(theta / 2) * np.array(n)])
-    t1 = np.array([0.0, 2.0, -2.0, 1.0])
+    t1 = np.array([0.0, -5.0, 2.0, 0.0])
 
     # Init DualQuaternion
     Q1 = DualQuaternion_body.from_pose(quat = q1, trans = t1)
@@ -81,9 +81,17 @@ def reference(t, ts):
     v1_dual_data = np.zeros((4, t.shape[0] + 1), dtype=np.double)
 
     for k in range(0, t.shape[0]):
+        Q1_quat = Q1.get_real
+        w_quat = Quaternion(q = w1[:, k])
+        w_quat_b = Q1_quat.conjugate() * w_quat * Q1_quat
+        w_quat_b_data = w_quat_b.get[:, 0]
 
+        v_quat = Quaternion(q = v1[:, k])
+        v_quat_b = Q1_quat.conjugate() * v_quat * Q1_quat
+        v_quat_b_data = v_quat_b.get[:, 0]
         # Compute dual velocity
-        dual_velocity_values = dual_velocity_body(w1[:, k], v1[:, k], Q1)
+        dual_velocity_values = dual_velocity_body(w_quat_b_data, v1[:, k], Q1)
+        #dual_velocity_values = dual_velocity_body(w1[:, k], v1[:, k], Q1)
         w1_dual_data[:, k] = dual_velocity_values.get_real.get[:, 0]
         v1_dual_data[:, k] = dual_velocity_values.get_dual.get[:, 0]
 
@@ -263,10 +271,10 @@ def main(odom_pub_1, odom_pub_2):
     rospy.loginfo_once("DualQuaternion.....")
 
     # Init Quaternions
-    theta1 = 3.81
-    n1 = np.array([0.4896, 0.2032, 0.8480])
+    theta1 = np.pi/2
+    n1 = np.array([0.0, 0.0, 1.0])
     q1 = np.hstack([np.cos(theta1 / 2), np.sin(theta1 / 2) * np.array(n1)])
-    t1 = np.array([0.0, 2.0, 2.0, 3.0])
+    t1 = np.array([0.0, 2.0, -2.0, 0.0])
 
     Q2_data, wd, vd = reference(t, sample_time)
 
