@@ -605,8 +605,6 @@ class DualQuaternion():
         axis_angle_real = dual_axis.get_real.get
         axis_angle_dual = dual_axis.get_dual.get
 
-
-
         if isinstance(q1r.get, np.ndarray) and isinstance(q1d.get, np.ndarray):  # Use Vector directly without parentheses
             # Get translation of the dual quaternion
             theta = axis_angle_real[0, 0]
@@ -673,8 +671,6 @@ class DualQuaternion():
         axis_angle_real = dual_axis.get_real.get
         axis_angle_dual = dual_axis.get_dual.get
 
-
-
         if isinstance(q1r.get, np.ndarray) and isinstance(q1d.get, np.ndarray):  # Use Vector directly without parentheses
             # Get translation of the dual quaternion
             theta = axis_angle_real[0, 0]
@@ -738,11 +734,11 @@ class DualQuaternion():
         if isinstance(q1r.get, np.ndarray) and isinstance(q1d.get, np.ndarray):  # Use Vector directly without parentheses
             q1r_angle_axis = q1r.angle_axis
             # Get translation of the dual quaternion
-            trans = self.get_trans.get
+            trans = self.get_trans
 
-            p = np.linalg.norm(trans)
+            p = trans.norm
 
-            result = np.vstack((p, trans[1, 0], trans[2, 0], trans[3, 0]))
+            result = np.vstack((p, trans.get[1, 0], trans.get[2, 0], trans.get[3, 0]))
 
             Dual_ln = DualQuaternion(q_real=Quaternion(q = q1r_angle_axis), q_dual= Quaternion(q = result))
 
@@ -750,21 +746,22 @@ class DualQuaternion():
             # Get the log mapping of the quaterion inside the DualQuaternion
             q1r_angle_axis = q1r.angle_axis
             # Get translation of the dual quaternion
-            trans = self.get_trans.get
+            trans = self.get_trans
 
-            p = np.linalg.norm(trans)
+            p = trans.norm
 
-            result = cs.vertcat(p[0, 0], trans[1, 0], trans[2, 0], trans[3, 0])
+            result = cs.vertcat(p, trans.get[1, 0], trans.get[2, 0], trans.get[3, 0])
 
             Dual_ln = DualQuaternion(q_real=Quaternion(q = q1r_angle_axis), q_dual= Quaternion(q = result))
         elif isinstance(q1r.get, cs.SX) and isinstance(q1d.get, cs.SX):
             # Get the log mapping of the quaterion inside the DualQuaternion
             q1r_angle_axis = q1r.angle_axis
             # Get translation of the dual quaternion
-            trans = self.get_trans.get
-            p = cs.norm_2(trans)
+            trans = self.get_trans
 
-            result = cs.vertcat(p[0, 0], trans[1, 0], trans[2, 0], trans[3, 0])
+            p = trans.norm
+
+            result = cs.vertcat(p, trans.get[1, 0], trans.get[2, 0], trans.get[3, 0])
 
             Dual_ln = DualQuaternion(q_real=Quaternion(q = q1r_angle_axis), q_dual= Quaternion(q = result))
         else:
@@ -806,3 +803,54 @@ class DualQuaternion():
             return product
         else:
             raise TypeError("Vector Dot Product only defined for DualQuaternions")
+
+    def H_plus_dual(self):
+        # Log mapping of the dualQuaternion
+        q1r = self.Qr
+        q1d = self.Qd
+        # Get the log mapping of the quaterion inside the DualQuaternion
+        H_r_plus = q1r.H_plus()
+        H_d_plus = q1d.H_plus()
+
+        if isinstance(q1r.get, np.ndarray) and isinstance(q1d.get, np.ndarray):  # Use Vector directly without parentheses
+            None
+            # Get translation of the dual quaternion
+        elif isinstance(q1r.get, cs.MX) and isinstance(q1d.get, cs.MX):
+            # Get translation of the dual quaternion
+            zeros = cs.SX.zeros(4, 4)
+            Hplus = cs.vertcat(cs.horzcat(H_r_plus, zeros),
+                        cs.horzcat(H_d_plus, H_r_plus))
+        elif isinstance(q1r.get, cs.SX) and isinstance(q1d.get, cs.SX):
+            # Get translation of the dual quaternion
+            zeros = cs.SX.zeros(4, 4)
+            Hplus = cs.vertcat(cs.horzcat(H_r_plus, zeros),
+                        cs.horzcat(H_d_plus, H_r_plus))
+        else:
+            raise TypeError("The elements of both Dualquaternions should be of the same type.")
+
+        return Hplus
+
+    def H_minus_dual(self):
+        # Log mapping of the dualQuaternion
+        q1r = self.Qr
+        q1d = self.Qd
+        # Get the log mapping of the quaterion inside the DualQuaternion
+        H_r_minus = q1r.H_minus()
+        H_d_minus = q1d.H_minus()
+
+        if isinstance(q1r.get, np.ndarray) and isinstance(q1d.get, np.ndarray):  # Use Vector directly without parentheses
+            None
+            # Get translation of the dual quaternion
+        elif isinstance(q1r.get, cs.MX) and isinstance(q1d.get, cs.MX):
+            # Get translation of the dual quaternion
+            zeros = cs.SX.zeros(4, 4)
+            Hminus = cs.vertcat(cs.horzcat(H_r_minus, zeros),
+                        cs.horzcat(H_d_minus, H_r_minus))
+        elif isinstance(q1r.get, cs.SX) and isinstance(q1d.get, cs.SX):
+            # Get translation of the dual quaternion
+            zeros = cs.SX.zeros(4, 4)
+            Hminus = cs.vertcat(cs.horzcat(H_r_minus, zeros),
+                        cs.horzcat(H_d_minus, H_r_minus))
+        else:
+            raise TypeError("The elements of both Dualquaternions should be of the same type.")
+        return Hminus

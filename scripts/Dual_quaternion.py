@@ -19,16 +19,16 @@ def reference(t, ts):
     v1 = np.zeros((4, t.shape[0]))
     v1p = np.zeros((4, t.shape[0]))
 
-    #v1[1, :] = -4*0.5*np.sin(0.5*t)
-    #v1[2, :] = 4*0.5*np.cos(0.5*t)
-    #v1[3, :] = 0.0
+    v1[1, :] = -4*0.5*np.sin(0.5*t)
+    v1[2, :] = 4*0.5*np.cos(0.5*t)
+    v1[3, :] = 0.0
     #
     #v1p[1, :] = -4*0.5*0.5*np.cos(0.5*t)
     #v1p[2, :] = -4*0.5*0.5*np.sin(0.5*t)
 
-    v1[1, :] = 0.1
-    v1[2, :] = 0.0
-    v1[3, :] = 0.0
+    #v1[1, :] = 0.5
+    #v1[2, :] = 0.0
+    #v1[3, :] = 0.0
 
     # Linear accelerations
     v1p[1, :] = 0.0
@@ -44,7 +44,7 @@ def reference(t, ts):
     #theta_p[0] = 0
 
     # Update angular velocities
-    w1[1, :] = 1.0
+    w1[1, :] = 0.5
     w1[2, :] = 0.0
     w1[3, :] = 0.0
 
@@ -245,7 +245,7 @@ def control_law(qd, q, kp, wd, vd):
     dual_velocity_d = DualQuaternion_body(q_real = Quaternion(q = wd), q_dual = Quaternion(q = vd))
     
     U = -2*q_e_ln.vector_dot_product(kp) + q_e_c * dual_velocity_d * q_e
-    return U, q_e_ln
+    return U, q_e_ln, q_e.ln_control()
 
 def main(odom_pub_1, odom_pub_2):
     # Sample Time Defintion
@@ -256,7 +256,7 @@ def main(odom_pub_1, odom_pub_2):
     t = np.arange(0, t_f + sample_time, sample_time)
     
     # Frequency of the simulation
-    hz = int(1/sample_time)
+    hz = int(1/(sample_time))
     loop_rate = rospy.Rate(hz)
 
     # Message Ros
@@ -266,7 +266,7 @@ def main(odom_pub_1, odom_pub_2):
     theta1 = 3.81
     n1 = np.array([0.4896, 0.2032, 0.8480])
     q1 = np.hstack([np.cos(theta1 / 2), np.sin(theta1 / 2) * np.array(n1)])
-    t1 = np.array([0.0, 2.0, 2.0, -3.0])
+    t1 = np.array([0.0, 2.0, 2.0, 3.0])
 
     Q2_data, wd, vd = reference(t, sample_time)
 
@@ -285,8 +285,8 @@ def main(odom_pub_1, odom_pub_2):
     v1 = np.zeros((4, t.shape[0]))
 
     # Control gains
-    angular_gain = np.hstack([0.0, 1, 1, 1])
-    trans_gain = np.array([0, 1., 1., 1.])
+    angular_gain = np.hstack([0.0, 2, 2, 2])
+    trans_gain = np.array([0, 2., 2., 2.])
 
     # Control Gain represented as a DualQuaternion
     K = DualQuaternion_body(q_real = Quaternion(q = angular_gain), q_dual = Quaternion(q = trans_gain))
@@ -306,11 +306,11 @@ def main(odom_pub_1, odom_pub_2):
         Q2 = DualQuaternion_body.from_pose(quat = Q2_data[0:4, k], trans = Q2_data[4:8, k])
         #Q2_aux = DualQuaternion_body(q_real = Q2.get_real, q_dual = Q2.get_dual)
 
-        # Control Law using Dualquaternions
-        U, qe_ln = control_law(Q2, Q1, K, wd[:, k], vd[:, k])
+
+        U, qe_ln, q_e_ln = control_law(Q2, Q1, K, wd[:, k], vd[:, k])
 
         # Norm of the Dualquaternion Error
-        norm_q, norm_t = qe_ln.norm_dual_control
+        norm_q, norm_t = q_e_ln.norm_dual_control
         norm_quat[:, k] = norm_q
         norm_trans[:, k] = norm_t
 

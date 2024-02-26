@@ -55,7 +55,7 @@ def reference(t, ts):
     #q1 = np.hstack([r_q[3], r_q[0], r_q[1], r_q[2]])
     n = np.array([0.0, 0.0, 1.0])
     q1 = np.hstack([np.cos(theta / 2), np.sin(theta / 2) * np.array(n)])
-    t1 = np.array([0.0, 2.0, -2.0, 1.0])
+    t1 = np.array([0.0, 2.0, -2.0, 0.0])
 
     # Init DualQuaternion
     Q1 = DualQuaternion.from_pose(quat = q1, trans = t1)
@@ -88,8 +88,8 @@ def reference(t, ts):
         w_quat_s = Q1_quat * w_quat * Q1_quat.conjugate()
         w_quat_s_data = w_quat_s.get[:, 0]
         # Compute dual velocity
-        #dual_velocity_values = dual_velocity(w_quat_s_data, v1[:, k], Q1)
-        dual_velocity_values = dual_velocity(w1[:, k], v1[:, k], Q1)
+        dual_velocity_values = dual_velocity(w_quat_s_data, v1[:, k], Q1)
+        #dual_velocity_values = dual_velocity(w1[:, k], v1[:, k], Q1)
         w1_dual_data[:, k] = dual_velocity_values.get_real.get[:, 0]
         v1_dual_data[:, k] = dual_velocity_values.get_dual.get[:, 0]
 
@@ -151,6 +151,7 @@ def quatdot(quat, omega):
 
     aux_dual = DualQuaternion(q_real = aux_1, q_dual = aux_2)
 
+    #q_dot = (1/2)*(omega * quat) + aux_dual
     q_dot = (1/2)*(omega * quat) + aux_dual
     return q_dot
 
@@ -249,17 +250,17 @@ def main(odom_pub_1, odom_pub_2):
     t = np.arange(0, t_f + sample_time, sample_time)
     
     # Frequency of the simulation
-    hz = int(1/sample_time)
+    hz = int(1/(sample_time))
     loop_rate = rospy.Rate(hz)
 
     # Message Ros
     rospy.loginfo_once("DualQuaternion.....")
 
     # Defining of the vectors using casadi
-    theta1 = ca.SX([ca.pi/2])
+    theta1 = ca.SX([-ca.pi/2])
     n1 = ca.SX([0.0, 0.0, 1.0])
     q1 = ca.vertcat(ca.cos(theta1/2), ca.sin(theta1/2)@n1)
-    t1 = ca.SX([0.0, 2.0, 2.0, -3.0])
+    t1 = ca.SX([0.0, -5.0, 2.0, 0.0])
 
     # Get Trajectory
     Q2_data, wd, vd, Q2_data_i = reference(t, sample_time)
@@ -297,10 +298,12 @@ def main(odom_pub_1, odom_pub_2):
         tic = rospy.get_time()
         # Set Desired Reference as DualQuaternion
         Q2 = DualQuaternion.from_pose(quat = Q2_data[0:4, k], trans = Q2_data[4:8, k])
+        qe = Q1 * Q2.conjugate()
 
 
         # Control Law
         U, qe_ln, pe_ln, q_e_ln = control_law(Q2, Q1, K, wd[:, k], vd[:, k])
+        print(U.get[:, 0])
 
         # Norm of the Dualquaternion Error
         norm_q, norm_t = q_e_ln.norm_dual_control
@@ -322,7 +325,7 @@ def main(odom_pub_1, odom_pub_2):
         send_odometry(quat_2_msg, odom_pub_2)
 
         # System evolution
-        Q1 = f_rk4(Q1, U, sample_time)
+        #Q1 = f_rk4(Q1, U, sample_time)
 
         # Save information
         Q1_data[0:4, k +1] = Q1.get_quat.get[:, 0]

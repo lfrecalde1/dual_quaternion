@@ -549,30 +549,29 @@ class Quaternion():
         elif isinstance(q, cs.MX):
             qw = q[0, 0]
             angle = cs.atan2(norm, qw)
-            if  cs.fabs(angle) > 2.22e-15:
-                x = q[1, 0] / norm
-                y = q[2, 0] / norm
-                z = q[3, 0] / norm
-            else:
-                angle = 0.0
-                x = 0.0
-                y = 0.0
-                z = 1.0
-            result = cs.vertcat(angle, x, y, z)
+            # Define conditions
+            condition1 = cs.fabs(angle) > 2.22e-15
+
+            # Define expressions for each condition
+            expr1 =  cs.vertcat(angle, q[1, 0]/norm, q[2, 0]/norm, q[3, 0]/norm)
+            expr2 = cs.vertcat(angle, 0.0, 0.0, 1.0)
+
+            # Nested if_else to implement multiple branches
+            result = cs.if_else(condition1, expr1, expr2) 
             return result
+
         elif isinstance(q, cs.SX):
             qw = q[0, 0]
             angle = cs.atan2(norm, qw)
-            if  cs.fabs(angle) > 2.22e-15:
-                x = q[1, 0] / norm
-                y = q[2, 0] / norm
-                z = q[3, 0] / norm
-            else:
-                angle = 0.0
-                x = 0.0
-                y = 0.0
-                z = 1.0
-            result = cs.vertcat(angle, x, y, z)
+            # Define conditions
+            condition1 = cs.fabs(angle) > 2.22e-15
+
+            # Define expressions for each condition
+            expr1 =  cs.vertcat(angle, q[1, 0]/norm, q[2, 0]/norm, q[3, 0]/norm)
+            expr2 = cs.vertcat(angle, 0.0, 0.0, 1.0)
+
+            # Nested if_else to implement multiple branches
+            result = cs.if_else(condition1, expr1, expr2) 
             return result
         else:
             raise TypeError("Internal problem with the definition of the Quaternion, it should be a np.array, cs.MX or cs.SX.")
