@@ -311,6 +311,8 @@ def main(odom_pub_1, odom_pub_2):
     for k in range(0, t.shape[0]):
         tic = rospy.get_time()
         # Update Desired Quaaternion
+        aux_H = Q1.H_plus_dual()
+        print(aux_H.shape)
         Q2 = DualQuaternion_body.from_pose(quat = Q2_data[0:4, k], trans = Q2_data[4:8, k])
         #Q2_aux = DualQuaternion_body(q_real = Q2.get_real, q_dual = Q2.get_dual)
 

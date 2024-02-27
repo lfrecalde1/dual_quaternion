@@ -804,20 +804,23 @@ class DualQuaternion():
         else:
             raise TypeError("Vector Dot Product only defined for DualQuaternions")
 
+    @property
     def H_plus_dual(self):
         # Log mapping of the dualQuaternion
         q1r = self.Qr
         q1d = self.Qd
         # Get the log mapping of the quaterion inside the DualQuaternion
-        H_r_plus = q1r.H_plus()
-        H_d_plus = q1d.H_plus()
+        H_r_plus = q1r.H_plus
+        H_d_plus = q1d.H_plus
 
         if isinstance(q1r.get, np.ndarray) and isinstance(q1d.get, np.ndarray):  # Use Vector directly without parentheses
-            None
+            zeros = np.zeros((4, 4))
+            Hplus = np.block([[H_r_plus, zeros],
+                               [H_d_plus, H_r_plus]])
             # Get translation of the dual quaternion
         elif isinstance(q1r.get, cs.MX) and isinstance(q1d.get, cs.MX):
             # Get translation of the dual quaternion
-            zeros = cs.SX.zeros(4, 4)
+            zeros = cs.MX.zeros(4, 4)
             Hplus = cs.vertcat(cs.horzcat(H_r_plus, zeros),
                         cs.horzcat(H_d_plus, H_r_plus))
         elif isinstance(q1r.get, cs.SX) and isinstance(q1d.get, cs.SX):
@@ -830,20 +833,23 @@ class DualQuaternion():
 
         return Hplus
 
+    @property
     def H_minus_dual(self):
         # Log mapping of the dualQuaternion
         q1r = self.Qr
         q1d = self.Qd
         # Get the log mapping of the quaterion inside the DualQuaternion
-        H_r_minus = q1r.H_minus()
-        H_d_minus = q1d.H_minus()
+        H_r_minus = q1r.H_minus
+        H_d_minus = q1d.H_minus
 
         if isinstance(q1r.get, np.ndarray) and isinstance(q1d.get, np.ndarray):  # Use Vector directly without parentheses
-            None
+            zeros = np.zeros((4, 4))
+            Hminus = np.block([[H_r_minus, zeros],
+                               [H_d_minus, H_r_minus]])
             # Get translation of the dual quaternion
         elif isinstance(q1r.get, cs.MX) and isinstance(q1d.get, cs.MX):
             # Get translation of the dual quaternion
-            zeros = cs.SX.zeros(4, 4)
+            zeros = cs.MX.zeros(4, 4)
             Hminus = cs.vertcat(cs.horzcat(H_r_minus, zeros),
                         cs.horzcat(H_d_minus, H_r_minus))
         elif isinstance(q1r.get, cs.SX) and isinstance(q1d.get, cs.SX):
