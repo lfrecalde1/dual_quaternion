@@ -615,7 +615,7 @@ class DualQuaternion():
 
             # Dual Part
             s = trans/p
-            ps = (1/2) * p * s
+            ps = (1/2) * trans
             result_ps = np.vstack((0.0, ps[0], ps[1], ps[2]))
 
             # Real Part
@@ -633,7 +633,7 @@ class DualQuaternion():
 
             # Dual Part
             s = trans/p
-            ps = (1/2) * p * s
+            ps = (1/2) * trans
             result_ps = cs.vertcat(0.0, ps[0, 0], ps[1, 0], ps[2, 0])
 
             # Real Part
@@ -649,7 +649,7 @@ class DualQuaternion():
 
             # Dual Part
             s = trans/p
-            ps = (1/2) * p * s
+            ps = (1/2) * trans
             result_ps = cs.vertcat(0.0, ps[0, 0], ps[1, 0], ps[2, 0])
 
             # Real Part
@@ -681,7 +681,7 @@ class DualQuaternion():
 
             # Dual Part
             s = trans/p
-            ps = (1/2) * p * s
+            ps = (1/2) * trans
             result_ps = np.vstack((0.0, ps[0], ps[1], ps[2]))
 
             # Real Part
@@ -699,7 +699,7 @@ class DualQuaternion():
 
             # Dual Part
             s = trans/p
-            ps = (1/2) * p * s
+            ps = (1/2) * trans
             result_ps = cs.vertcat(0.0, ps[0, 0], ps[1, 0], ps[2, 0])
 
             # Real Part
@@ -715,7 +715,7 @@ class DualQuaternion():
 
             # Dual Part
             s = trans/p
-            ps = (1/2) * p * s
+            ps = (1/2) * trans
             result_ps = cs.vertcat(0.0, ps[0, 0], ps[1, 0], ps[2, 0])
 
             # Real Part

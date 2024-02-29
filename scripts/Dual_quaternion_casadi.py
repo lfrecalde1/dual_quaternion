@@ -25,7 +25,7 @@ def reference(t, ts):
     #v1p[1, :] = -4*0.5*0.5*np.cos(0.5*t)
     #v1p[2, :] = -4*0.5*0.5*np.sin(0.5*t)
 
-    v1[1, :] = 0.1
+    v1[1, :] = 0.0
     v1[2, :] = 0.0
     v1[3, :] = 0.0
 
@@ -45,7 +45,7 @@ def reference(t, ts):
     # Update angular velocities
     w1[1, :] = 0.0
     w1[2, :] = 0.0
-    w1[3, :] = 0.5
+    w1[3, :] = 0.0
 
     #Compute initial quaternion based on the defined trajectory
     #r = R.from_euler('zyx',[theta[0], 0, 0], degrees=False)
