@@ -558,6 +558,7 @@ class Quaternion():
 
             # Nested if_else to implement multiple branches
             result = cs.if_else(condition1, expr1, expr2) 
+
             return result
 
         elif isinstance(q, cs.SX):
@@ -666,11 +667,13 @@ class Quaternion():
             return Quaternion(q = result)
 
         elif isinstance(p, cs.MX) and isinstance(q, cs.MX):
-            product = cs.vertcat(0.0, q[2]*p[3] - q[3]*p[2], q[3]*p[1] - q[1]*p[3], q[1]*p[2] - q[2]*p[1])
+            aux = cs.MX([0])
+            product = cs.vertcat(aux[0], q[2]*p[3] - q[3]*p[2], q[3]*p[1] - q[1]*p[3], q[1]*p[2] - q[2]*p[1])
             return Quaternion(q = product)
 
         elif isinstance(p, cs.SX) and isinstance(q, cs.SX):
-            product = cs.vertcat(0.0, q[2]*p[3] - q[3]*p[2], q[3]*p[1] - q[1]*p[3], q[1]*p[2] - q[2]*p[1])
+            aux = cs.SX([0])
+            product = cs.vertcat(aux[0], q[2]*p[3] - q[3]*p[2], q[3]*p[1] - q[1]*p[3], q[1]*p[2] - q[2]*p[1])
             return Quaternion(q = product)
         else:
             raise TypeError("The elements of both quaternions should be of the same type.")
