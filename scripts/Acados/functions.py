@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from dual_quaternion import Quaternion
 from dual_quaternion import DualQuaternion_body
 from casadi import Function
+from casadi import jacobian
 
 # Defining Dual Quaternion informtatio
 qw_1 = ca.MX.sym('qw_1', 1, 1)
@@ -99,6 +100,12 @@ Kp =  DualQuaternion_body(q_real= Quaternion(q = Kr), q_dual= Quaternion(q= Kd))
 
 # DualQuaternion from axis and position
 Q1_pose =  DualQuaternion_body.from_pose(quat = q_1_aux, trans = t_1_aux)
+
+# Compute short path to the desired quaternion
+q_error = ca.MX.sym('q_error', 8, 1)
+
+# Define the function
+f_error = ca.Function('f_error', [q_error], [ca.if_else(q_error[0, 0] >= 0, q_error, -q_error)])
 
 def dual_quat_casadi():
     values = Q1.get[:, 0]
@@ -208,17 +215,11 @@ def velocities_body_from_twist_casadi(dual_velocity = W1d, Q_current = Q1d, W_da
 def dual_control_casadi(qd = Q1d, wd = W1d, q =Q1, kp = Kp, qd_data = dual_1d_data, wd_data = w_1d_data, q_data = dual_1_data, kp_data = k_data):
 
     q_e_aux = qd.conjugate() * q
-    
-    condition1 = q_e_aux.get[0, 0] > 0.0
 
-    # Define expressions for each condition
-    expr1 =  q_e_aux.get[:, 0]
-    expr2 = -q_e_aux.get[:, 0]
-
-    # Nested if_else to implement multiple branches
-    q_error = ca.if_else(condition1, expr1, expr2) 
+    q_error = f_error(q_e_aux.get[:, 0])
 
     q_e = DualQuaternion_body(q_real=Quaternion(q = q_error[0:4, 0]), q_dual= Quaternion(q = q_error[4:8, 0]))
+
     # Apply log mapping
     q_e_ln = q_e.ln_control()
 
@@ -228,7 +229,7 @@ def dual_control_casadi(qd = Q1d, wd = W1d, q =Q1, kp = Kp, qd_data = dual_1d_da
     # Control Law 
     U = -2*q_e_ln.vector_dot_product(kp) + q_e_c * wd * q_e
     aux = U.get[:, 0]
-    control_values = ca.vertcat(aux[1, 0], aux[2, 0], aux[3, 0], aux[5, 0], aux[6, 0], aux[7, 0])
+    control_values = ca.vertcat(aux[0, 0], aux[1, 0], aux[2, 0], aux[3, 0], aux[4, 0], aux[5, 0], aux[6, 0], aux[7, 0])
 
     f_control = Function('f_control', [qd_data, wd_data, q_data, kp_data], [control_values])
     return f_control
@@ -251,6 +252,10 @@ def lyapunov_casadi(qd = Q1d, q =Q1, qd_data = dual_1d_data, q_data = dual_1_dat
     q_e_ln = q_e.ln_control()
 
     P =  1*ca.MX.eye(8)
+    P[0, 0] = 1.5
+    P[1, 1] = 1.5
+    P[2, 2] = 1.5
+    P[3, 3] = 1.5
 
     q_e_ln_data = q_e_ln.get[:, 0]
 
@@ -259,3 +264,145 @@ def lyapunov_casadi(qd = Q1d, q =Q1, qd_data = dual_1d_data, q_data = dual_1_dat
     v = norm_lie
     v_f = Function('v_f', [qd_data, q_data], [v])
     return v_f
+
+def cost_casadi(qd = Q1d, q =Q1, qd_data = dual_1d_data, q_data = dual_1_data):
+    #  Control Error Split Values
+    q_e_aux = qd.conjugate() * q
+    
+    condition1 = q_e_aux.get[0, 0] > 0.0
+
+    # Define expressions for each condition
+    expr1 =  q_e_aux.get[:, 0]
+    expr2 = -q_e_aux.get[:, 0]
+
+    # Nested if_else to implement multiple branches
+    q_error = ca.if_else(condition1, expr1, expr2) 
+
+    q_e = DualQuaternion_body(q_real=Quaternion(q = q_error[0:4, 0]), q_dual= Quaternion(q = q_error[4:8, 0]))
+
+    # Sux variable in roder to get a norm
+    q_3_aux = ca.MX([1.0, 0.0, 0.0, 0.0])
+    t_3_aux = ca.MX([0.0, 0.0, 0.0, 0.0])
+    Q3_pose =  DualQuaternion_body.from_pose(quat = q_3_aux, trans = t_3_aux)
+    
+    q_e_ln = Q3_pose - q_e
+
+    P =  1*ca.MX.eye(8)
+
+    q_e_ln_data = q_e_ln.get[:, 0]
+
+    norm_lie = q_e_ln_data.T@P@q_e_ln_data
+    
+    v = norm_lie
+
+    v_f = Function('v_f', [qd_data, q_data], [v])
+    return v_f
+
+def lyapunov_dot_casadi(qd = Q1d, q =Q1, qd_data = dual_1d_data, q_data = dual_1_data):
+    #  Control Error Split Values
+    q_e_aux = qd.conjugate() * q
+    
+    condition1 = q_e_aux.get[0, 0] > 0.0
+
+    # Define expressions for each condition
+    expr1 =  q_e_aux.get[:, 0]
+    expr2 = -q_e_aux.get[:, 0]
+
+    # Nested if_else to implement multiple branches
+    q_error = ca.if_else(condition1, expr1, expr2) 
+
+    q_e = DualQuaternion_body(q_real=Quaternion(q = q_error[0:4, 0]), q_dual= Quaternion(q = q_error[4:8, 0]))
+
+    q_e_ln = q_e.ln_control()
+
+    P =  1*ca.MX.eye(8)
+
+    q_e_ln_data = q_e_ln.get[:, 0]
+
+    norm_lie = q_e_ln_data.T@P@q_e_ln_data
+
+    v_jacobian = jacobian(norm_lie, q.get[:, 0])
+    
+    v_p_f = Function('v_p_f', [qd_data, q_data], [v_jacobian])
+    return v_p_f
+
+def jacobian_casadi(qd = Q1d, qd_data = dual_1d_data):
+    H = qd.H_plus_dual
+    H = 1/2 * H
+    f_J = Function('f_J', [qd_data], [H])
+    return f_J
+
+
+def system_evolution_casadi(N, ts):
+    # Shape of the system
+    n_states = dual_1d_data.numel()
+
+    # Shape of the velocities
+
+    n_controls = w_1d_data.numel()
+
+    X = ca.MX.zeros(n_states, N + 1)
+    U = ca.MX.sym('U', n_controls, N)
+    P = ca.MX.sym('P', n_states)
+
+    # Creatin dynamics function
+    f = f_rk4_casadi()
+
+    X[:, 0] = P
+
+    for k in range(N):
+        st = X[:, k]
+        con = U[:,k]
+        X[:,k+1] = f(st, con, ts)
+
+    f_prediction = ca.Function('f_prediction', [P, U], [X])
+
+    return f_prediction
+
+def optimization_casadi(N, ts):
+    # Shape of the system
+    n_states = dual_1d_data.numel()
+
+    # Shape of the velocities
+
+    n_controls = w_1d_data.numel()
+
+    X = ca.MX.zeros(n_states, N + 1)
+    U = ca.MX.sym('U', n_controls, N)
+    P = ca.MX.sym('P', n_states + n_states)
+
+    # Creatin dynamics function
+    f = f_rk4_casadi()
+    lyapunov_cost =  lyapunov_casadi()
+
+    cost_fn = 0  # cost function
+    X[:, 0] = P[:n_states]  # constraints in the equation
+
+    for k in range(N):
+        st = X[:, k]
+        con = U[:, k]
+        error = 10*lyapunov_cost(P[n_states:], st)
+        cost_fn = cost_fn + error + (0.01)*(con.T@con)
+        X[:,k+1] = f(st, con, ts)
+
+    # general Vector optimization
+    OPT_variables = U.reshape((-1, 1))
+
+    nlp_prob = {'f': cost_fn,'x': OPT_variables, 'p': P}
+    opts = {'ipopt': {'max_iter': 100, 'print_level': 1, 'acceptable_tol': 1e-8, 'acceptable_obj_change_tol': 1e-6},'print_time': 1}
+    solver = ca.nlpsol('solver', 'ipopt', nlp_prob, opts)
+    
+
+    # Set bounds for control inputs
+    lbx = -3 * ca.DM.ones((n_controls * N, 1))  # Lower bounds
+    ubx = 3 * ca.DM.ones((n_controls * N, 1))   # Upper bounds
+
+    args = {
+        'lbx': lbx,
+        'ubx': ubx
+    }
+
+    return solver, args
+
+    
+    
