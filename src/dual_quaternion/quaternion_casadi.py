@@ -522,7 +522,7 @@ class Quaternion():
         if isinstance(q, np.ndarray):  # Use Vector directly without parentheses
             qw = q[0, 0]
             angle = np.arctan2(norm, qw)
-            if  np.abs(angle) > 2.22e-15:
+            if  norm > 0.0:
                 x = q[1, 0] / norm
                 y = q[2, 0] / norm
                 z = q[3, 0] / norm
@@ -550,7 +550,7 @@ class Quaternion():
             qw = q[0, 0]
             angle = cs.atan2(norm, qw)
             # Define conditions
-            condition1 = cs.fabs(angle) > 2.22e-15
+            condition1 = norm > 0.0
 
             # Define expressions for each condition
             expr1 =  cs.vertcat(angle, q[1, 0]/norm, q[2, 0]/norm, q[3, 0]/norm)
@@ -565,7 +565,7 @@ class Quaternion():
             qw = q[0, 0]
             angle = cs.atan2(norm, qw)
             # Define conditions
-            condition1 = cs.fabs(angle) > 2.22e-15
+            condition1 = norm > 0.0
 
             # Define expressions for each condition
             expr1 =  cs.vertcat(angle, q[1, 0]/norm, q[2, 0]/norm, q[3, 0]/norm)

@@ -36,7 +36,7 @@ def reference(t, ts):
 
     # Compute angular displacement
     #theta = np.arctan2(v1[2,:], v1[1, :])
-    theta = -np.pi/2
+    theta = np.pi/2
 
     # Compute angular velocity
     #theta_p = (1. / ((v1[2, :] / v1[1, :]) ** 2 + 1)) * ((v1p[2, :] * v1[1, :] - v1[2, :] * v1p[1, :]) / v1[1, :] ** 2)
@@ -55,7 +55,7 @@ def reference(t, ts):
     #q1 = np.hstack([r_q[3], r_q[0], r_q[1], r_q[2]])
     n = np.array([0.0, 0.0, 1.0])
     q1 = np.hstack([np.cos(theta / 2), np.sin(theta / 2) * np.array(n)])
-    t1 = np.array([0.0, -5.0, 2.0, 0.0])
+    t1 = np.array([0.0, -10.0, 10.0, 0.0])
 
     # Init DualQuaternion
     Q1 = DualQuaternion.from_pose(quat = q1, trans = t1)
@@ -257,7 +257,7 @@ def main(odom_pub_1, odom_pub_2):
     rospy.loginfo_once("DualQuaternion.....")
 
     # Defining of the vectors using casadi
-    theta1 = ca.SX([ca.pi/2])
+    theta1 = ca.SX([-ca.pi])
     n1 = ca.SX([0.0, 0.0, 1.0])
     q1 = ca.vertcat(ca.cos(theta1/2), ca.sin(theta1/2)@n1)
     t1 = ca.SX([0.0, 2.0, -2.0, 0.0])
