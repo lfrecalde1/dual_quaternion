@@ -732,7 +732,7 @@ class DualQuaternion_body():
         q1d = self.Qd
 
         if isinstance(q1r.get, np.ndarray) and isinstance(q1d.get, np.ndarray):  # Use Vector directly without parentheses
-            q1r_angle_axis = q1r.angle_axis
+            q1r_angle_axis = q1r.angle_axis()
             # Get translation of the dual quaternion
             trans = self.get_trans
 
@@ -744,7 +744,7 @@ class DualQuaternion_body():
 
         elif isinstance(q1r.get, cs.MX) and isinstance(q1d.get, cs.MX):
             # Get the log mapping of the quaterion inside the DualQuaternion
-            q1r_angle_axis = q1r.angle_axis
+            q1r_angle_axis = q1r.angle_axis()
             # Get translation of the dual quaternion
             trans = self.get_trans
 
@@ -755,7 +755,7 @@ class DualQuaternion_body():
             Dual_ln = DualQuaternion_body(q_real=Quaternion(q = q1r_angle_axis), q_dual= Quaternion(q = result))
         elif isinstance(q1r.get, cs.SX) and isinstance(q1d.get, cs.SX):
             # Get the log mapping of the quaterion inside the DualQuaternion
-            q1r_angle_axis = q1r.angle_axis
+            q1r_angle_axis = q1r.angle_axis()
             # Get translation of the dual quaternion
             trans = self.get_trans
 

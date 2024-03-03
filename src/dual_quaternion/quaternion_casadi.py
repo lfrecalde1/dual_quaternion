@@ -515,7 +515,7 @@ class Quaternion():
                 self.q = q
             else:
                 raise TypeError("quaternion must be an ndarray or Casadi MX  SX")
-    @property
+    #@property
     def angle_axis(self):
         q = self.q
         norm = self.norm
@@ -547,32 +547,38 @@ class Quaternion():
             #result = np.vstack((angle, x, y, z))
             #return result
         elif isinstance(q, cs.MX):
-            qw = q[0, 0]
-            angle = cs.atan2(norm, qw)
+            #qw = q[0, 0]
+            #angle = cs.atan2(norm, qw)
             # Define conditions
-            condition1 = norm > 0.0
+            #condition1 = norm > 0.0
 
             # Define expressions for each condition
-            expr1 =  cs.vertcat(angle, q[1, 0]/norm, q[2, 0]/norm, q[3, 0]/norm)
-            expr2 = cs.vertcat(angle, 0.0, 0.0, 1.0)
+            #expr1 =  cs.vertcat(angle, q[1, 0]/norm, q[2, 0]/norm, q[3, 0]/norm)
+            #expr2 = cs.vertcat(angle, 0.0, 0.0, 1.0)
 
             # Nested if_else to implement multiple branches
-            result = cs.if_else(condition1, expr1, expr2) 
-
+            #result = cs.if_else(condition1, expr1, expr2) 
+            norm = cs.norm_2(q[1:4] + cs.np.finfo(np.float64).eps)
+            angle = cs.atan2(norm, q[0])
+            expr1 =  cs.vertcat(angle, q[1, 0]/norm, q[2, 0]/norm, q[3, 0]/norm)
+            result = expr1
             return result
-
         elif isinstance(q, cs.SX):
-            qw = q[0, 0]
-            angle = cs.atan2(norm, qw)
+            #qw = q[0, 0]
+            #angle = cs.atan2(norm, qw)
             # Define conditions
-            condition1 = norm > 0.0
+            #condition1 = norm > 0.0
 
             # Define expressions for each condition
-            expr1 =  cs.vertcat(angle, q[1, 0]/norm, q[2, 0]/norm, q[3, 0]/norm)
-            expr2 = cs.vertcat(angle, 0.0, 0.0, 1.0)
+            #expr1 =  cs.vertcat(angle, q[1, 0]/norm, q[2, 0]/norm, q[3, 0]/norm)
+            #expr2 = cs.vertcat(angle, 0.0, 0.0, 1.0)
 
             # Nested if_else to implement multiple branches
-            result = cs.if_else(condition1, expr1, expr2) 
+            #result = cs.if_else(condition1, expr1, expr2) 
+            norm = cs.norm_2(q[1:4] + cs.np.finfo(np.float64).eps)
+            angle = cs.atan2(norm, q[0])
+            expr1 =  cs.vertcat(angle, q[1, 0]/norm, q[2, 0]/norm, q[3, 0]/norm)
+            result = expr1
             return result
         else:
             raise TypeError("Internal problem with the definition of the Quaternion, it should be a np.array, cs.MX or cs.SX.")
@@ -580,7 +586,7 @@ class Quaternion():
     def ln(self):
         # Log mapping
         q = self.q
-        angle_axis_aux = self.angle_axis
+        angle_axis_aux = self.angle_axis()
         if isinstance(q, np.ndarray):  # Use Vector directly without parentheses
             angle = angle_axis_aux[0, 0]
             x = angle_axis_aux[1, 0]
