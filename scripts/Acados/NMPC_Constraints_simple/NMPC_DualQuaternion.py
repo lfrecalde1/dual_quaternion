@@ -85,7 +85,7 @@ def main(odom_pub_1, odom_pub_2):
 
     # Time defintion aux variable
     t = np.arange(0, t_f + sample_time, sample_time)
-    N = 3
+    N = 4
 
     # Function of the prediction behavior
     system_prediction = system_evolution_casadi(t.shape[0], sample_time)
@@ -119,13 +119,13 @@ def main(odom_pub_1, odom_pub_2):
     dual_1 = dualquat_from_pose(theta1, nx, ny,  nz, tx1, ty1, tz1)
 
     # Defining the desired dualquaternion
-    theta1_d = 0.0
+    theta1_d = np.pi/2
     nx_d = 0.0
     ny_d = 0.0
     nz_d = 1.0
-    tx1_d = -0.0
-    ty1_d = 0.0
-    tz1_d = 0.0
+    tx1_d = -2
+    ty1_d = 2
+    tz1_d = 1.0
 
     # Initial Dualquaternion
     dual_2 = dualquat_from_pose(theta1_d, nx_d, ny_d,  nz_d, tx1_d, ty1_d, tz1_d)

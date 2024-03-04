@@ -524,8 +524,16 @@ def optimization_casadi(N, ts):
         'p': P
         }
 
-    opts = {'ipopt': {'max_iter': 100, 'print_level': 1, 'acceptable_tol': 1e-2, 'acceptable_obj_change_tol': 1e-2},'print_time': 1}
-    solver = ca.nlpsol('solver', 'ipopt', nlp_prob, opts)
+    opts = {
+    'qpsol': 'qpoases',  # Specifies the QP solver to be used by SQPMethod. Alternatives include 'osqp', 'qpoases', etc.
+    'qpsol_options': {    # Options for the QP solver
+        'printLevel': 'none'  # For qpoases, controls the verbosity. Adjust according to the QP solver documentation.
+    },
+    'print_time': 0,       # Controls printing of execution time (0 for no printing)
+    'print_iteration': 0,  # Controls printing of iteration information (0 for no printing)
+    'max_iter': 100,       # Maximum number of iterations
+    }
+    solver = ca.nlpsol('sqp_solver', 'sqpmethod', nlp_prob, opts)
     
 
     # Set bounds for control inputs
