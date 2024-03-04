@@ -9,8 +9,8 @@ from scipy.spatial.transform import Rotation as R
 from scipy import sparse
 from nav_msgs.msg import Odometry
 from functions import dualquat_from_pose_casadi, dualquat_trans_casadi, dualquat_quat_casadi
-from functions import f_rk4_casadi, dual_velocity_casadi, dual_velocity_body_casadi, velocities_body_from_twist_casadi
-from functions import dual_quat_casadi, dual_control_casadi, lyapunov_casadi, lyapunov_dot_casadi
+from functions import f_rk4_casadi_simple, dual_velocity_casadi, dual_velocity_body_casadi, velocities_body_from_twist_casadi
+from functions import dual_quat_casadi, dual_control_casadi, lyapunov_casadi_simple, lyapunov_dot_casadi
 from functions import jacobian_casadi, system_evolution_casadi, optimization_casadi
 import osqp
 
@@ -19,12 +19,12 @@ dual_quat = dual_quat_casadi()
 dualquat_from_pose = dualquat_from_pose_casadi()
 get_trans = dualquat_trans_casadi()
 get_quat = dualquat_quat_casadi()
-f_rk4 = f_rk4_casadi()
+f_rk4 = f_rk4_casadi_simple()
 dual_twist = dual_velocity_casadi()
 velocity_body = dual_velocity_body_casadi()
 velocity_body_from_twist = velocities_body_from_twist_casadi()
 kinematics_control = dual_control_casadi()
-lyapunov_lie = lyapunov_casadi()
+lyapunov_lie = lyapunov_casadi_simple()
 lyapunov_dot_lie = lyapunov_dot_casadi()
 jacobian_dual = jacobian_casadi()
 
@@ -113,13 +113,13 @@ def main(odom_pub_1, odom_pub_2):
     dual_1 = dualquat_from_pose(theta1, nx, ny,  nz, tx1, ty1, tz1)
 
     # Defining the desired dualquaternion
-    theta1_d = 0.0
+    theta1_d = np.pi/2
     nx_d = 0.0
     ny_d = 0.0
     nz_d = 1.0
-    tx1_d = -0.0
-    ty1_d = 0.0
-    tz1_d = 0.0
+    tx1_d = -2
+    ty1_d = 2
+    tz1_d = 1
 
     # Initial Dualquaternion
     dual_2 = dualquat_from_pose(theta1_d, nx_d, ny_d,  nz_d, tx1_d, ty1_d, tz1_d)

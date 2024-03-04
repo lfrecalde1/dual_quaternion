@@ -21,6 +21,7 @@ d_1 = ca.vertcat(dw_1, dx_1, dy_1, dz_1)
 
 # Creating auxiliar variables
 dual_1_data = ca.vertcat(qw_1, qx_1, qy_1, qz_1, dw_1,dx_1, dy_1, dz_1)
+dual_1 = ca.vertcat(qw_1, qx_1, qy_1, qz_1, dw_1,dx_1, dy_1, dz_1)
 
 # Auxiliar values to create the dual quaternion
 theta_1_aux = ca.MX.sym('theta_1_aux', 1, 1)
@@ -286,6 +287,70 @@ def dual_control_casadi(qd = Q1d, wd = W1d, q =Q1, kp = Kp, qd_data = dual_1d_da
     f_control = Function('f_control', [qd_data, wd_data, q_data, kp_data], [control_values])
     return f_control
 
+def lyapunov_casadi_simple(qd = dual_1d, q =dual_1, qd_data = dual_1d_data, q_data = dual_1_data):
+    #  Control Error Split Values
+    qd_conjugate = ca.vertcat(qd[0, 0], -qd[1, 0], -qd[2, 0], -qd[3, 0], qd[4, 0], -qd[5, 0], -qd[6, 0], -qd[7, 0])
+    quat_data = qd_conjugate[0:4]
+    dual_data =  qd_conjugate[4:8]
+
+    H_r_plus = ca.vertcat(ca.horzcat(quat_data[0, 0], -quat_data[1, 0], -quat_data[2, 0], -quat_data[3, 0]),
+                                ca.horzcat(quat_data[1, 0], quat_data[0, 0], -quat_data[3, 0], quat_data[2, 0]),
+                                ca.horzcat(quat_data[2, 0], quat_data[3, 0], quat_data[0, 0], -quat_data[1, 0]),
+                                ca.horzcat(quat_data[3, 0], -quat_data[2, 0], quat_data[1, 0], quat_data[0, 0]))
+
+    H_d_plus = ca.vertcat(ca.horzcat(dual_data[0, 0], -dual_data[1, 0], -dual_data[2, 0], -dual_data[3, 0]),
+                                ca.horzcat(dual_data[1, 0], dual_data[0, 0], -dual_data[3, 0], dual_data[2, 0]),
+                                ca.horzcat(dual_data[2, 0], dual_data[3, 0], dual_data[0, 0], -dual_data[1, 0]),
+                                ca.horzcat(dual_data[3, 0], -dual_data[2, 0], dual_data[1, 0], dual_data[0, 0]))
+    zeros = ca.MX.zeros(4, 4)
+    Hplus = ca.vertcat(ca.horzcat(H_r_plus, zeros),
+                        ca.horzcat(H_d_plus, H_r_plus))
+
+
+    q_e_aux = Hplus @ q
+    
+    condition1 = q_e_aux[0, 0] > 0.0
+
+    # Define expressions for each condition
+    expr1 =  q_e_aux[:, 0]
+    expr2 = -q_e_aux[:, 0]
+
+    # Check shortest path
+    q_error = ca.if_else(condition1, expr1, expr2) 
+    q_error_real = q_error[0:4, 0]
+    q_error_real_c = ca.vertcat(q_error_real[0, 0], -q_error_real[1, 0], -q_error_real[2, 0], -q_error_real[3, 0])
+    q_error_dual = q_error[4:8, 0]
+
+    # Real Part
+    norm = ca.norm_2(q_error_real[1:4] + ca.np.finfo(np.float64).eps)
+    angle = ca.atan2(norm, q_error_real[0])
+
+    # Dual Part
+    H_error_real_plus = ca.vertcat(ca.horzcat(q_error_real_c[0, 0], -q_error_real_c[1, 0], -q_error_real_c[2, 0], -q_error_real_c[3, 0]),
+                                ca.horzcat(q_error_real_c[1, 0], q_error_real_c[0, 0], -q_error_real_c[3, 0], q_error_real_c[2, 0]),
+                                ca.horzcat(q_error_real_c[2, 0], q_error_real_c[3, 0], q_error_real_c[0, 0], -q_error_real_c[1, 0]),
+                                ca.horzcat(q_error_real_c[3, 0], -q_error_real_c[2, 0], q_error_real_c[1, 0], q_error_real_c[0, 0]))
+
+    trans_error = 2 * H_error_real_plus@q_error_dual
+
+    # Computing log map
+    ln_quaternion = ca.vertcat(0.0,  (1/2)*angle*q_error_real[1, 0]/norm, (1/2)*angle*q_error_real[2, 0]/norm, (1/2)*angle*q_error_real[3, 0]/norm)
+    ln_trans = ca.vertcat(0.0, (1/2)*trans_error[1, 0], (1/2)*trans_error[2, 0], (1/2)*trans_error[3, 0])
+
+    q_e_ln = ca.vertcat(ln_quaternion, ln_trans)
+
+    P =  1*ca.MX.eye(8)
+    P[0, 0] = 2
+    P[1, 1] = 2
+    P[2, 2] = 2
+    P[3, 3] = 2
+
+    norm_lie = q_e_ln.T@P@q_e_ln
+    
+    v = norm_lie
+    v_f = Function('v_f', [qd_data, q_data], [v])
+    return v_f
+
 def lyapunov_casadi(qd = Q1d, q =Q1, qd_data = dual_1d_data, q_data = dual_1_data):
     #  Control Error Split Values
     q_e_aux = qd.conjugate() * q
@@ -304,10 +369,10 @@ def lyapunov_casadi(qd = Q1d, q =Q1, qd_data = dual_1d_data, q_data = dual_1_dat
     q_e_ln = q_e.ln_control()
 
     P =  1*ca.MX.eye(8)
-    P[0, 0] = 5
-    P[1, 1] = 5
-    P[2, 2] = 5
-    P[3, 3] = 5
+    P[0, 0] = 2
+    P[1, 1] = 2
+    P[2, 2] = 2
+    P[3, 3] = 2
 
     q_e_ln_data = q_e_ln.get[:, 0]
 
@@ -424,8 +489,8 @@ def optimization_casadi(N, ts):
     P = ca.MX.sym('P', n_states + n_states)
 
     # Creatin dynamics function
-    f = f_rk4_casadi()
-    lyapunov_cost =  lyapunov_casadi()
+    f = f_rk4_casadi_simple()
+    lyapunov_cost =  lyapunov_casadi_simple()
 
     cost_fn = 0  # cost function
     X[:, 0] = P[:n_states]  # constraints in the equation
@@ -434,7 +499,7 @@ def optimization_casadi(N, ts):
         st = X[:, k]
         con = U[:, k]
         error = 2*lyapunov_cost(P[n_states:], st)
-        cost_fn = cost_fn + error + (0.02)*(con.T@con)
+        cost_fn = cost_fn + error + (0.05)*(con.T@con)
         X[:,k+1] = f(st, con, ts)
 
     # general Vector optimization
