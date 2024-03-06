@@ -56,26 +56,10 @@ def send_odometry(odom_msg, odom_pub):
     odom_pub.publish(odom_msg)
     return None
 
-def optimization_solver(state_target, state_init, u0, solver, args, n_states, n_controls, N):
-
-    args['p'] = ca.vertcat(
-            state_init,    # current state
-            state_target   # target state
-        )
-        # optimization variable current state
-    args['x0'] = ca.vertcat(ca.reshape(u0, n_controls*N, 1))
-
-    sol = solver(
-            x0=args['x0'],
-            p=args['p']
-        )
-
-    u0 = ca.reshape(sol['x'], n_controls, N)
-    return u0
 def main(odom_pub_1, odom_pub_2):
     # Sample Time Defintion
-    sample_time = 0.01
-    t_f = 20
+    sample_time = 0.05
+    t_f = 15
 
     # Time defintion aux variable
     t = np.arange(0, t_f + sample_time, sample_time)
@@ -88,6 +72,11 @@ def main(odom_pub_1, odom_pub_2):
     # Frequency of the simulation
     hz = int(1/(sample_time))
     loop_rate = rospy.Rate(hz)
+
+    t_N = 1.0
+    # Prediction Node of the NMPC formulation
+    N = np.arange(0, t_N + sample_time, sample_time)
+    N_prediction = N.shape[0]
 
     # Message Ros
     rospy.loginfo_once("DualQuaternion.....")
@@ -122,26 +111,24 @@ def main(odom_pub_1, odom_pub_2):
     # Initial Dualquaternion
     dual_2 = dualquat_from_pose(theta1_d, nx_d, ny_d,  nz_d, tx1_d, ty1_d, tz1_d)
 
-    # Control Gain
-    kp = np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0]) 
 
     # Empty Matrix
-    Q1_trans_data = np.zeros((4, t.shape[0] + 1), dtype=np.double)
-    Q1_quat_data = np.zeros((4, t.shape[0] + 1), dtype=np.double)
-    Q1_data = np.zeros((8, t.shape[0] + 1), dtype=np.double)
+    Q1_trans_data = np.zeros((4, t.shape[0] + 1 - N_prediction), dtype=np.double)
+    Q1_quat_data = np.zeros((4, t.shape[0] + 1 - N_prediction), dtype=np.double)
+    Q1_data = np.zeros((8, t.shape[0] + 1 - N_prediction), dtype=np.double)
 
     # Initial Values
     Q1_trans_data[:, 0] = np.array(get_trans(dual_1)).reshape((4, ))
     Q1_quat_data[:, 0] = np.array(get_quat(dual_1)).reshape((4, ))
     Q1_data[:, 0] = np.array(dual_1).reshape((8, ))
 
-    Velocities_data = np.zeros((6, t.shape[0]), dtype=np.double)
-    twist_velocities_data = np.zeros((6, t.shape[0]), dtype=np.double)
+    Velocities_data = np.zeros((6, t.shape[0] - N_prediction), dtype=np.double)
+    twist_velocities_data = np.zeros((6, t.shape[0] - N_prediction), dtype=np.double)
 
     # Empty Matrix
-    Q2_trans_data = np.zeros((4, t.shape[0] + 1), dtype=np.double)
-    Q2_quat_data = np.zeros((4, t.shape[0] + 1), dtype=np.double)
-    Q2_data = np.zeros((8, t.shape[0] + 1), dtype=np.double)
+    Q2_trans_data = np.zeros((4, t.shape[0] + 1 - N_prediction), dtype=np.double)
+    Q2_quat_data = np.zeros((4, t.shape[0] + 1 - N_prediction), dtype=np.double)
+    Q2_data = np.zeros((8, t.shape[0] + 1 - N_prediction), dtype=np.double)
 
     # Initial Values
     Q2_trans_data[:, 0] = np.array(get_trans(dual_2)).reshape((4, ))
@@ -149,8 +136,8 @@ def main(odom_pub_1, odom_pub_2):
     Q2_data[:, 0] = np.array(dual_2).reshape((8, ))
 
     # Empty Values Lyapunov
-    lyapunov_values = np.zeros((1, t.shape[0]), dtype=np.double)
-    lyapunov_dot_values = np.zeros((1, t.shape[0]), dtype=np.double)
+    lyapunov_values = np.zeros((1, t.shape[0] - N_prediction), dtype=np.double)
+    lyapunov_dot_values = np.zeros((1, t.shape[0] - N_prediction), dtype=np.double)
 
 
     quat_1_msg = get_odometry(quat_1_msg, dual_1, 'quat_1')
@@ -167,7 +154,7 @@ def main(odom_pub_1, odom_pub_2):
 
 
     # Control actions
-    f = 10*100
+    f = 9.8*100
     tau = np.array([0.0, -0.1, 0.0])
     angular_linear_1 = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]) # Angular Body linear Inertial
     dual_twist_1 = dual_twist(angular_linear_1, dual_1)

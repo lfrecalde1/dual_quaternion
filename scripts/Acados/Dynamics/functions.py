@@ -326,11 +326,11 @@ velocity = velocities_from_twist_casadi()
 
 def dual_aceleraction_casadi(W = w_1d, dual = dual_1d, force = F, torques = tau):
     # Constant values 
-    J = ca.DM([[1.0, 0.0, 0.0], [0.0, 0.63, 0.0], [0.0, 0.0, 0.85]])
+    J = ca.DM([[2.64e-3, 0.0, 0.0], [0.0, 2.64e-3, 0.0], [0.0, 0.0, 4.96e-3]])
     J_1 = ca.inv(J)
     e3 = ca.DM([[0], [0], [1]])
     g = 9.8
-    m = 100
+    m = 1
 
     # Compute linear and angular velocity from twist velocity
     angular_b_linear_i = velocity(W, dual)
