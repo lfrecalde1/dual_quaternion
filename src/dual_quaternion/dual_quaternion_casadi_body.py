@@ -91,7 +91,7 @@ class DualQuaternion_body():
         # This represents the translation component of the DualQuaternion.
         # Dual Part (1/2) * t * q   
         # Dual Part (1/2) * q * t
-        q_d = (1/2)* (q*t)
+        q_d = (1/2)* (q_r*t)
         #q_d = (1/2)* (t*q)
         return DualQuaternion_body(q_real = q_r, q_dual = q_d)
 
