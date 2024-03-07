@@ -9,11 +9,13 @@ from scipy.spatial.transform import Rotation as R
 from scipy import sparse
 from nav_msgs.msg import Odometry
 from functions import dualquat_from_pose_casadi, dualquat_trans_casadi, dualquat_quat_casadi
-from functions import f_rk4_casadi_simple, dual_velocity_casadi, dual_velocity_body_casadi, velocities_body_from_twist_casadi
-from functions import dual_quat_casadi, dual_control_casadi, lyapunov_casadi_simple, lyapunov_dot_casadi
-from functions import jacobian_casadi, system_evolution_casadi, optimization_casadi
+from functions import f_rk4_casadi_simple, dual_velocity_casadi
+from functions import dual_quat_casadi, rotation_casadi, rotation_inverse_casadi
 from functions import velocities_from_twist_casadi, f_rk4_dynamics_casadi_simple
-import osqp
+import scipy.io
+from ode_acados import quadrotorModel
+from nmpc_acados import create_ocp_solver
+from acados_template import AcadosOcpSolver, AcadosSimSolver
 
 # Creating Funtions based on Casadi
 dual_quat = dual_quat_casadi()
@@ -22,14 +24,12 @@ get_trans = dualquat_trans_casadi()
 get_quat = dualquat_quat_casadi()
 f_rk4 = f_rk4_casadi_simple()
 dual_twist = dual_velocity_casadi()
-velocity_body = dual_velocity_body_casadi()
-velocity_body_from_twist = velocities_body_from_twist_casadi()
 velocity_from_twist = velocities_from_twist_casadi()
-kinematics_control = dual_control_casadi()
-lyapunov_lie = lyapunov_casadi_simple()
-lyapunov_dot_lie = lyapunov_dot_casadi()
-jacobian_dual = jacobian_casadi()
+#f_rk4_dynamics = f_rk4_dynamics_casadi_simple()
+rot = rotation_casadi()
+inverse_rot = rotation_inverse_casadi()
 f_rk4_dynamics = f_rk4_dynamics_casadi_simple()
+
 
 def get_odometry(odom_msg, dqd, name):
     # Function to send the Oritentation of the Quaternion
@@ -56,24 +56,19 @@ def send_odometry(odom_msg, odom_pub):
     odom_pub.publish(odom_msg)
     return None
 
-def main(odom_pub_1, odom_pub_2):
+def main(odom_pub_1, odom_pub_2, L):
     # Sample Time Defintion
-    sample_time = 0.05
-    t_f = 15
+    sample_time = 0.005
+    t_f = 10
 
     # Time defintion aux variable
     t = np.arange(0, t_f + sample_time, sample_time)
-    N = 10
 
-    # Function of the prediction behavior
-    system_prediction = system_evolution_casadi(t.shape[0], sample_time)
-    solver, args = optimization_casadi(N, sample_time)
-    
     # Frequency of the simulation
     hz = int(1/(sample_time))
     loop_rate = rospy.Rate(hz)
 
-    t_N = 1.0
+    t_N = 0.5
     # Prediction Node of the NMPC formulation
     N = np.arange(0, t_N + sample_time, sample_time)
     N_prediction = N.shape[0]
@@ -84,33 +79,18 @@ def main(odom_pub_1, odom_pub_2):
 
     # Odometry Message
     quat_1_msg = Odometry()
-    quat_2_msg = Odometry()
     
     # Defining initial condition of the system and verify properties
-    theta1 = 0.0
+    theta1 = np.pi/2
     nx = 0.0
     ny = 0.0
     nz = 1.0
     tx1 = 0.0
     ty1 = 0.0
-    tz1 = 0.0
-
+    tz1 = 3.0
 
     # Initial Dualquaternion
     dual_1 = dualquat_from_pose(theta1, nx, ny,  nz, tx1, ty1, tz1)
-
-    # Defining the desired dualquaternion
-    theta1_d = np.pi/2
-    nx_d = 0.0
-    ny_d = 0.0
-    nz_d = 1.0
-    tx1_d = -2.0
-    ty1_d = 2.0
-    tz1_d = 0.0
-
-    # Initial Dualquaternion
-    dual_2 = dualquat_from_pose(theta1_d, nx_d, ny_d,  nz_d, tx1_d, ty1_d, tz1_d)
-
 
     # Empty Matrix
     Q1_trans_data = np.zeros((4, t.shape[0] + 1 - N_prediction), dtype=np.double)
@@ -122,79 +102,54 @@ def main(odom_pub_1, odom_pub_2):
     Q1_quat_data[:, 0] = np.array(get_quat(dual_1)).reshape((4, ))
     Q1_data[:, 0] = np.array(dual_1).reshape((8, ))
 
+    Q2_trans_data = np.zeros((4, t.shape[0] + 1 - N_prediction), dtype=np.double)
+    Q2_data = np.zeros((8, t.shape[0] + 1 - N_prediction), dtype=np.double)
+
     Velocities_data = np.zeros((6, t.shape[0] - N_prediction), dtype=np.double)
     twist_velocities_data = np.zeros((6, t.shape[0] - N_prediction), dtype=np.double)
 
-    # Empty Matrix
-    Q2_trans_data = np.zeros((4, t.shape[0] + 1 - N_prediction), dtype=np.double)
-    Q2_quat_data = np.zeros((4, t.shape[0] + 1 - N_prediction), dtype=np.double)
-    Q2_data = np.zeros((8, t.shape[0] + 1 - N_prediction), dtype=np.double)
-
-    # Initial Values
-    Q2_trans_data[:, 0] = np.array(get_trans(dual_2)).reshape((4, ))
-    Q2_quat_data[:, 0] = np.array(get_quat(dual_2)).reshape((4, ))
-    Q2_data[:, 0] = np.array(dual_2).reshape((8, ))
-
-    # Empty Values Lyapunov
-    lyapunov_values = np.zeros((1, t.shape[0] - N_prediction), dtype=np.double)
-    lyapunov_dot_values = np.zeros((1, t.shape[0] - N_prediction), dtype=np.double)
-
-
+    # Odometry message
     quat_1_msg = get_odometry(quat_1_msg, dual_1, 'quat_1')
     send_odometry(quat_1_msg, odom_pub_1)
 
-    quat_2_msg = get_odometry(quat_2_msg, dual_2, 'quat_2')
-    send_odometry(quat_2_msg, odom_pub_2)
-
-    # Optimization
-    #n_controls = 6
-    #n_states = 8
-    #U0 = ca.DM.ones((n_controls, N))  # initial control
-    #U0 = optimization_solver(dual_2, dual_1, U0, solver, args, n_states, n_controls, N)
+    model  = quadrotorModel(L)
+    ocp = create_ocp_solver(N_prediction, t_N, L, sample_time)
+    acados_ocp_solver = AcadosOcpSolver(ocp, json_file="acados_ocp_" + ocp.model.name + ".json", build= True, generate= True)
+    acados_integrator = AcadosSimSolver(ocp, json_file="acados_sim_" + ocp.model.name + ".json", build= True, generate= True)
 
 
-    # Control actions
-    f = 9.8*100
-    tau = np.array([0.0, -0.1, 0.0])
-    angular_linear_1 = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]) # Angular Body linear Inertial
-    dual_twist_1 = dual_twist(angular_linear_1, dual_1)
 
-    for k in range(0, t.shape[0]):
+
+    # Simulation loop
+    for k in range(0, t.shape[0] - N_prediction):
         tic = rospy.get_time()
-        # Compute Lyapunov Lie 
-        # desired Linear inertial And angular body velocities reference quaternion
-        angular_linear_2 = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]) # Angular Body linear Inertial
-        angular_linear_1 = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]) # Angular Body linear Inertial
+        # Control actions
+        angular_linear_1 = np.array([0.0, 0.0, 5, 5, 0.0, 0.0]) # Angular Body linear Inertial
+        dual_twist_1 = dual_twist(angular_linear_1, dual_1)
 
-        #U0 = optimization_solver(dual_2, dual_1, U0, solver, args, n_states, n_controls, N)
-        # Evolve desired Dualquaternion
-        dual_twist_2 = dual_twist(angular_linear_2, dual_2)
-        #dual_twist_1_aux = ca.vertcat(dual_twist_1[0, 0], dual_twist_1[1, 0], dual_twist_1[2, 0], dual_twist_1[3, 0], dual_twist_1[4, 0], dual_twist_1[5, 0])
-
-
-        velocities  = velocity_body_from_twist(dual_twist_1, dual_1)
+        # Save Velocities
+        velocities  = velocity_from_twist(dual_twist_1, dual_1)
         Velocities_data[: , k] = np.array(velocities).reshape((6, ))
 
         # System Evolution
-        dual_twist_1 = f_rk4_dynamics(dual_twist_1, dual_1, f, tau, sample_time)
-        dual_2 = f_rk4(dual_2, dual_twist_2, sample_time)
-        dual_1 = f_rk4(dual_1, dual_twist_1, sample_time)
+        acados_integrator.set("x", np.array(dual_1))
+        acados_integrator.set("u", np.array(dual_twist_1))
+
+        status_integral = acados_integrator.solve()
+        xcurrent = acados_integrator.get("x")
+
+        dual_1 = xcurrent
+        #dual_twist_1 = f_rk4_dynamics(dual_twist_1, dual_1, f[:, k], tau[:, k], sample_time)
 
         # Send Data throught Ros
         quat_1_msg = get_odometry(quat_1_msg, dual_1, 'quat_1')
         send_odometry(quat_1_msg, odom_pub_1)
 
-        quat_2_msg = get_odometry(quat_2_msg, dual_2, 'quat_2')
-        send_odometry(quat_2_msg, odom_pub_2)
 
         # Update Matrices
         Q1_data[:, k + 1] = np.array(dual_1).reshape((8, ))
         Q1_trans_data[:, k + 1] = np.array(get_trans(dual_1)).reshape((4, ))
         Q1_quat_data[:, k + 1] = np.array(get_quat(dual_1)).reshape((4, ))
-
-        Q2_data[:, k + 1] = np.array(dual_2).reshape((8, ))
-        Q2_trans_data[:, k + 1] = np.array(get_trans(dual_2)).reshape((4, ))
-        Q2_quat_data[:, k + 1] = np.array(get_quat(dual_2)).reshape((4, ))
 
         # Time restriction Correct
         loop_rate.sleep()
@@ -230,7 +185,14 @@ if __name__ == '__main__':
 
         odomety_topic_2 = "/" + "dual_2" + "/odom"
         odometry_publisher_2 = rospy.Publisher(odomety_topic_2, Odometry, queue_size = 10)
-        main(odometry_publisher_1, odometry_publisher_2)
+        # Dynamics Parameters
+        m = 1                                                                             
+        Jxx = 2.64e-3
+        Jyy = 2.64e-3
+        Jzz = 4.96e-3
+        g = 9.8
+        L = [m, Jxx, Jyy, Jzz, g]
+        main(odometry_publisher_1, odometry_publisher_2, L)
     except(rospy.ROSInterruptException, KeyboardInterrupt):
         print("Error System")
         pass
