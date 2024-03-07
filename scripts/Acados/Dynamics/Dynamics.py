@@ -8,12 +8,8 @@ from dual_quaternion import plot_states_quaternion, plot_states_position, fancy_
 from scipy.spatial.transform import Rotation as R
 from scipy import sparse
 from nav_msgs.msg import Odometry
-from functions import dualquat_from_pose_casadi, dualquat_trans_casadi, dualquat_quat_casadi
-from functions import f_rk4_casadi_simple, dual_velocity_casadi
-from functions import dual_quat_casadi, rotation_casadi, rotation_inverse_casadi
-from functions import velocities_from_twist_casadi, f_rk4_dynamics_casadi_simple
-import scipy.io
-from ode_acados import quadrotorModel
+from functions import dualquat_from_pose_casadi
+from ode_acados import quadrotorModel, dualquat_trans_casadi, dualquat_quat_casadi, rotation_casadi, rotation_inverse_casadi, dual_velocity_casadi, dual_quat_casadi, velocities_from_twist_casadi
 from nmpc_acados import create_ocp_solver
 from acados_template import AcadosOcpSolver, AcadosSimSolver
 
@@ -22,13 +18,10 @@ dual_quat = dual_quat_casadi()
 dualquat_from_pose = dualquat_from_pose_casadi()
 get_trans = dualquat_trans_casadi()
 get_quat = dualquat_quat_casadi()
-f_rk4 = f_rk4_casadi_simple()
 dual_twist = dual_velocity_casadi()
 velocity_from_twist = velocities_from_twist_casadi()
-#f_rk4_dynamics = f_rk4_dynamics_casadi_simple()
 rot = rotation_casadi()
 inverse_rot = rotation_inverse_casadi()
-f_rk4_dynamics = f_rk4_dynamics_casadi_simple()
 
 
 def get_odometry(odom_msg, dqd, name):
@@ -58,7 +51,7 @@ def send_odometry(odom_msg, odom_pub):
 
 def main(odom_pub_1, odom_pub_2, L):
     # Sample Time Defintion
-    sample_time = 0.005
+    sample_time = 0.01
     t_f = 10
 
     # Time defintion aux variable
@@ -81,75 +74,134 @@ def main(odom_pub_1, odom_pub_2, L):
     quat_1_msg = Odometry()
     
     # Defining initial condition of the system and verify properties
-    theta1 = np.pi/2
+    theta1 = np.pi/4
     nx = 0.0
     ny = 0.0
     nz = 1.0
-    tx1 = 0.0
-    ty1 = 0.0
+    tx1 = -2.0
+    ty1 = 2.0
     tz1 = 3.0
 
     # Initial Dualquaternion
     dual_1 = dualquat_from_pose(theta1, nx, ny,  nz, tx1, ty1, tz1)
+    angular_linear_1 = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]) # Angular Body linear Inertial
+    dual_twist_1 = dual_twist(angular_linear_1, dual_1)
+
+    # Initial Conditions Complete state
+    X = np.zeros((14, t.shape[0] + 1 - N_prediction), dtype=np.double)
+    X[:, 0] = np.array(ca.vertcat(dual_1, dual_twist_1)).reshape((14, ))
 
     # Empty Matrix
     Q1_trans_data = np.zeros((4, t.shape[0] + 1 - N_prediction), dtype=np.double)
     Q1_quat_data = np.zeros((4, t.shape[0] + 1 - N_prediction), dtype=np.double)
-    Q1_data = np.zeros((8, t.shape[0] + 1 - N_prediction), dtype=np.double)
+    Q1_velocities_data = np.zeros((6, t.shape[0] +1 - N_prediction), dtype=np.double)
 
     # Initial Values
     Q1_trans_data[:, 0] = np.array(get_trans(dual_1)).reshape((4, ))
     Q1_quat_data[:, 0] = np.array(get_quat(dual_1)).reshape((4, ))
-    Q1_data[:, 0] = np.array(dual_1).reshape((8, ))
+    velocities  = velocity_from_twist(dual_twist_1, dual_1)
+    Q1_velocities_data[:, 0] = np.array(velocities).reshape((6, ))
 
     Q2_trans_data = np.zeros((4, t.shape[0] + 1 - N_prediction), dtype=np.double)
     Q2_data = np.zeros((8, t.shape[0] + 1 - N_prediction), dtype=np.double)
-
-    Velocities_data = np.zeros((6, t.shape[0] - N_prediction), dtype=np.double)
-    twist_velocities_data = np.zeros((6, t.shape[0] - N_prediction), dtype=np.double)
 
     # Odometry message
     quat_1_msg = get_odometry(quat_1_msg, dual_1, 'quat_1')
     send_odometry(quat_1_msg, odom_pub_1)
 
-    model  = quadrotorModel(L)
-    ocp = create_ocp_solver(N_prediction, t_N, L, sample_time)
+    # Constraints on control actions
+    F_max = L[0]*L[4] + 20
+    F_min = 0
+    tau_1_max = 0.1
+    tau_1_min = -0.1
+    tau_2_max = 0.1
+    tau_2_min = -0.1
+    tau_3_max = 0.1
+    taux_3_min = -0.1
+
+    # Defining desired
+    theta1_d = 0
+    nx_d = 0.0
+    ny_d = 0.0
+    nz_d = 1.0
+    tx1_d = 0.0
+    ty1_d = 0.0
+    tz1_d = 0.0
+
+    # Initial Dualquaternion
+    dual_1_d = dualquat_from_pose(theta1_d, nx_d, ny_d,  nz_d, tx1_d, ty1_d, tz1_d)
+    angular_linear_1_d = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]) # Angular Body linear Inertial
+    dual_twist_1_d = dual_twist(angular_linear_1_d, dual_1_d)
+
+    # Initial Conditions Complete state
+    X_d = np.zeros((14, t.shape[0]), dtype=np.double)
+    for k in range(0, X_d.shape[1]):
+        X_d[:, k ] = np.array(ca.vertcat(dual_1_d, dual_twist_1_d)).reshape((14, ))
+
+    u_d = np.zeros((4, t.shape[0]), dtype=np.double)
+    u_d[0, :] = 9.8
+
+    # Optimization problem
+    ocp = create_ocp_solver(X[:, 0], N_prediction, t_N, F_max, F_min, tau_1_max, tau_1_min, tau_2_max, tau_2_min, tau_3_max, taux_3_min, L, sample_time)
     acados_ocp_solver = AcadosOcpSolver(ocp, json_file="acados_ocp_" + ocp.model.name + ".json", build= True, generate= True)
     acados_integrator = AcadosSimSolver(ocp, json_file="acados_sim_" + ocp.model.name + ".json", build= True, generate= True)
 
+    nx = ocp.model.x.size()[0]
+    nu = ocp.model.u.size()[0]
 
+    # Reset Solver
 
+    # Control Actions 
+    u = np.zeros((4, t.shape[0] - N_prediction), dtype=np.double)
 
     # Simulation loop
     for k in range(0, t.shape[0] - N_prediction):
         tic = rospy.get_time()
-        # Control actions
-        angular_linear_1 = np.array([0.0, 0.0, 5, 5, 0.0, 0.0]) # Angular Body linear Inertial
-        dual_twist_1 = dual_twist(angular_linear_1, dual_1)
+        # Control Law Acados
+        acados_ocp_solver.set(0, "lbx", X[:, k])
+        acados_ocp_solver.set(0, "ubx", X[:, k])
 
-        # Save Velocities
-        velocities  = velocity_from_twist(dual_twist_1, dual_1)
-        Velocities_data[: , k] = np.array(velocities).reshape((6, ))
+        # Desired Trajectory of the system
+        for j in range(N_prediction):
+            yref = X_d[:,k+j]
+            uref = u_d[:,k+j]
+            aux_ref = np.hstack((yref, uref))
+            acados_ocp_solver.set(j, "p", aux_ref)
 
+        yref_N = X_d[:,k+N_prediction]
+        uref_N = u_d[:,k+N_prediction]
+        aux_ref_N = np.hstack((yref_N, uref_N))
+        acados_ocp_solver.set(N_prediction, "p", aux_ref_N)
+
+        # Check Solution since there can be possible errors 
+        acados_ocp_solver.solve()
+
+        # Get the control Action
+        aux_control = acados_ocp_solver.get(0, "u")
+        u[0, k] = aux_control[0]
+        u[1:4, k] = aux_control[1:4]
+        
         # System Evolution
-        acados_integrator.set("x", np.array(dual_1))
-        acados_integrator.set("u", np.array(dual_twist_1))
+        acados_integrator.set("x", X[:, k])
+        acados_integrator.set("u", u[:, k])
 
         status_integral = acados_integrator.solve()
         xcurrent = acados_integrator.get("x")
 
-        dual_1 = xcurrent
-        #dual_twist_1 = f_rk4_dynamics(dual_twist_1, dual_1, f[:, k], tau[:, k], sample_time)
+        # Update Data of the system
+        X[:, k+1] = xcurrent
+        dual_1 = X[0:8, k+1]
+        dual_twist_1 = X[8:14, k+1]
+
+        # Update Matrices
+        Q1_trans_data[:, k + 1] = np.array(get_trans(dual_1)).reshape((4, ))
+        Q1_quat_data[:, k + 1] = np.array(get_quat(dual_1)).reshape((4, ))
+        velocities  = velocity_from_twist(dual_twist_1, dual_1)
+        Q1_velocities_data[:, k+1] = np.array(velocities).reshape((6, ))
 
         # Send Data throught Ros
         quat_1_msg = get_odometry(quat_1_msg, dual_1, 'quat_1')
         send_odometry(quat_1_msg, odom_pub_1)
-
-
-        # Update Matrices
-        Q1_data[:, k + 1] = np.array(dual_1).reshape((8, ))
-        Q1_trans_data[:, k + 1] = np.array(get_trans(dual_1)).reshape((4, ))
-        Q1_quat_data[:, k + 1] = np.array(get_quat(dual_1)).reshape((4, ))
 
         # Time restriction Correct
         loop_rate.sleep()
@@ -161,18 +213,18 @@ def main(odom_pub_1, odom_pub_2, L):
 
 
     fig11, ax11, ax21, ax31, ax41 = fancy_plots_4()
-    plot_states_quaternion(fig11, ax11, ax21, ax31, ax41, Q1_data[0:4, :], Q2_data[0:4, :], t, "Quaternion Results")
+    plot_states_quaternion(fig11, ax11, ax21, ax31, ax41, Q1_quat_data[0:4, :], Q2_data[0:4, :], t, "Quaternion Results")
     plt.show()
 
     fig12, ax12, ax22, ax32 = fancy_plots_3()
     plot_states_position(fig12, ax12, ax22, ax32, Q1_trans_data[1:4, :], Q2_trans_data[1:4, :], t, "Position of the System")
     plt.show()
     fig13, ax13, ax23, ax33 = fancy_plots_3()
-    plot_angular_velocities(fig13, ax13, ax23, ax33, Velocities_data[0:3, :], t, "Angular velocities Body")
+    plot_angular_velocities(fig13, ax13, ax23, ax33, Q1_velocities_data[0:3, :], t, "Angular velocities Body")
     plt.show()
 
     fig14, ax14, ax24, ax34 = fancy_plots_3()
-    plot_linear_velocities(fig14, ax14, ax24, ax34, Velocities_data[3:6, :], t, "Linear velocities Body")
+    plot_linear_velocities(fig14, ax14, ax24, ax34, Q1_velocities_data[3:6, :], t, "Linear velocities Body")
     plt.show()
 
     return None

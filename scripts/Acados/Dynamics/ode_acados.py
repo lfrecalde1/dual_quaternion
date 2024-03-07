@@ -63,7 +63,6 @@ kd1 = ca.MX.sym("kd1", 1, 1)
 kd2 = ca.MX.sym("kd2", 1, 1)
 kd3 = ca.MX.sym("kd3", 1, 1)
 
-
 Kr = ca.vertcat(0.0, kr1, kr2, kr3)
 Kd = ca.vertcat(0.0, kd1, kd2, kd3)
 
@@ -97,6 +96,7 @@ v2 = ca.MX.sym('v2', 3, 1)
 cross_product = ca.vertcat(v1[1]*v2[2] - v1[2]*v2[1],
                            v1[2]*v2[0] - v1[0]*v2[2],
                            v1[0]*v2[1] - v1[1]*v2[0])
+
 f_cross =  ca.Function('f_cross', [v1, v2], [cross_product])
 
 # Quaternion rotation
@@ -120,14 +120,13 @@ def rotation_casadi():
                                 ca.horzcat(aux_value[2, 0], aux_value[3, 0], aux_value[0, 0], -aux_value[1, 0]),
                                 ca.horzcat(aux_value[3, 0], -aux_value[2, 0], aux_value[1, 0], aux_value[0, 0]))
 
-
-
     vector_i = H_plus_aux@quat_c
 
 
     f_rot =  ca.Function('f_rot', [quat_aux_1, vector_aux_1], [vector_i[1:4, 0]])
     return f_rot
 
+f_rotation = rotation_casadi()
 
 def rotation_inverse_casadi():
     quat_aux_1 = ca.MX.sym('quat_aux_1', 4, 1)
@@ -223,7 +222,7 @@ def quatdot_simple(quat, omega):
 
     # Auxiliar variable veloicities
     omega = ca.vertcat(0.0, omega[0, 0], omega[1, 0], omega[2, 0], 0.0, omega[3, 0], omega[4, 0], omega[5, 0])
-    q_dot = (1/2)*(Hplus@ omega)
+    q_dot = (1/2)*(Hplus@ omega) + aux_dual
     return q_dot
 
 def dual_velocity_casadi(twist = w_1d, dualquat = dual_1d):
@@ -264,6 +263,98 @@ def velocities_from_twist_casadi(twist = w_1d, dualquat = dual_1d):
     velocity = ca.vertcat(w, v_i)
     f_velocity = Function('f_velocity', [w_1d, dual_1d], [velocity])
     return f_velocity
+    
+velocity = velocities_from_twist_casadi()
+
+def dual_aceleraction_casadi(dual, omega, u, L):
+    # Split Control Actions
+    force = u[0, 0]
+    torques = u[1:4, 0]
+
+    # System Matrices
+    J = ca.MX.zeros(3, 3)
+    J[0, 0] = L[1]
+    J[1, 1] = L[2]
+    J[2, 2] = L[3]
+    J_1 = ca.inv(J)
+    e3 = ca.MX.zeros(3, 1)
+    e3[2, 0] = 1.0
+    g = L[4]
+    m = L[0]
+
+    # Compute linear and angular velocity from twist velocity
+    angular_b_linear_i = velocity(omega, dual)
+    w = angular_b_linear_i[0:3, 0]
+    v = angular_b_linear_i[3:6, 0]
+    p = get_trans(dual)
+    q = get_quat(dual)
+    p = p[1:4, 0]
+
+    # Compute unforced part
+    a = ca.cross(-J_1@w, J@w)
+    F_r = a
+    F_d = ca.cross(a, p) + ca.cross(w, v) - g*e3
+
+    # Compute forced part
+    U_r = J_1@torques
+    U_d = ((force*(f_rotation(q, e3)))/m) + ca.cross(J_1@torques, p)
+
+    T_r = F_r + U_r
+    T_d = F_d + U_d
+    T = ca.vertcat(T_r, T_d)
+
+    return T
+
+def lyapunov_casadi_simple(qd = dual_1d, q =dual_1):
+    #  Control Error Split Values
+    qd_conjugate = ca.vertcat(qd[0, 0], -qd[1, 0], -qd[2, 0], -qd[3, 0], qd[4, 0], -qd[5, 0], -qd[6, 0], -qd[7, 0])
+    quat_data = qd_conjugate[0:4]
+    dual_data =  qd_conjugate[4:8]
+
+    H_r_plus = ca.vertcat(ca.horzcat(quat_data[0, 0], -quat_data[1, 0], -quat_data[2, 0], -quat_data[3, 0]),
+                                ca.horzcat(quat_data[1, 0], quat_data[0, 0], -quat_data[3, 0], quat_data[2, 0]),
+                                ca.horzcat(quat_data[2, 0], quat_data[3, 0], quat_data[0, 0], -quat_data[1, 0]),
+                                ca.horzcat(quat_data[3, 0], -quat_data[2, 0], quat_data[1, 0], quat_data[0, 0]))
+
+    H_d_plus = ca.vertcat(ca.horzcat(dual_data[0, 0], -dual_data[1, 0], -dual_data[2, 0], -dual_data[3, 0]),
+                                ca.horzcat(dual_data[1, 0], dual_data[0, 0], -dual_data[3, 0], dual_data[2, 0]),
+                                ca.horzcat(dual_data[2, 0], dual_data[3, 0], dual_data[0, 0], -dual_data[1, 0]),
+                                ca.horzcat(dual_data[3, 0], -dual_data[2, 0], dual_data[1, 0], dual_data[0, 0]))
+    zeros = ca.MX.zeros(4, 4)
+    Hplus = ca.vertcat(ca.horzcat(H_r_plus, zeros),
+                        ca.horzcat(H_d_plus, H_r_plus))
+
+
+    q_e_aux = Hplus @ q
+    
+    condition1 = q_e_aux[0, 0] > 0.0
+
+    # Define expressions for each condition
+    expr1 =  q_e_aux[:, 0]
+    expr2 = -q_e_aux[:, 0]
+
+    # Check shortest path
+    q_error = ca.if_else(condition1, expr1, expr2) 
+
+
+    # Sux variable in roder to get a norm
+    q_3_aux = ca.MX([1.0, 0.0, 0.0, 0.0])
+    t_3_aux = ca.MX([0.0, 0.0, 0.0, 0.0])
+    Q3_pose =  ca.vertcat(q_3_aux, t_3_aux)
+    
+    q_e_ln = Q3_pose - q_error
+
+    P =  1*ca.MX.eye(8)
+    P[7, 7] = 2
+
+    norm_lie = q_e_ln.T@P@q_e_ln
+    
+    v = norm_lie
+    v_f = Function('v_f', [dual_1d, dual_1], [v])
+    return v_f
+
+lyapunov = lyapunov_casadi_simple()
+
 def quadrotorModel(L: list)-> AcadosModel:
     # Dynamics of the quadrotor based on unit quaternions
     # INPUT
@@ -272,12 +363,6 @@ def quadrotorModel(L: list)-> AcadosModel:
     # model                                                      - Acados model
     model_name = 'quadrotor'
     constraint = ca.types.SimpleNamespace()
-    # Split system parameters
-    m = L[0]
-    Jxx = L[1]
-    Jyy = L[2]
-    Jzz = L[3]
-    gravity = L[4]
     # Defining Desired Frame
     qw_1d = ca.MX.sym('qw_1d', 1, 1)
     qx_1d = ca.MX.sym('qx_1d', 1, 1)
@@ -298,10 +383,13 @@ def quadrotorModel(L: list)-> AcadosModel:
     wy_1d = ca.MX.sym("wy_1d", 1, 1)
     wz_1d = ca.MX.sym("wz_1d", 1, 1)
 
-    # Symbolic variables desired velocities
-    w_1d = ca.vertcat(wx_1d, wy_1d, wz_1d, vx_1d, vy_1d, vz_1d)
 
-    X = ca.vertcat(qw_1d, qx_1d, qy_1d, qz_1d, dw_1d, dx_1d, dy_1d, dz_1d)
+    X = ca.vertcat(qw_1d, qx_1d, qy_1d, qz_1d, dw_1d, dx_1d, dy_1d, dz_1d,
+                   wx_1d, wy_1d, wz_1d, vx_1d, vy_1d, vz_1d)
+
+    # Split States of the system
+    twist_1 = X[8:14, 0]
+    dualquat_1 = X[0:8, 0]
 
     # Auxiliary variables implicit function
     qw_1dot = ca.MX.sym('qw_1dot', 1, 1)
@@ -314,16 +402,37 @@ def quadrotorModel(L: list)-> AcadosModel:
     dy_1dot = ca.MX.sym("dy_1dot", 1, 1)
     dz_1dot = ca.MX.sym("dz_1dot", 1, 1)
 
-    X_dot = ca.vertcat(qw_1dot, qx_1dot, qy_1dot, qz_1dot, dw_1dot, dx_1dot, dy_1dot, dz_1dot)
+    vx_1dot = ca.MX.sym("vx_1dot", 1, 1)
+    vy_1dot = ca.MX.sym("vy_1dot", 1, 1)
+    vz_1dot = ca.MX.sym("vz_1dot", 1, 1)
 
-    u = w_1d
+    wx_1dot = ca.MX.sym("wx_1dot", 1, 1)
+    wy_1dot = ca.MX.sym("wy_1dot", 1, 1)
+    wz_1dot = ca.MX.sym("wz_1dot", 1, 1)
 
-    qdot = quatdot_simple(X, u)
+    X_dot = ca.vertcat(qw_1dot, qx_1dot, qy_1dot, qz_1dot, dw_1dot, dx_1dot, dy_1dot, dz_1dot,
+                       wx_1dot, wy_1dot, wz_1dot, vx_1dot, vy_1dot, vz_1dot)
+
+    # Control Actions
+    F_ref = ca.MX.sym('F_ref')
+    tau_1_ref = ca.MX.sym('tau_1_ref')
+    tau_2_ref = ca.MX.sym('tau_2_ref')
+    tau_3_ref = ca.MX.sym('tau_3_ref')
+
+    u = ca.vertcat(F_ref, tau_1_ref, tau_2_ref, tau_3_ref)
+
+    dualdot = quatdot_simple(dualquat_1, twist_1)
+    twistdot = dual_aceleraction_casadi(dualquat_1, twist_1, u, L)
+
+    norm_q = ca.norm_2(get_quat(X[0:8]))
+    constraint.norm = Function("norm", [X], [norm_q])
+    constraint.expr = ca.vertcat(norm_q)
+    constraint.min = 1.0
+    constraint.max = 1.0
     # Explicit and implicit functions
-    f_expl = ca.vertcat(qdot)
-    f_system = Function('system',[X, u], [f_expl])
+    f_expl = ca.vertcat(dualdot, twistdot)
     f_impl = X_dot - f_expl
-
+    p = ca.MX.sym('p', 18, 1)
 
     # Algebraic variables
     z = []
@@ -336,5 +445,6 @@ def quadrotorModel(L: list)-> AcadosModel:
     model.xdot = X_dot
     model.u = u
     model.z = z
+    model.p = p
     model.name = model_name
-    return model
+    return model, get_trans, get_quat, constraint, lyapunov
