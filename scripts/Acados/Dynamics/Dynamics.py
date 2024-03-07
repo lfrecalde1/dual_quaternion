@@ -51,8 +51,8 @@ def send_odometry(odom_msg, odom_pub):
 
 def main(odom_pub_1, odom_pub_2, L):
     # Sample Time Defintion
-    sample_time = 0.01
-    t_f = 10
+    sample_time = 0.03
+    t_f = 20
 
     # Time defintion aux variable
     t = np.arange(0, t_f + sample_time, sample_time)
@@ -126,7 +126,7 @@ def main(odom_pub_1, odom_pub_2, L):
     nz_d = 1.0
     tx1_d = 0.0
     ty1_d = 0.0
-    tz1_d = 0.0
+    tz1_d = 1
 
     # Initial Dualquaternion
     dual_1_d = dualquat_from_pose(theta1_d, nx_d, ny_d,  nz_d, tx1_d, ty1_d, tz1_d)
