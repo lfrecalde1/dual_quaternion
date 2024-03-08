@@ -1,15 +1,12 @@
 #!/usr/bin/env python
-import time
 import rospy
 import numpy as np
 import matplotlib.pyplot as plt
 import casadi as ca
-from dual_quaternion import plot_states_quaternion, plot_states_position, fancy_plots_4, fancy_plots_1, plot_norm_quat, plot_angular_velocities, plot_linear_velocities, fancy_plots_3, plot_norm_real, plot_norm_dual, plot_lyapunov, plot_lyapunov_dot
-from scipy.spatial.transform import Rotation as R
-from scipy import sparse
+from dual_quaternion import plot_states_quaternion, plot_states_position, fancy_plots_4, plot_angular_velocities, plot_linear_velocities, fancy_plots_3, plot_control_actions
 from nav_msgs.msg import Odometry
 from functions import dualquat_from_pose_casadi
-from ode_acados import quadrotorModel, dualquat_trans_casadi, dualquat_quat_casadi, rotation_casadi, rotation_inverse_casadi, dual_velocity_casadi, dual_quat_casadi, velocities_from_twist_casadi
+from ode_acados import dualquat_trans_casadi, dualquat_quat_casadi, rotation_casadi, rotation_inverse_casadi, dual_velocity_casadi, dual_quat_casadi, velocities_from_twist_casadi
 from nmpc_acados import create_ocp_solver
 from acados_template import AcadosOcpSolver, AcadosSimSolver
 
@@ -72,6 +69,7 @@ def main(odom_pub_1, odom_pub_2, L):
 
     # Odometry Message
     quat_1_msg = Odometry()
+    quat_1_d_msg = Odometry()
     
     # Defining initial condition of the system and verify properties
     theta1 = np.pi/4
@@ -91,23 +89,23 @@ def main(odom_pub_1, odom_pub_2, L):
     X = np.zeros((14, t.shape[0] + 1 - N_prediction), dtype=np.double)
     X[:, 0] = np.array(ca.vertcat(dual_1, dual_twist_1)).reshape((14, ))
 
-    # Empty Matrix
+    # Empty Matrices that is used to plot the results
     Q1_trans_data = np.zeros((4, t.shape[0] + 1 - N_prediction), dtype=np.double)
     Q1_quat_data = np.zeros((4, t.shape[0] + 1 - N_prediction), dtype=np.double)
     Q1_velocities_data = np.zeros((6, t.shape[0] +1 - N_prediction), dtype=np.double)
 
-    # Initial Values
+    # Update initial condition in the empty matrices
     Q1_trans_data[:, 0] = np.array(get_trans(dual_1)).reshape((4, ))
     Q1_quat_data[:, 0] = np.array(get_quat(dual_1)).reshape((4, ))
     velocities  = velocity_from_twist(dual_twist_1, dual_1)
     Q1_velocities_data[:, 0] = np.array(velocities).reshape((6, ))
 
-    Q2_trans_data = np.zeros((4, t.shape[0] + 1 - N_prediction), dtype=np.double)
-    Q2_data = np.zeros((8, t.shape[0] + 1 - N_prediction), dtype=np.double)
-
     # Odometry message
     quat_1_msg = get_odometry(quat_1_msg, dual_1, 'quat_1')
     send_odometry(quat_1_msg, odom_pub_1)
+
+    quat_1_d_msg = get_odometry(quat_1_d_msg, dual_1_d, 'quat_1_d')
+    send_odometry(quat_1_d_msg, odom_pub_2)
 
     # Constraints on control actions
     F_max = L[0]*L[4] + 20
@@ -119,7 +117,7 @@ def main(odom_pub_1, odom_pub_2, L):
     tau_3_max = 0.1
     taux_3_min = -0.1
 
-    # Defining desired
+    # Defining desired frame
     theta1_d = np.pi/2
     nx_d = 0.0
     ny_d = 0.0
@@ -128,12 +126,12 @@ def main(odom_pub_1, odom_pub_2, L):
     ty1_d = 0
     tz1_d = 0
 
-    # Initial Dualquaternion
+    # Initial Desired Dualquaternion
     dual_1_d = dualquat_from_pose(theta1_d, nx_d, ny_d,  nz_d, tx1_d, ty1_d, tz1_d)
     angular_linear_1_d = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]) # Angular Body linear Inertial
     dual_twist_1_d = dual_twist(angular_linear_1_d, dual_1_d)
 
-    # Initial Conditions Complete state
+    # Initial condition for the desired states
     X_d = np.zeros((14, t.shape[0]), dtype=np.double)
     for k in range(0, X_d.shape[1]):
         X_d[:, k ] = np.array(ca.vertcat(dual_1_d, dual_twist_1_d)).reshape((14, ))
@@ -141,18 +139,26 @@ def main(odom_pub_1, odom_pub_2, L):
     u_d = np.zeros((4, t.shape[0]), dtype=np.double)
     u_d[0, :] = 9.8
 
+    Q2_trans_data = np.zeros((4, t.shape[0] + 1 - N_prediction), dtype=np.double)
+    Q2_quat_data = np.zeros((4, t.shape[0] + 1 - N_prediction), dtype=np.double)
+
+    Q2_trans_data[:, 0] = np.array(get_trans(dual_1_d)).reshape((4, ))
+    Q2_quat_data[:, 0] = np.array(get_quat(dual_1_d)).reshape((4, ))
+
     # Optimization problem
     ocp = create_ocp_solver(X[:, 0], N_prediction, t_N, F_max, F_min, tau_1_max, tau_1_min, tau_2_max, tau_2_min, tau_3_max, taux_3_min, L, sample_time)
     acados_ocp_solver = AcadosOcpSolver(ocp, json_file="acados_ocp_" + ocp.model.name + ".json", build= True, generate= True)
     acados_integrator = AcadosSimSolver(ocp, json_file="acados_sim_" + ocp.model.name + ".json", build= True, generate= True)
 
-    nx = ocp.model.x.size()[0]
-    nu = ocp.model.u.size()[0]
+    # Dimensions of the optimization problem
+    x_dim = ocp.model.x.size()[0]
+    u_dim = ocp.model.u.size()[0]
 
-    # Reset Solver
 
     # Control Actions 
     u = np.zeros((4, t.shape[0] - N_prediction), dtype=np.double)
+    F = np.zeros((1, t.shape[0] - N_prediction), dtype=np.double)
+    M = np.zeros((3, t.shape[0] - N_prediction), dtype=np.double)
 
     # Simulation loop
     for k in range(0, t.shape[0] - N_prediction):
@@ -179,8 +185,10 @@ def main(odom_pub_1, odom_pub_2, L):
 
         # Get the control Action
         aux_control = acados_ocp_solver.get(0, "u")
-        u[0, k] = aux_control[0]
-        u[1:4, k] = aux_control[1:4]
+        F[:, k] = aux_control[0]
+        M[:, k] = aux_control[1:4]
+        u[0, k] = F[:, k]
+        u[1:4, k] = M[:, k]
         
         # System Evolution
         acados_integrator.set("x", X[:, k])
@@ -194,15 +202,22 @@ def main(odom_pub_1, odom_pub_2, L):
         dual_1 = X[0:8, k+1]
         dual_twist_1 = X[8:14, k+1]
 
-        # Update Matrices
+        # Update Matrices of our system
         Q1_trans_data[:, k + 1] = np.array(get_trans(dual_1)).reshape((4, ))
         Q1_quat_data[:, k + 1] = np.array(get_quat(dual_1)).reshape((4, ))
         velocities  = velocity_from_twist(dual_twist_1, dual_1)
         Q1_velocities_data[:, k+1] = np.array(velocities).reshape((6, ))
 
+        # Update matrices of the reference
+        Q2_trans_data[:, k + 1] = np.array(get_trans(dual_1_d)).reshape((4, ))
+        Q2_quat_data[:, k + 1] = np.array(get_quat(dual_1_d)).reshape((4, ))
+
         # Send Data throught Ros
         quat_1_msg = get_odometry(quat_1_msg, dual_1, 'quat_1')
         send_odometry(quat_1_msg, odom_pub_1)
+
+        quat_1_d_msg = get_odometry(quat_1_d_msg, dual_1_d, 'quat_1_d')
+        send_odometry(quat_1_d_msg, odom_pub_2)
 
         # Time restriction Correct
         loop_rate.sleep()
@@ -213,19 +228,24 @@ def main(odom_pub_1, odom_pub_2, L):
         rospy.loginfo(message_ros + str(delta))
 
 
-    fig11, ax11, ax21, ax31, ax41 = fancy_plots_4()
-    plot_states_quaternion(fig11, ax11, ax21, ax31, ax41, Q1_quat_data[0:4, :], Q2_data[0:4, :], t, "Quaternion Results")
+    fig11, ax11, ax12, ax13, ax14 = fancy_plots_4()
+    plot_states_quaternion(fig11, ax11, ax12, ax13, ax14, Q1_quat_data[0:4, :], Q2_quat_data[0:4, :], t, "Quaternion Results")
     plt.show()
 
-    fig12, ax12, ax22, ax32 = fancy_plots_3()
-    plot_states_position(fig12, ax12, ax22, ax32, Q1_trans_data[1:4, :], Q2_trans_data[1:4, :], t, "Position of the System")
+    fig21, ax21, ax22, ax23 = fancy_plots_3()
+    plot_states_position(fig21, ax21, ax22, ax23, Q1_trans_data[1:4, :], Q2_trans_data[1:4, :], t, "Position of the System")
     plt.show()
-    fig13, ax13, ax23, ax33 = fancy_plots_3()
-    plot_angular_velocities(fig13, ax13, ax23, ax33, Q1_velocities_data[0:3, :], t, "Angular velocities Body")
+    fig31, ax31, ax32, ax33 = fancy_plots_3()
+    plot_angular_velocities(fig31, ax31, ax32, ax33, Q1_velocities_data[0:3, :], t, "Angular velocities Body")
     plt.show()
 
-    fig14, ax14, ax24, ax34 = fancy_plots_3()
-    plot_linear_velocities(fig14, ax14, ax24, ax34, Q1_velocities_data[3:6, :], t, "Linear velocities Body")
+    fig41, ax41, ax42, ax43 = fancy_plots_3()
+    plot_linear_velocities(fig41, ax41, ax42, ax43, Q1_velocities_data[3:6, :], t, "Linear velocities Body")
+    plt.show()
+
+    # Control Actions
+    fig51, ax51, ax52, ax53, ax54 = fancy_plots_4()
+    plot_control_actions(fig51, ax51, ax52, ax53, ax54, F, M, t, "Control Actions of the System")
     plt.show()
 
     return None
