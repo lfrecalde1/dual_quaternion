@@ -120,13 +120,13 @@ def main(odom_pub_1, odom_pub_2, L):
     taux_3_min = -0.1
 
     # Defining desired
-    theta1_d = 0
+    theta1_d = np.pi/2
     nx_d = 0.0
     ny_d = 0.0
     nz_d = 1.0
-    tx1_d = 0.0
-    ty1_d = 0.0
-    tz1_d = 1
+    tx1_d = 0
+    ty1_d = 0
+    tz1_d = 0
 
     # Initial Dualquaternion
     dual_1_d = dualquat_from_pose(theta1_d, nx_d, ny_d,  nz_d, tx1_d, ty1_d, tz1_d)
@@ -157,6 +157,7 @@ def main(odom_pub_1, odom_pub_2, L):
     # Simulation loop
     for k in range(0, t.shape[0] - N_prediction):
         tic = rospy.get_time()
+        print(dual_1_d)
         # Control Law Acados
         acados_ocp_solver.set(0, "lbx", X[:, k])
         acados_ocp_solver.set(0, "ubx", X[:, k])

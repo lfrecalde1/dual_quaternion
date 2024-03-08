@@ -36,7 +36,7 @@ def reference(t, ts):
 
     # Compute angular displacement
     #theta = np.arctan2(v1[2,:], v1[1, :])
-    theta = np.pi/2
+    theta = -np.pi/2
 
     # Compute angular velocity
     #theta_p = (1. / ((v1[2, :] / v1[1, :]) ** 2 + 1)) * ((v1p[2, :] * v1[1, :] - v1[2, :] * v1p[1, :]) / v1[1, :] ** 2)
@@ -53,9 +53,9 @@ def reference(t, ts):
 
     # Init Quaternions
     #q1 = np.hstack([r_q[3], r_q[0], r_q[1], r_q[2]])
-    n = np.array([0.0, 0.0, 1.0])
+    n = np.array([0.0, 1.0, 0.0])
     q1 = np.hstack([np.cos(theta / 2), np.sin(theta / 2) * np.array(n)])
-    t1 = np.array([0.0, -10.0, 10.0, 0.0])
+    t1 = np.array([0.0, 10.0, 5.0, -5.0])
 
     # Init DualQuaternion
     Q1 = DualQuaternion.from_pose(quat = q1, trans = t1)
@@ -219,7 +219,8 @@ def control_law(qd, q, kp, wd, vd):
     # Control error complete
     qd_c = qd.conjugate()
     # Calculate left error
-    #q_e =  q * qd_c
+    q_e =  q * qd_c
+    print(q_e.get[:, 0])
 
     # Shortest path
     q_e_data = q_e.get
@@ -257,10 +258,10 @@ def main(odom_pub_1, odom_pub_2):
     rospy.loginfo_once("DualQuaternion.....")
 
     # Defining of the vectors using casadi
-    theta1 = ca.SX([-ca.pi])
-    n1 = ca.SX([0.0, 0.0, 1.0])
+    theta1 = ca.SX([-ca.pi/2])
+    n1 = ca.SX([0.0, 1.0, 0.0])
     q1 = ca.vertcat(ca.cos(theta1/2), ca.sin(theta1/2)@n1)
-    t1 = ca.SX([0.0, 2.0, -2.0, 0.0])
+    t1 = ca.SX([0.0, 10.0, 5.0, -5.0])
 
     # Get Trajectory
     Q2_data, wd, vd, Q2_data_i = reference(t, sample_time)
@@ -299,20 +300,25 @@ def main(odom_pub_1, odom_pub_2):
         # Set Desired Reference as DualQuaternion
         Q2 = DualQuaternion.from_pose(quat = Q2_data[0:4, k], trans = Q2_data[4:8, k])
         qe = Q1 * Q2.conjugate()
+        q_e_ln = qe.ln_control()
 
 
         # Control Law
-        U, qe_ln, pe_ln, q_e_ln = control_law(Q2, Q1, K, wd[:, k], vd[:, k])
-        print(U.get[:, 0])
+        #U, qe_ln, pe_ln, q_e_ln = control_law(Q2, Q1, K, wd[:, k], vd[:, k])
+        print("---------------------")
+        print(Q1)
+        print(Q2)
+        print(qe.get[:, 0])
+        print(q_e_ln.get[:, 0])
 
         # Norm of the Dualquaternion Error
-        norm_q, norm_t = q_e_ln.norm_dual_control
-        norm_quat[:, k] = norm_q
-        norm_trans[:, k] = norm_t
+        #norm_q, norm_t = q_e_ln.norm_dual_control
+        #norm_quat[:, k] = norm_q
+        #norm_trans[:, k] = norm_t
 
         # Save Values Control Law
-        w1[1:4, k] = angular_velocity_body(U, Q1)
-        v1[1:4, k] =  linear_velocity_body(U, Q1)
+        #w1[1:4, k] = angular_velocity_body(U, Q1)
+        #v1[1:4, k] =  linear_velocity_body(U, Q1)
 
         # Compute dual velocity
         dual_velocity_values = dual_velocity(w1[:, k], v1[:, k], Q1)
@@ -325,7 +331,7 @@ def main(odom_pub_1, odom_pub_2):
         send_odometry(quat_2_msg, odom_pub_2)
 
         # System evolution
-        Q1 = f_rk4(Q1, U, sample_time)
+        #Q1 = f_rk4(Q1, U, sample_time)
 
         # Save information
         Q1_data[0:4, k +1] = Q1.get_quat.get[:, 0]
