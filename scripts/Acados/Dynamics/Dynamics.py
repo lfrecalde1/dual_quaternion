@@ -47,9 +47,12 @@ def send_odometry(odom_msg, odom_pub):
     return None
 
 def main(odom_pub_1, odom_pub_2, L):
+    # Split Values
+    m = L[0]
+    g = L[4]
     # Sample Time Defintion
     sample_time = 0.03
-    t_f = 20
+    t_f = 30
 
     # Time defintion aux variable
     t = np.arange(0, t_f + sample_time, sample_time)
@@ -58,7 +61,7 @@ def main(odom_pub_1, odom_pub_2, L):
     hz = int(1/(sample_time))
     loop_rate = rospy.Rate(hz)
 
-    t_N = 0.5
+    t_N = 1
     # Prediction Node of the NMPC formulation
     N = np.arange(0, t_N + sample_time, sample_time)
     N_prediction = N.shape[0]
@@ -72,13 +75,13 @@ def main(odom_pub_1, odom_pub_2, L):
     quat_1_d_msg = Odometry()
     
     # Defining initial condition of the system and verify properties
-    theta1 = np.pi/4
+    theta1 = np.pi/2
     nx = 0.0
     ny = 0.0
     nz = 1.0
-    tx1 = -2.0
-    ty1 = 2.0
-    tz1 = 3.0
+    tx1 = 0.0
+    ty1 = -2.0
+    tz1 = 0.0
 
     # Initial Dualquaternion
     dual_1 = dualquat_from_pose(theta1, nx, ny,  nz, tx1, ty1, tz1)
@@ -100,12 +103,6 @@ def main(odom_pub_1, odom_pub_2, L):
     velocities  = velocity_from_twist(dual_twist_1, dual_1)
     Q1_velocities_data[:, 0] = np.array(velocities).reshape((6, ))
 
-    # Odometry message
-    quat_1_msg = get_odometry(quat_1_msg, dual_1, 'quat_1')
-    send_odometry(quat_1_msg, odom_pub_1)
-
-    quat_1_d_msg = get_odometry(quat_1_d_msg, dual_1_d, 'quat_1_d')
-    send_odometry(quat_1_d_msg, odom_pub_2)
 
     # Constraints on control actions
     F_max = L[0]*L[4] + 20
@@ -118,13 +115,13 @@ def main(odom_pub_1, odom_pub_2, L):
     taux_3_min = -0.1
 
     # Defining desired frame
-    theta1_d = np.pi/2
+    theta1_d = 0.0
     nx_d = 0.0
     ny_d = 0.0
     nz_d = 1.0
-    tx1_d = 0
-    ty1_d = 0
-    tz1_d = 0
+    tx1_d = 1
+    ty1_d = 1
+    tz1_d = 1
 
     # Initial Desired Dualquaternion
     dual_1_d = dualquat_from_pose(theta1_d, nx_d, ny_d,  nz_d, tx1_d, ty1_d, tz1_d)
@@ -134,16 +131,23 @@ def main(odom_pub_1, odom_pub_2, L):
     # Initial condition for the desired states
     X_d = np.zeros((14, t.shape[0]), dtype=np.double)
     for k in range(0, X_d.shape[1]):
-        X_d[:, k ] = np.array(ca.vertcat(dual_1_d, dual_twist_1_d)).reshape((14, ))
+        X_d[:, k] = np.array(ca.vertcat(dual_1_d, dual_twist_1_d)).reshape((14, ))
 
     u_d = np.zeros((4, t.shape[0]), dtype=np.double)
-    u_d[0, :] = 9.8
+    u_d[0, :] = m*g
 
     Q2_trans_data = np.zeros((4, t.shape[0] + 1 - N_prediction), dtype=np.double)
     Q2_quat_data = np.zeros((4, t.shape[0] + 1 - N_prediction), dtype=np.double)
 
     Q2_trans_data[:, 0] = np.array(get_trans(dual_1_d)).reshape((4, ))
     Q2_quat_data[:, 0] = np.array(get_quat(dual_1_d)).reshape((4, ))
+
+    # Odometry message
+    quat_1_msg = get_odometry(quat_1_msg, dual_1, 'quat_1')
+    send_odometry(quat_1_msg, odom_pub_1)
+
+    quat_1_d_msg = get_odometry(quat_1_d_msg, dual_1_d, 'quat_1_d')
+    send_odometry(quat_1_d_msg, odom_pub_2)
 
     # Optimization problem
     ocp = create_ocp_solver(X[:, 0], N_prediction, t_N, F_max, F_min, tau_1_max, tau_1_min, tau_2_max, tau_2_min, tau_3_max, taux_3_min, L, sample_time)
@@ -154,16 +158,22 @@ def main(odom_pub_1, odom_pub_2, L):
     x_dim = ocp.model.x.size()[0]
     u_dim = ocp.model.u.size()[0]
 
-
     # Control Actions 
     u = np.zeros((4, t.shape[0] - N_prediction), dtype=np.double)
     F = np.zeros((1, t.shape[0] - N_prediction), dtype=np.double)
     M = np.zeros((3, t.shape[0] - N_prediction), dtype=np.double)
 
+    for stage in range(N_prediction + 1):
+        acados_ocp_solver.set(stage, "x", X[:, 0])
+    for stage in range(N_prediction):
+        acados_ocp_solver.set(stage, "u", np.zeros((u_dim,)))
+
     # Simulation loop
     for k in range(0, t.shape[0] - N_prediction):
         tic = rospy.get_time()
-        print(dual_1_d)
+        quat_check = get_quat(X[0:8, k])
+        print(np.linalg.norm(quat_check))
+
         # Control Law Acados
         acados_ocp_solver.set(0, "lbx", X[:, k])
         acados_ocp_solver.set(0, "ubx", X[:, k])
@@ -190,7 +200,7 @@ def main(odom_pub_1, odom_pub_2, L):
         u[0, k] = F[:, k]
         u[1:4, k] = M[:, k]
         
-        # System Evolution
+        # Evolution of the system
         acados_integrator.set("x", X[:, k])
         acados_integrator.set("u", u[:, k])
 

@@ -46,6 +46,8 @@ MODEL_OBJ := $(MODEL_SRC:.c=.o)
 
 # optimal control problem - mostly CasADi exports
 OCP_SRC=
+OCP_SRC+= quadrotor_constraints/quadrotor_constr_h_fun_jac_uxt_zt.c
+OCP_SRC+= quadrotor_constraints/quadrotor_constr_h_fun.c
 OCP_SRC+= quadrotor_cost/quadrotor_cost_ext_cost_0_fun.c
 OCP_SRC+= quadrotor_cost/quadrotor_cost_ext_cost_0_fun_jac.c
 OCP_SRC+= quadrotor_cost/quadrotor_cost_ext_cost_0_fun_jac_hess.c

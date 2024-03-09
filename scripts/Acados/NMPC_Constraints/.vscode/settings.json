@@ -1,0 +1,14 @@
+{
+    "python.autoComplete.extraPaths": [
+        "/home/fer/dual_ws/devel/lib/python3/dist-packages",
+        "/opt/ros/noetic/lib/python3/dist-packages",
+        "/usr/local/webots/lib/controller/python",
+        "//home/fer/pfdq"
+    ],
+    "python.analysis.extraPaths": [
+        "/home/fer/dual_ws/devel/lib/python3/dist-packages",
+        "/opt/ros/noetic/lib/python3/dist-packages",
+        "/usr/local/webots/lib/controller/python",
+        "//home/fer/pfdq"
+    ]
+}
