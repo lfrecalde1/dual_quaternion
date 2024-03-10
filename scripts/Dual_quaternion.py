@@ -46,7 +46,7 @@ def reference(t, ts):
     # Update angular velocities
     w1[1, :] = 0.0
     w1[2, :] = 0.0
-    w1[3, :] = 0.5
+    w1[3, :] = 0.0
 
     #Compute initial quaternion based on the defined trajectory
     #r = R.from_euler('zyx',[theta[0], 0, 0], degrees=False)
@@ -310,9 +310,16 @@ def main(odom_pub_1, odom_pub_2):
 
     for k in range(0, t.shape[0]):
         tic = rospy.get_time()
+        aux_q = Quaternion(q = q1)
+        qux_q_c = aux_q.conjugate()
+        aux_t = Quaternion(q = t1)
+        dual = (1/2) * aux_q * aux_t
+        print("----------------")
+        print(dual)
+        print(Q1.get[:, 0])
+
+
         # Update Desired Quaaternion
-        aux_H = Q1.H_plus_dual()
-        print(aux_H.shape)
         Q2 = DualQuaternion_body.from_pose(quat = Q2_data[0:4, k], trans = Q2_data[4:8, k])
         #Q2_aux = DualQuaternion_body(q_real = Q2.get_real, q_dual = Q2.get_dual)
 
@@ -339,7 +346,7 @@ def main(odom_pub_1, odom_pub_2):
         send_odometry(quat_2_msg, odom_pub_2)
 
         # System Evolution
-        Q1 = f_rk4(Q1, U, sample_time)
+        #Q1 = f_rk4(Q1, U, sample_time)
 
         # Save information
         Q1_data[0:4, k +1] = Q1.get_quat.get[:, 0]
