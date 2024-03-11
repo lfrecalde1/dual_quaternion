@@ -76,13 +76,13 @@ def main(odom_pub_1, odom_pub_2, L):
     quat_1_d_msg = Odometry()
     
     # Defining initial condition of the system and verify properties
-    theta1 = -np.pi/2
-    nx = 0.0
-    ny = 0.0
-    nz = 1.0
+    theta1 = 3.8134
+    nx = 0.4896
+    ny = 0.2032
+    nz = 0.8480
     tx1 = 4.0
-    ty1 = -4.0
-    tz1 = 0
+    ty1 = 4.0
+    tz1 = 4
 
     # Initial Dualquaternion
     dual_1 = dualquat_from_pose(theta1, nx, ny,  nz, tx1, ty1, tz1)
@@ -120,9 +120,9 @@ def main(odom_pub_1, odom_pub_2, L):
     nx_d = 0.0
     ny_d = 0.0
     nz_d = 1.0
-    tx1_d = 1
-    ty1_d = 1
-    tz1_d = 1
+    tx1_d = 0
+    ty1_d = 0
+    tz1_d = 0
 
     # Initial Desired Dualquaternion
     dual_1_d = dualquat_from_pose(theta1_d, nx_d, ny_d,  nz_d, tx1_d, ty1_d, tz1_d)
