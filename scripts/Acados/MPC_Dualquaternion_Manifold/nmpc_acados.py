@@ -64,7 +64,9 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
     v = model.x[11:14]
 
     # Gain Matrix complete error
+    # Add 0,0 value
     Q_t = DM.zeros(8, 8)
+    Q_t[0, 0] = 1
     Q_t[1, 1] = 1
     Q_t[2, 2] = 1
     Q_t[3, 3] = 1
