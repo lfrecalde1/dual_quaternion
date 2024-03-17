@@ -156,6 +156,7 @@ def rotation_inverse_casadi():
     f_rot_inv =  ca.Function('f_rot_inv', [quat_aux_1, vector_aux_1], [vector_b[1:4, 0]])
     return f_rot_inv
 
+f_rotation_inverse = rotation_inverse_casadi()
 
 def dual_quat_casadi():
     values = Q1.get[:, 0]
@@ -522,4 +523,4 @@ def quadrotorModel(L: list)-> AcadosModel:
     model.z = z
     model.p = p
     model.name = model_name
-    return model, get_trans, get_quat, constraint, error_manifold, error_quaternion, error_lie
+    return model, get_trans, get_quat, constraint, error_manifold, error_quaternion, error_lie, velocity, f_rotation_inverse

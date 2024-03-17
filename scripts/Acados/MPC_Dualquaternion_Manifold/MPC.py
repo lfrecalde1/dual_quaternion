@@ -76,10 +76,10 @@ def main(odom_pub_1, odom_pub_2, L):
     quat_1_d_msg = Odometry()
     
     # Defining initial condition of the system and verify properties
-    theta1 = 3.8134
-    nx = 0.4896
-    ny = 0.2032
-    nz = 0.8480
+    theta1 = np.pi
+    nx = 0.0
+    ny = 1.0
+    nz = 0.0
     tx1 = 4.0
     ty1 = 4.0
     tz1 = 4

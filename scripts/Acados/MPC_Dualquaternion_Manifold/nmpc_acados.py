@@ -22,7 +22,7 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
     ocp = AcadosOcp()
 
     # Model of the system
-    model, get_trans, get_quat, constraint, error_manifold, error_quaternion, error_lie = quadrotorModel(L)
+    model, get_trans, get_quat, constraint, error_manifold, error_quaternion, error_lie, velocity, f_rotacion_inverse = quadrotorModel(L)
 
     # Constructing the optimal control problem
     ocp.model = model
@@ -60,8 +60,13 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
     error_nominal_input = nominal_input - model.u[0:4]
 
     # Angular velocities
+    #angular_b_linear_i = velocity(model.x[8:14], dual)
+    #w = angular_b_linear_i[0:3, 0]
+    #v_i = angular_b_linear_i[3:6, 0]
+    #v = v_i
     w = model.x[8:11]
     v = model.x[11:14]
+
 
     # Gain Matrix complete error
     # Add 0,0 value
@@ -70,6 +75,7 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
     Q_t[1, 1] = 1
     Q_t[2, 2] = 1
     Q_t[3, 3] = 1
+    Q_t[4, 4] = 0.2
     Q_t[5, 5] = 0.2
     Q_t[6, 6] = 0.2
     Q_t[7, 7] = 0.2
