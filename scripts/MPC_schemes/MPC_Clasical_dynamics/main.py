@@ -240,8 +240,8 @@ if __name__ == '__main__':
         # Initial conditions of the system
         pos_0 = np.array([-4.0, -4.0, 4.0], dtype=np.double)
         vel_0 = np.array([0.0, 0.0, 0.0], dtype=np.double)
-        angle_0 = np.pi
-        axis_0 = [0.0, 1, 0.0]
+        angle_0 = 3.8134
+        axis_0 = [0.4896, 0.2032, 0.8480]
         quat_0 = axisToquaternion(angle_0, axis_0)
         omega_0 = np.array([0.0, 0.0, 0.0], dtype=np.double)
 

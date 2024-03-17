@@ -87,10 +87,10 @@ int main()
     x_current[3] = 0;
     x_current[4] = 0;
     x_current[5] = 0;
-    x_current[6] = 0.00000000000000006123233995736766;
-    x_current[7] = 0;
-    x_current[8] = 1;
-    x_current[9] = 0;
+    x_current[6] = -0.3296224738085895;
+    x_current[7] = 0.462237638713127;
+    x_current[8] = 0.1918437258711344;
+    x_current[9] = 0.8006076748952853;
     x_current[10] = 0;
     x_current[11] = 0;
     x_current[12] = 0;

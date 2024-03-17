@@ -86,10 +86,10 @@ int main()
     x_current[1] = 0;
     x_current[2] = 1;
     x_current[3] = 0;
-    x_current[4] = -2;
+    x_current[4] = 2;
     x_current[5] = 2;
-    x_current[6] = 0.00000000000000012246467991473532;
-    x_current[7] = -2;
+    x_current[6] = -0.00000000000000012246467991473532;
+    x_current[7] = 2;
     x_current[8] = 0;
     x_current[9] = 0;
     x_current[10] = 0;

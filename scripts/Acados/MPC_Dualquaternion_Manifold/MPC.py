@@ -80,8 +80,8 @@ def main(odom_pub_1, odom_pub_2, L):
     nx = 0.0
     ny = 1.0
     nz = 0.0
-    tx1 = 4.0
-    ty1 = 4.0
+    tx1 = -4.0
+    ty1 = -4.0
     tz1 = 4
 
     # Initial Dualquaternion

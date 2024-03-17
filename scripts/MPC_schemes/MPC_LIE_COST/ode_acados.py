@@ -369,6 +369,7 @@ def error_lie(qd, q):
     trans_error = 2 * H_error_real_plus@q_error_dual
     # Computing log map
     ln_quaternion = ca.vertcat(0.0,  (1/2)*angle*q_error_real[1, 0]/norm, (1/2)*angle*q_error_real[2, 0]/norm, (1/2)*angle*q_error_real[3, 0]/norm)
+    #ln_quaternion = ca.vertcat(0.0,  (1/2)*1*q_error_real[1, 0], (1/2)*1*q_error_real[2, 0], (1/2)*1*q_error_real[3, 0])
     ln_trans = ca.vertcat(0.0, (1/2)*trans_error[1, 0], (1/2)*trans_error[2, 0], (1/2)*trans_error[3, 0])
     q_e_ln = ca.vertcat(ln_quaternion, ln_trans)
     return q_e_ln
