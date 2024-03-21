@@ -56,12 +56,12 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
     # Gain Matrix complete error
 
     Q_l = DM.zeros(8, 8)
-    Q_l[1, 1] = 2.5
-    Q_l[2, 2] = 2.5
-    Q_l[3, 3] = 2.5
-    Q_l[5, 5] = 2
-    Q_l[6, 6] = 2
-    Q_l[7, 7] = 2
+    Q_l[1, 1] = 2
+    Q_l[2, 2] = 2
+    Q_l[3, 3] = 2
+    Q_l[5, 5] = 0.5
+    Q_l[6, 6] = 0.5
+    Q_l[7, 7] = 0.5
 
     Q_t = DM.zeros(8, 8)
     Q_t[0, 0] = 1
@@ -119,7 +119,7 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
     ocp.solver_options.hessian_approx = "GAUSS_NEWTON"  
     #ocp.solver_options.regularize_method = "CONVEXIFY"  
     ocp.solver_options.integrator_type = "IRK"
-    ocp.solver_options.nlp_solver_type = "SQP_RTI"
+    ocp.solver_options.nlp_solver_type = "SQP"
     ocp.solver_options.Tsim = ts
     ocp.solver_options.sim_method_num_stages = 4
     ocp.solver_options.sim_method_num_steps = 1 # Verify the meaning of this value

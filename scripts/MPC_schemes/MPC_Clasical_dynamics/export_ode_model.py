@@ -3,6 +3,46 @@ from casadi import Function, MX, vertcat, sin, cos
 import numpy as np
 import casadi as ca
 
+def rotation_inverse_casadi():
+    # Creation of the symbolic variables for the quaternion and the vector
+    quat_aux_1 = ca.MX.sym('quat_aux_1', 4, 1)
+    vector_aux_1 = ca.MX.sym('vector_aux_1', 3, 1)
+
+    # Auxiliary pure quaternion based on the information of the vector
+    vector = ca.vertcat(0.0, vector_aux_1)
+
+    # Quaternion
+    quat = quat_aux_1
+
+    # Quaternion conjugate
+    quat_c = ca.vertcat(quat[0, 0], -quat[1, 0], -quat[2, 0], -quat[3, 0])
+    # v' = q* x v x q 
+    # Rotation to the body Frame
+
+    # QUaternion Multiplication vector form
+    H_plus_q_c = ca.vertcat(ca.horzcat(quat_c[0, 0], -quat_c[1, 0], -quat_c[2, 0], -quat_c[3, 0]),
+                                ca.horzcat(quat_c[1, 0], quat_c[0, 0], -quat_c[3, 0], quat_c[2, 0]),
+                                ca.horzcat(quat_c[2, 0], quat_c[3, 0], quat_c[0, 0], -quat_c[1, 0]),
+                                ca.horzcat(quat_c[3, 0], -quat_c[2, 0], quat_c[1, 0], quat_c[0, 0]))
+
+    # First Multiplication
+    aux_value = H_plus_q_c@vector
+
+    # Quaternion multiplication second element
+    H_plus_aux = ca.vertcat(ca.horzcat(aux_value[0, 0], -aux_value[1, 0], -aux_value[2, 0], -aux_value[3, 0]),
+                                ca.horzcat(aux_value[1, 0], aux_value[0, 0], -aux_value[3, 0], aux_value[2, 0]),
+                                ca.horzcat(aux_value[2, 0], aux_value[3, 0], aux_value[0, 0], -aux_value[1, 0]),
+                                ca.horzcat(aux_value[3, 0], -aux_value[2, 0], aux_value[1, 0], aux_value[0, 0]))
+
+    # Rotated vector repected to the body frame
+    vector_b = H_plus_aux@quat
+
+    # Defining function using casadi
+    f_rot_inv =  ca.Function('f_rot_inv', [quat_aux_1, vector_aux_1], [vector_b[1:4, 0]])
+    return f_rot_inv
+
+# Creating functions which are going to be used later
+f_rotation_inverse = rotation_inverse_casadi()
 def quatTorot_c(quat):
     # Function to transform a quaternion to a rotational matrix
     # INPUT
@@ -216,7 +256,7 @@ def quadrotorModel(L: list)-> AcadosModel:
     model.z = z
     model.p = p
     model.name = model_name
-    return model, f_system, constraint, f_error, error_quaternion
+    return model, f_system, constraint, f_error, error_quaternion, f_rotation_inverse
 
 def conjugate_quaternion(q):
     # Compute the conjugate of a specified quaternion
@@ -316,16 +356,16 @@ def error_quaternion(qd, q):
     # Check shortest path
     q_error = ca.if_else(condition1, expr1, expr2) 
 
-    norm = ca.norm_2(q_error[1:4] + ca.np.finfo(np.float64).eps)
-    angle = ca.atan2(norm, q_error[0])
+    #norm = ca.norm_2(q_error[1:4] + ca.np.finfo(np.float64).eps)
+    #angle = ca.atan2(norm, q_error[0])
 
-    ln_quaternion = ca.vertcat(0.0,  (1/2)*angle*q_error[1, 0]/norm, (1/2)*angle*q_error[2, 0]/norm, (1/2)*angle*q_error[3, 0]/norm)
+    #ln_quaternion = ca.vertcat(0.0,  (1/2)*angle*q_error[1, 0]/norm, (1/2)*angle*q_error[2, 0]/norm, (1/2)*angle*q_error[3, 0]/norm)
 
 
     # Sux variable in roder to get a norm
-    #q_3_aux = ca.DM([1.0, 0.0, 0.0, 0.0])
-    #Q3_pose =  ca.vertcat(q_3_aux)
+    q_3_aux = ca.DM([1.0, 0.0, 0.0, 0.0])
+    Q3_pose =  ca.vertcat(q_3_aux)
     
-    #q_e_ln = Q3_pose - q_error
+    q_e_ln = Q3_pose - q_error
 
-    return ln_quaternion
+    return q_e_ln

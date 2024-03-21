@@ -63,7 +63,7 @@ def main(odom_pub_1, odom_pub_2, L):
     hz = int(1/(sample_time))
     loop_rate = rospy.Rate(hz)
 
-    t_N = 0.5
+    t_N = 0.1
     # Prediction Node of the NMPC formulation
     N = np.arange(0, t_N + sample_time, sample_time)
     N_prediction = N.shape[0]
@@ -85,9 +85,9 @@ def main(odom_pub_1, odom_pub_2, L):
     nx = 0.4896
     ny = 0.2032
     nz = 0.8480
-    tx1 = -4.0
-    ty1 = -4.0
-    tz1 = 4
+    tx1 = -1.0
+    ty1 = -1.0
+    tz1 = 1
 
     # Initial Dualquaternion
     dual_1 = dualquat_from_pose(theta1, nx, ny,  nz, tx1, ty1, tz1)
@@ -140,7 +140,7 @@ def main(odom_pub_1, odom_pub_2, L):
     X_d = np.zeros((14, t.shape[0]+1), dtype=np.double)
     X_d[0:8, 0] = np.array(dual_1_d).reshape((8, ))
     for k in range(0, t.shape[0]):
-        angular_linear_1_d = np.array([0.0, 0.0, 0.5, 0.1, 0.0, 0.0]) # Angular Body linear Inertial
+        angular_linear_1_d = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]) # Angular Body linear Inertial
         dual_twist_1_d = dual_twist(angular_linear_1_d, dual_1_d)
         dual_1_d = f_rk4(dual_1_d, dual_twist_1_d, sample_time)
         # Update Reference
@@ -186,8 +186,8 @@ def main(odom_pub_1, odom_pub_2, L):
     # Simulation loop
     for k in range(0, t.shape[0] - N_prediction):
         tic = rospy.get_time()
-        acados_ocp_solver.options_set("rti_phase", 1)
-        acados_ocp_solver.solve()
+        #acados_ocp_solver.options_set("rti_phase", 1)
+        #acados_ocp_solver.solve()
         # Check properties
         real = X[0:4, k]
         dual = X[4:8, k]
@@ -215,7 +215,7 @@ def main(odom_pub_1, odom_pub_2, L):
         acados_ocp_solver.set(N_prediction, "p", aux_ref_N)
 
         # Check Solution since there can be possible errors 
-        acados_ocp_solver.options_set("rti_phase", 2)
+        #acados_ocp_solver.options_set("rti_phase", 2)
         acados_ocp_solver.solve()
 
         stat_fields = ['time_tot', 'time_lin', 'time_qp', 'time_qp_solver_call', 'time_reg', 'sqp_iter']

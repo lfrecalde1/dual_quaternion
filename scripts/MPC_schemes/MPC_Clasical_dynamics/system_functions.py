@@ -288,7 +288,7 @@ def set_odom_msg(msg, x):
     # OUTPUT
     # msg                                                               - odometry msg
     msg.header.stamp = rospy.Time.now()
-    msg.header.frame_id = "map"
+    msg.header.frame_id = "world"
     #msg.child_frame_id = "blue_robot_base"
 
     msg.pose.pose.position.x = x[0]
@@ -318,7 +318,7 @@ def send_odom_msg(msg, pub):
     return None
 
 def init_marker(marker, x):
-    marker.header.frame_id = "map"  # Set the frame ID
+    marker.header.frame_id = "world"  # Set the frame ID
     marker.type = Marker.LINE_STRIP
     marker.action = Marker.ADD
     marker.scale.x = 0.01  # Scale of the mesh
@@ -331,14 +331,14 @@ def init_marker(marker, x):
     return marker, aux_point
 
 def set_marker(marker, x, aux_point):
-    marker.header.frame_id = "map"  # Set the frame ID
+    marker.header.frame_id = "world"  # Set the frame ID
     marker.header.stamp = rospy.Time.now()
     aux_point.append(Point(x[0], x[1], x[2]))
     marker.points = aux_point  # Position of the 
     return marker, aux_point
 
 def init_marker_ref(marker, x):
-    marker.header.frame_id = "map"  # Set the frame ID
+    marker.header.frame_id = "world"  # Set the frame ID
     marker.type = Marker.LINE_STRIP
     marker.action = Marker.ADD
     marker.scale.x = 0.01  # Scale of the mesh
@@ -351,7 +351,7 @@ def init_marker_ref(marker, x):
     return marker, aux_point
 
 def set_marker_ref(marker, x, aux_point):
-    marker.header.frame_id = "map"  # Set the frame ID
+    marker.header.frame_id = "world"  # Set the frame ID
     marker.header.stamp = rospy.Time.now()
     aux_point.append(Point(x[0], x[1], x[2]))
     marker.points = aux_point  # Position of the 

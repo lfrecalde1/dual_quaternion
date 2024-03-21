@@ -21,7 +21,7 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
     ocp = AcadosOcp()
 
     # Model of the system
-    model, f_d, constraint, f_error, error_quaternion = quadrotorModel(L)
+    model, f_d, constraint, f_error, error_quaternion, rotation_inverse = quadrotorModel(L)
 
     # Constructing the optimal control problem
     ocp.model = model
@@ -39,9 +39,9 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
 
     # Gain matrices position error
     Q = MX.zeros(3, 3)
-    Q[0, 0] = 1.5
-    Q[1, 1] = 1.5
-    Q[2, 2] = 2.5
+    Q[0, 0] = 2.5
+    Q[1, 1] = 4.0
+    Q[2, 2] = 2.0
 
     # Control effort using gain matrices
     R = MX.zeros(4, 4)
@@ -65,12 +65,13 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
 
     # Angular velocities
     w = model.x[10:13]
-    v = model.x[3:6]
+    vi = model.x[3:6]
+    vb = rotation_inverse(q, vi)
 
 
-    ocp.model.cost_expr_ext_cost = 1*(error_position.T @ Q @error_position) + 1*(error_nominal_input.T @ R @ error_nominal_input) + 10*(error_ori.T@error_ori)+ 1*(w.T@w)+ 1*(v.T@v)
 
-    ocp.model.cost_expr_ext_cost_e = 1*(error_position.T @ Q @error_position)+ 10*(error_ori.T@error_ori)+ 1*(w.T@w) + 1*(v.T@v)
+    ocp.model.cost_expr_ext_cost = 1*(error_position.T @ Q @error_position) + 1*(error_nominal_input.T @ R @ error_nominal_input) + 10*(error_ori.T@error_ori)+ 1*(w.T@w)+ 1*(vb.T@vb)
+    ocp.model.cost_expr_ext_cost_e = 1*(error_position.T @ Q @error_position)+ 10*(error_ori.T@error_ori)+ 1*(w.T@w) + 1*(vb.T@vb)
 
 
     # Auxiliary variable initialization
@@ -108,10 +109,10 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
 
     # Set options
     ocp.solver_options.qp_solver = "FULL_CONDENSING_HPIPM" 
-    ocp.solver_options.hessian_approx = "EXACT"  
-    ocp.solver_options.regularize_method = "CONVEXIFY"  
-    ocp.solver_options.integrator_type = "ERK"
-    ocp.solver_options.nlp_solver_type = "SQP_RTI"
+    ocp.solver_options.hessian_approx = "GAUSS_NEWTON"  
+    #ocp.solver_options.regularize_method = "CONVEXIFY"  
+    ocp.solver_options.integrator_type = "IRK"
+    ocp.solver_options.nlp_solver_type = "SQP"
     ocp.solver_options.Tsim = ts
     ocp.solver_options.sim_method_num_stages = 4
     ocp.solver_options.sim_method_num_steps = 1 # Verify the meaning of this value
