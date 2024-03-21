@@ -14,7 +14,7 @@ from nav_msgs.msg import Odometry
 from visualization_msgs.msg import Marker
 from functions import dualquat_from_pose_casadi
 from ode_acados import dualquat_trans_casadi, dualquat_quat_casadi, rotation_casadi, rotation_inverse_casadi, dual_velocity_casadi, dual_quat_casadi, velocities_from_twist_casadi
-from ode_acados import f_rk4_casadi_simple
+from ode_acados import f_rk4_casadi_simple, noise
 
 dualquat_from_pose = dualquat_from_pose_casadi()
 get_trans = dualquat_trans_casadi()
@@ -160,9 +160,37 @@ def main(ts: float, t_f: float, t_N: float, x_0: np.ndarray, L: list, odom_pub_1
     ref_marker_msg = Marker()
     ref_marker_msg, aux_trajectory_ref = init_marker_ref(ref_marker_msg, xref[:, 0])
 
+    # Noise
+    sigma_x = 0.01
+    sigma_y = 0.01
+    sigma_z = 0.01
+    sigma_theta_x = 0.001
+    sigma_theta_y = 0.001
+    sigma_theta_z = 0.001
+    sigma_vx = 0.0001
+    sigma_vy = 0.0001
+    sigma_vz = 0.0001
+    sigma_wx = 0.0001
+    sigma_wy = 0.0001
+    sigma_wz = 0.0001
+    aux_noise = np.zeros(12)
+    aux_noise[0] = sigma_x**2
+    aux_noise[1] = sigma_y**2
+    aux_noise[2] = sigma_z**2
+    aux_noise[3] = sigma_theta_x**2
+    aux_noise[4] = sigma_theta_y**2
+    aux_noise[5] = sigma_theta_z**2
+    aux_noise[6] = sigma_vx**2
+    aux_noise[7] = sigma_vy**2
+    aux_noise[8] = sigma_vz**2
+    aux_noise[9] = sigma_wx**2
+    aux_noise[10] = sigma_wy**2
+    aux_noise[11] = sigma_wz**2
+    uav_white_noise_cov = np.diag(aux_noise)
     # Loop simulation
     for k in range(0, t.shape[0] - N_prediction):
         tic = rospy.get_time()
+        white_noise = np.random.multivariate_normal(np.zeros(12),uav_white_noise_cov)
         #acados_ocp_solver.options_set("rti_phase", 1)
         #acados_ocp_solver.solve()
         # Control Law Acados
@@ -211,7 +239,7 @@ def main(ts: float, t_f: float, t_N: float, x_0: np.ndarray, L: list, odom_pub_1
         xcurrent = acados_integrator.get("x")
 
         # System evolution
-        x[:, k+1] = xcurrent
+        x[:, k+1] = noise(xcurrent, white_noise)
         euler[:, k+1] = get_euler_angles(x[6:10, k+1])
 
         # Send msg to Ros
@@ -269,7 +297,7 @@ if __name__ == '__main__':
         L = [m, Jxx, Jyy, Jzz, g]
 
         # Initial conditions of the system
-        pos_0 = np.array([-1.0, -1.0, 1.0], dtype=np.double)
+        pos_0 = np.array([-2.0, -2.0, 2.0], dtype=np.double)
         vel_0 = np.array([0.0, 0.0, 0.0], dtype=np.double)
         angle_0 = 3.8134
         axis_0 = [0.4896, 0.2032, 0.8480]

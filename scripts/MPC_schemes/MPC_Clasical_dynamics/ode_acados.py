@@ -538,3 +538,52 @@ def quadrotorModel(L: list)-> AcadosModel:
     model.p = p
     model.name = model_name
     return model, get_trans, get_quat, constraint, error_manifold, error_lie, error_quaternion
+
+def noise(x, noise):
+    # Get position and quaternion
+    v = x[3:6]
+    w = x[10:13]
+    trans_np = x[0:3]
+    quat_data = x[6:10]
+
+    # Split noise
+    noise_position = noise[0:3]
+
+    # Translation part
+    trans_noise = trans_np + noise_position
+    trans_noise_aux = np.array([0.0, trans_noise[0], trans_noise[1], trans_noise[2]])
+
+    # Rotational part
+    noise_quat = noise[3:6]
+    squared_norm_delta = noise_quat[0]*noise_quat[0] + noise_quat[1]*noise_quat[1] + noise_quat[2]*noise_quat[2]
+    q_delta = np.zeros((4, 1))
+
+    if squared_norm_delta > 0:
+        norm_delta = np.sqrt(squared_norm_delta)
+        sin_delta_by_delta = np.sin(norm_delta) / norm_delta
+        q_delta[0, 0] = np.cos(norm_delta)
+        q_delta[1, 0] = sin_delta_by_delta * noise_quat[0]
+        q_delta[2, 0] = sin_delta_by_delta * noise_quat[1]
+        q_delta[3, 0] = sin_delta_by_delta * noise_quat[2]
+    else:
+        q_delta[0, 0] = 1.0
+        q_delta[1, 0] = 0.0
+        q_delta[2, 0] = 0.0
+        q_delta[3, 0] = 0.0
+
+    H_r_plus = ca.vertcat(ca.horzcat(quat_data[0], -quat_data[1], -quat_data[2], -quat_data[3]),
+                                ca.horzcat(quat_data[1], quat_data[0], -quat_data[3], quat_data[2]),
+                                ca.horzcat(quat_data[2], quat_data[3], quat_data[0], -quat_data[1]),
+                                ca.horzcat(quat_data[3], -quat_data[2], quat_data[1], quat_data[0]))
+    H_r_plus = np.array(H_r_plus)
+    quat_noise_aux = H_r_plus@q_delta
+
+    # Twist Noise
+    values_twist_aux = noise[6:12]
+    values_twist_v = v + values_twist_aux[0:3]
+    values_twist_w = w + values_twist_aux[3:6]
+    values_pose = np.array([trans_noise_aux[1], trans_noise_aux[2], trans_noise_aux[3],
+                            values_twist_v[0], values_twist_v[1], values_twist_v[2],
+                            quat_noise_aux[0], quat_noise_aux[1], quat_noise_aux[2], quat_noise_aux[3],
+                            values_twist_w[0], values_twist_w[1], values_twist_w[2]])
+    return values_pose

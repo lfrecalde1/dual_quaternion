@@ -68,10 +68,10 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
     Q_t[1, 1] = 1
     Q_t[2, 2] = 1
     Q_t[3, 3] = 1
-    Q_t[4, 4] = 1
-    Q_t[5, 5] = 1
-    Q_t[6, 6] = 1
-    Q_t[7, 7] = 1
+    Q_t[4, 4] = 2
+    Q_t[5, 5] = 2
+    Q_t[6, 6] = 2
+    Q_t[7, 7] = 2
 
 
     #ocp.model.cost_expr_ext_cost = 10*(error_total_lie.T@Q_l@error_total_lie) + 1*(error_nominal_input.T @ R @ error_nominal_input)+ 1*(w.T@w)+ 1*(v.T@v)
@@ -119,7 +119,7 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
     ocp.solver_options.hessian_approx = "GAUSS_NEWTON"  
     #ocp.solver_options.regularize_method = "CONVEXIFY"  
     ocp.solver_options.integrator_type = "IRK"
-    ocp.solver_options.nlp_solver_type = "SQP"
+    ocp.solver_options.nlp_solver_type = "SQP_RTI"
     ocp.solver_options.Tsim = ts
     ocp.solver_options.sim_method_num_stages = 4
     ocp.solver_options.sim_method_num_steps = 1 # Verify the meaning of this value

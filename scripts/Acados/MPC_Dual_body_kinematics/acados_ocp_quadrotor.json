@@ -1,7 +1,7 @@
 {
     "acados_include_path": "/home/fer/acados/include",
     "acados_lib_path": "/home/fer/acados/lib",
-    "code_export_directory": "/home/fer/dual_ws/src/dual_quaternion/scripts/Acados/MPC_Dual_body/c_generated_code",
+    "code_export_directory": "/home/fer/dual_ws/src/dual_quaternion/scripts/Acados/MPC_Dual_body_kinematics/c_generated_code",
     "constraints": {
         "C": [],
         "C_e": [],

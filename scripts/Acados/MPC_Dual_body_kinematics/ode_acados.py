@@ -456,3 +456,47 @@ def quadrotorModel(L: list)-> AcadosModel:
     model.p = p
     model.name = model_name
     return model, get_trans, get_quat, constraint, error_manifold, error_lie
+
+def noise(dual, noise):
+    # Get position and quaternion
+    trans = get_trans(dual)
+    trans_np = np.array(trans[1:4]).reshape((3, ))
+    quat_data = get_quat(dual)
+
+    # Split noise
+    noise_position = noise[0:3]
+
+    # Translation part
+    trans_noise = trans_np + noise_position
+    trans_noise_aux = np.array([0.0, trans_noise[0], trans_noise[1], trans_noise[1]])
+
+    # Rotational part
+    noise_quat = noise[3:6]
+    squared_norm_delta = noise_quat[0]*noise_quat[0] + noise_quat[1]*noise_quat[1] + noise_quat[2]*noise_quat[2]
+    q_delta = np.zeros((4, 1))
+    if squared_norm_delta > 0:
+        norm_delta = np.sqrt(squared_norm_delta)
+        sin_delta_by_delta = np.sin(norm_delta) / norm_delta
+        q_delta[0, 0] = np.cos(norm_delta)
+        q_delta[1, 0] = sin_delta_by_delta * noise_quat[0]
+        q_delta[2, 0] = sin_delta_by_delta * noise_quat[1]
+        q_delta[3, 0] = sin_delta_by_delta * noise_quat[2]
+    else:
+        q_delta[0, 0] = 1.0
+        q_delta[1, 0] = 0.0
+        q_delta[2, 0] = 0.0
+        q_delta[3, 0] = 0.0
+
+    H_r_plus = ca.vertcat(ca.horzcat(quat_data[0, 0], -quat_data[1, 0], -quat_data[2, 0], -quat_data[3, 0]),
+                                ca.horzcat(quat_data[1, 0], quat_data[0, 0], -quat_data[3, 0], quat_data[2, 0]),
+                                ca.horzcat(quat_data[2, 0], quat_data[3, 0], quat_data[0, 0], -quat_data[1, 0]),
+                                ca.horzcat(quat_data[3, 0], -quat_data[2, 0], quat_data[1, 0], quat_data[0, 0]))
+    H_r_plus = np.array(H_r_plus)
+    quat_noise_aux = H_r_plus@q_delta
+    Q1_pose =  DualQuaternion.from_pose(quat = quat_noise_aux, trans = trans_noise_aux)
+    values = Q1_pose.get[:, 0]
+    return np.array(values).reshape((8, ))
+
+
+
+

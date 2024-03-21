@@ -7,7 +7,7 @@ from dual_quaternion import plot_states_quaternion, plot_states_position, fancy_
 from nav_msgs.msg import Odometry
 from functions import dualquat_from_pose_casadi
 from ode_acados import dualquat_trans_casadi, dualquat_quat_casadi, rotation_casadi, rotation_inverse_casadi, dual_velocity_casadi, dual_quat_casadi, velocities_from_twist_casadi
-from ode_acados import f_rk4_casadi_simple
+from ode_acados import f_rk4_casadi_simple, noise
 from nmpc_acados import create_ocp_solver
 from acados_template import AcadosOcpSolver, AcadosSimSolver
 
@@ -165,9 +165,26 @@ def main(odom_pub_1, odom_pub_2, L):
     for stage in range(N_prediction):
         acados_ocp_solver.set(stage, "u", np.zeros((u_dim,)))
 
+    #white_noise_cov = np.diag(np.zeros(12))
+    sigma_x = 0.01
+    sigma_y = 0.01
+    sigma_z = 0.01
+    sigma_theta_x = 0.001
+    sigma_theta_y = 0.001
+    sigma_theta_z = 0.001
+    aux_noise = np.zeros(12)
+    aux_noise[0] = sigma_x**2
+    aux_noise[1] = sigma_y**2
+    aux_noise[2] = sigma_z**2
+    aux_noise[3] = sigma_theta_x**2
+    aux_noise[4] = sigma_theta_y**2
+    aux_noise[5] = sigma_theta_z**2
+    uav_white_noise_cov = np.diag(aux_noise)
+
     # Simulation loop
     for k in range(0, t.shape[0] - N_prediction):
         tic = rospy.get_time()
+        white_noise = np.random.multivariate_normal(np.zeros(12),uav_white_noise_cov)
         # Check properties
         real = X[0:4, k]
         dual = X[4:8, k]
@@ -176,6 +193,7 @@ def main(odom_pub_1, odom_pub_2, L):
         print("-----")
         print(np.linalg.norm(quat_check))
         print(np.dot(real, dual))
+        print(white_noise)
 
         # Control Law Acados
         acados_ocp_solver.set(0, "lbx", X[:, k])
@@ -214,7 +232,8 @@ def main(odom_pub_1, odom_pub_2, L):
         xcurrent = acados_integrator.get("x")
 
         # Update Data of the system
-        X[:, k+1] = xcurrent
+
+        X[:, k+1] = noise(xcurrent, white_noise)
         dual_1 = X[0:8, k+1]
 
         # Update Matrices of our system

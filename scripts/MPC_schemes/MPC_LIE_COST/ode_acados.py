@@ -290,8 +290,9 @@ def velocities_from_twist_casadi(twist = w_1d, dualquat = dual_1d):
 
 def error_manifold(qd, q):
     qd_conjugate = ca.vertcat(qd[0], -qd[1], -qd[2], -qd[3], qd[4], -qd[5], -qd[6], -qd[7])
-    quat_d_data = qd_conjugate[0:4]
-    dual_d_data =  qd_conjugate[4:8]
+    q_conjugate = ca.vertcat(q[0], -q[1], -q[2], -q[3], q[4], -q[5], -q[6], -q[7])
+    quat_d_data = qd[0:4]
+    dual_d_data =  qd[4:8]
 
     H_r_plus = ca.vertcat(ca.horzcat(quat_d_data[0], -quat_d_data[1], -quat_d_data[2], -quat_d_data[3]),
                                 ca.horzcat(quat_d_data[1], quat_d_data[0], -quat_d_data[3], quat_d_data[2]),
@@ -307,7 +308,7 @@ def error_manifold(qd, q):
                         ca.horzcat(H_d_plus, H_r_plus))
 
 
-    q_e_aux = Hplus @ q
+    q_e_aux = Hplus @ q_conjugate
     
     condition1 = q_e_aux[0, 0] > 0.0
 
@@ -538,3 +539,54 @@ def quadrotorModel(L: list)-> AcadosModel:
     model.p = p
     model.name = model_name
     return model, get_trans, get_quat, constraint, error_manifold, error_lie, error_quaternion
+
+def noise(x, noise):
+    # Get position and quaternion
+    dual = x[0:8]
+    twist = x[8:14]
+    trans = get_trans(dual)
+    trans_np = np.array(trans[1:4]).reshape((3, ))
+    quat_data = get_quat(dual)
+
+    # Split noise
+    noise_position = noise[0:3]
+
+    # Translation part
+    trans_noise = trans_np + noise_position
+    trans_noise_aux = np.array([0.0, trans_noise[0], trans_noise[1], trans_noise[2]])
+
+    # Rotational part
+    noise_quat = noise[3:6]
+    squared_norm_delta = noise_quat[0]*noise_quat[0] + noise_quat[1]*noise_quat[1] + noise_quat[2]*noise_quat[2]
+    q_delta = np.zeros((4, 1))
+
+    if squared_norm_delta > 0:
+        norm_delta = np.sqrt(squared_norm_delta)
+        sin_delta_by_delta = np.sin(norm_delta) / norm_delta
+        q_delta[0, 0] = np.cos(norm_delta)
+        q_delta[1, 0] = sin_delta_by_delta * noise_quat[0]
+        q_delta[2, 0] = sin_delta_by_delta * noise_quat[1]
+        q_delta[3, 0] = sin_delta_by_delta * noise_quat[2]
+    else:
+        q_delta[0, 0] = 1.0
+        q_delta[1, 0] = 0.0
+        q_delta[2, 0] = 0.0
+        q_delta[3, 0] = 0.0
+
+    H_r_plus = ca.vertcat(ca.horzcat(quat_data[0, 0], -quat_data[1, 0], -quat_data[2, 0], -quat_data[3, 0]),
+                                ca.horzcat(quat_data[1, 0], quat_data[0, 0], -quat_data[3, 0], quat_data[2, 0]),
+                                ca.horzcat(quat_data[2, 0], quat_data[3, 0], quat_data[0, 0], -quat_data[1, 0]),
+                                ca.horzcat(quat_data[3, 0], -quat_data[2, 0], quat_data[1, 0], quat_data[0, 0]))
+    H_r_plus = np.array(H_r_plus)
+    quat_noise_aux = H_r_plus@q_delta
+    Q1_pose =  DualQuaternion.from_pose(quat = quat_noise_aux, trans = trans_noise_aux)
+    values_pose = np.array(Q1_pose.get[:, 0]).reshape((8, ))
+
+    # Twist Noise
+    values_twist_aux = noise[6:12]
+    values_twist = np.array(twist).reshape((6, )) + values_twist_aux
+    x_noise = np.array([values_pose[0], values_pose[1], values_pose[2], values_pose[3],
+                        values_pose[4], values_pose[5], values_pose[6], values_pose[7],
+                        values_twist[0], values_twist[1], values_twist[2],
+                        values_twist[3], values_twist[4], values_twist[5]])
+    return x_noise
