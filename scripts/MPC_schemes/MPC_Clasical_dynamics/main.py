@@ -164,6 +164,12 @@ def main(ts: float, t_f: float, t_N: float, x_0: np.ndarray, L: list, pub, pub_p
         acados_ocp_solver.options_set("rti_phase", 2)
         acados_ocp_solver.solve()
 
+        # Check Solution since there can be possible errors 
+        #acados_ocp_solver.solve()
+        stat_fields = ['time_tot', 'time_lin', 'time_qp', 'time_qp_solver_call', 'time_reg', 'sqp_iter']
+        for field in stat_fields:
+            print(f"{field} : {acados_ocp_solver.get_stats(field)}")
+
         # Get the control Action
         aux_control = acados_ocp_solver.get(0, "u")
         F[:, k] = aux_control[0]
@@ -227,7 +233,7 @@ if __name__ == '__main__':
         # Time parameters
         ts = 0.03
         t_f = 30
-        t_N = 1.0
+        t_N = 0.3
 
         # Parameters of the system  (mass, inertial matrix, gravity)
         m = 1                                                                             

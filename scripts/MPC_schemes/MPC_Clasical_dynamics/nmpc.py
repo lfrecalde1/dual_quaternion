@@ -95,8 +95,8 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
     # Gains over the Horizon for the nonlinear constraint
     cost_weights = np.ones((ns, ))
     ocp.cost.zl = 100*np.ones((ns, ))
-    ocp.cost.Zl = 1*np.ones((ns, ))
-    ocp.cost.Zu = 1*np.ones((ns, ))
+    ocp.cost.Zl = 100*np.ones((ns, ))
+    ocp.cost.Zu = 100*np.ones((ns, ))
     ocp.cost.zu = 100*np.ones((ns, ))
 
     # Norm of a quaternion should be one
@@ -107,18 +107,18 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
     ocp.constraints.idxsh = np.array(range(nsh))
 
     # Set options
-    ocp.solver_options.qp_solver = "PARTIAL_CONDENSING_HPIPM" 
-    ocp.solver_options.hessian_approx = "GAUSS_NEWTON"  
+    ocp.solver_options.qp_solver = "FULL_CONDENSING_HPIPM" 
+    ocp.solver_options.hessian_approx = "EXACT"  
+    ocp.solver_options.regularize_method = "CONVEXIFY"  
     ocp.solver_options.integrator_type = "ERK"
     ocp.solver_options.nlp_solver_type = "SQP_RTI"
     ocp.solver_options.Tsim = ts
-    ocp.solver_options.levenberg_marquardt = 0.01
     ocp.solver_options.sim_method_num_stages = 4
-    ocp.solver_options.sim_method_num_steps = 3 # Verify the meaning of this value
+    ocp.solver_options.sim_method_num_steps = 1 # Verify the meaning of this value
     ocp.solver_options.nlp_solver_max_iter = 200
     ocp.solver_options.tol = 1e-4
-
-    # Set prediction horizon
     ocp.solver_options.tf = t_horizon
+    ocp.solver_options.levenberg_marquardt = 1e-5
+    ocp.solver_options.line_search_use_sufficient_descent
 
     return ocp

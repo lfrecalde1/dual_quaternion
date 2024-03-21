@@ -143,7 +143,7 @@ void quadrotor_acados_create_1_set_plan(ocp_nlp_plan_t* nlp_solver_plan, const i
     ************************************************/
     nlp_solver_plan->nlp_solver = SQP_RTI;
 
-    nlp_solver_plan->ocp_qp_solver_plan.qp_solver = PARTIAL_CONDENSING_HPIPM;
+    nlp_solver_plan->ocp_qp_solver_plan.qp_solver = FULL_CONDENSING_HPIPM;
 
     nlp_solver_plan->nlp_cost[0] = EXTERNAL;
     for (int i = 1; i < N; i++)
@@ -161,6 +161,7 @@ void quadrotor_acados_create_1_set_plan(ocp_nlp_plan_t* nlp_solver_plan, const i
     {nlp_solver_plan->nlp_constraints[i] = BGH;
     }
     nlp_solver_plan->nlp_constraints[N] = BGH;
+    nlp_solver_plan->regularization = CONVEXIFY;
 }
 
 
@@ -311,6 +312,11 @@ void quadrotor_acados_create_3_create_and_set_functions(quadrotor_solver_capsule
         MAP_CASADI_FNC(nl_constr_h_fun[i], quadrotor_constr_h_fun);
     }
     
+    capsule->nl_constr_h_fun_jac_hess = (external_function_param_casadi *) malloc(sizeof(external_function_param_casadi)*N);
+    for (int i = 0; i < N; i++) {
+        MAP_CASADI_FNC(nl_constr_h_fun_jac_hess[i], quadrotor_constr_h_fun_jac_uxt_zt_hess);
+    }
+    
 
 
 
@@ -323,6 +329,10 @@ void quadrotor_acados_create_3_create_and_set_functions(quadrotor_solver_capsule
     capsule->expl_ode_fun = (external_function_param_casadi *) malloc(sizeof(external_function_param_casadi)*N);
     for (int i = 0; i < N; i++) {
         MAP_CASADI_FNC(expl_ode_fun[i], quadrotor_expl_ode_fun);
+    }
+    capsule->hess_vde_casadi = (external_function_param_casadi *) malloc(sizeof(external_function_param_casadi)*N);
+    for (int i = 0; i < N; i++) {
+        MAP_CASADI_FNC(hess_vde_casadi[i], quadrotor_expl_ode_hess);
     }
 
 
@@ -403,7 +413,7 @@ void quadrotor_acados_create_5_set_nlp_in(quadrotor_solver_capsule* capsule, con
     if (new_time_steps) {
         quadrotor_acados_update_time_steps(capsule, N, new_time_steps);
     } else {// all time_steps are identical
-        double time_step = 0.02857142857142857;
+        double time_step = 0.02727272727272727;
         for (int i = 0; i < N; i++)
         {
             ocp_nlp_in_set(nlp_config, nlp_dims, nlp_in, i, "Ts", &time_step);
@@ -416,6 +426,7 @@ void quadrotor_acados_create_5_set_nlp_in(quadrotor_solver_capsule* capsule, con
     {
         ocp_nlp_dynamics_model_set(nlp_config, nlp_dims, nlp_in, i, "expl_vde_forw", &capsule->forw_vde_casadi[i]);
         ocp_nlp_dynamics_model_set(nlp_config, nlp_dims, nlp_in, i, "expl_ode_fun", &capsule->expl_ode_fun[i]);
+        ocp_nlp_dynamics_model_set(nlp_config, nlp_dims, nlp_in, i, "expl_ode_hess", &capsule->hess_vde_casadi[i]);
     
     }
 
@@ -602,6 +613,9 @@ void quadrotor_acados_create_5_set_nlp_in(quadrotor_solver_capsule* capsule, con
         ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, i, "nl_constr_h_fun",
                                       &capsule->nl_constr_h_fun[i]);
         
+        ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, i,
+                                      "nl_constr_h_fun_jac_hess", &capsule->nl_constr_h_fun_jac_hess[i]);
+        
         ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, i, "lh", lh);
         ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, i, "uh", uh);
     }
@@ -642,6 +656,17 @@ void quadrotor_acados_create_6_set_opts(quadrotor_solver_capsule* capsule)
     ************************************************/
 
 
+    int nlp_solver_exact_hessian = 1;
+    ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "exact_hess", &nlp_solver_exact_hessian);
+
+    int exact_hess_dyn = 1;
+    ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "exact_hess_dyn", &exact_hess_dyn);
+
+    int exact_hess_cost = 1;
+    ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "exact_hess_cost", &exact_hess_cost);
+
+    int exact_hess_constr = 1;
+    ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "exact_hess_constr", &exact_hess_constr);
     ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "globalization", "fixed_step");int full_step_dual = 0;
     ocp_nlp_solver_opts_set(nlp_config, capsule->nlp_opts, "full_step_dual", &full_step_dual);
 
@@ -652,7 +677,7 @@ void quadrotor_acados_create_6_set_opts(quadrotor_solver_capsule* capsule)
 
     // set up sim_method_num_steps
     // all sim_method_num_steps are identical
-    int sim_method_num_steps = 3;
+    int sim_method_num_steps = 1;
     for (int i = 0; i < N; i++)
         ocp_nlp_solver_opts_set_at_stage(nlp_config, nlp_opts, i, "dynamics_num_steps", &sim_method_num_steps);
 
@@ -675,16 +700,10 @@ void quadrotor_acados_create_6_set_opts(quadrotor_solver_capsule* capsule)
     double nlp_solver_step_length = 1;
     ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "step_length", &nlp_solver_step_length);
 
-    double levenberg_marquardt = 0.01;
+    double levenberg_marquardt = 0.00001;
     ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "levenberg_marquardt", &levenberg_marquardt);
 
     /* options QP solver */
-    int qp_solver_cond_N;
-
-    
-    // NOTE: there is no condensing happening here!
-    qp_solver_cond_N = N;
-    ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "qp_cond_N", &qp_solver_cond_N);
 
     int nlp_solver_ext_qp_res = 0;
     ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "ext_qp_res", &nlp_solver_ext_qp_res);
@@ -698,12 +717,6 @@ void quadrotor_acados_create_6_set_opts(quadrotor_solver_capsule* capsule)
 
 int print_level = 0;
     ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "print_level", &print_level);
-    int qp_solver_cond_ric_alg = 1;
-    ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "qp_cond_ric_alg", &qp_solver_cond_ric_alg);
-
-    int qp_solver_ric_alg = 1;
-    ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "qp_ric_alg", &qp_solver_ric_alg);
-
 
     int ext_cost_num_hess = 0;
     for (int i = 0; i < N; i++)
@@ -833,22 +846,10 @@ int quadrotor_acados_create_with_discretization(quadrotor_solver_capsule* capsul
  */
 int quadrotor_acados_update_qp_solver_cond_N(quadrotor_solver_capsule* capsule, int qp_solver_cond_N)
 {
-    // 1) destroy solver
-    ocp_nlp_solver_destroy(capsule->nlp_solver);
-
-    // 2) set new value for "qp_cond_N"
-    const int N = capsule->nlp_solver_plan->N;
-    if(qp_solver_cond_N > N)
-        printf("Warning: qp_solver_cond_N = %d > N = %d\n", qp_solver_cond_N, N);
-    ocp_nlp_solver_opts_set(capsule->nlp_config, capsule->nlp_opts, "qp_cond_N", &qp_solver_cond_N);
-
-    // 3) continue with the remaining steps from quadrotor_acados_create_with_discretization(...):
-    // -> 8) create solver
-    capsule->nlp_solver = ocp_nlp_solver_create(capsule->nlp_config, capsule->nlp_dims, capsule->nlp_opts);
-
-    // -> 9) do precomputations
-    int status = quadrotor_acados_create_9_precompute(capsule);
-    return status;
+    printf("\nacados_update_qp_solver_cond_N() failed, since no partial condensing solver is used!\n\n");
+    // Todo: what is an adequate behavior here?
+    exit(1);
+    return -1;
 }
 
 
@@ -880,14 +881,6 @@ int quadrotor_acados_reset(quadrotor_solver_capsule* capsule, int reset_qp_solve
             ocp_nlp_out_set(nlp_config, nlp_dims, nlp_out, i, "pi", buffer);
         }
     }
-    // get qp_status: if NaN -> reset memory
-    int qp_status;
-    ocp_nlp_get(capsule->nlp_config, capsule->nlp_solver, "qp_status", &qp_status);
-    if (reset_qp_solver_mem || (qp_status == 3))
-    {
-        // printf("\nin reset qp_status %d -> resetting QP memory\n", qp_status);
-        ocp_nlp_solver_reset_qp_memory(nlp_solver, nlp_in, nlp_out);
-    }
 
     free(buffer);
     return 0;
@@ -912,12 +905,14 @@ int quadrotor_acados_update_params(quadrotor_solver_capsule* capsule, int stage,
     {
         capsule->forw_vde_casadi[stage].set_param(capsule->forw_vde_casadi+stage, p);
         capsule->expl_ode_fun[stage].set_param(capsule->expl_ode_fun+stage, p);
+        capsule->hess_vde_casadi[stage].set_param(capsule->hess_vde_casadi+stage, p);
     
 
         // constraints
     
         capsule->nl_constr_h_fun_jac[stage].set_param(capsule->nl_constr_h_fun_jac+stage, p);
         capsule->nl_constr_h_fun[stage].set_param(capsule->nl_constr_h_fun+stage, p);
+        capsule->nl_constr_h_fun_jac_hess[stage].set_param(capsule->nl_constr_h_fun_jac_hess+stage, p);
 
         // cost
         if (stage == 0)
@@ -975,12 +970,14 @@ int quadrotor_acados_update_params_sparse(quadrotor_solver_capsule * capsule, in
     {
         capsule->forw_vde_casadi[stage].set_param_sparse(capsule->forw_vde_casadi+stage, n_update, idx, p);
         capsule->expl_ode_fun[stage].set_param_sparse(capsule->expl_ode_fun+stage, n_update, idx, p);
+        capsule->hess_vde_casadi[stage].set_param_sparse(capsule->hess_vde_casadi+stage, n_update, idx, p);
     
 
         // constraints
     
         capsule->nl_constr_h_fun_jac[stage].set_param_sparse(capsule->nl_constr_h_fun_jac+stage, n_update, idx, p);
         capsule->nl_constr_h_fun[stage].set_param_sparse(capsule->nl_constr_h_fun+stage, n_update, idx, p);
+        capsule->nl_constr_h_fun_jac_hess[stage].set_param_sparse(capsule->nl_constr_h_fun_jac_hess+stage, n_update, idx, p);
 
         // cost
         if (stage == 0)
@@ -1043,9 +1040,11 @@ int quadrotor_acados_free(quadrotor_solver_capsule* capsule)
     {
         external_function_param_casadi_free(&capsule->forw_vde_casadi[i]);
         external_function_param_casadi_free(&capsule->expl_ode_fun[i]);
+        external_function_param_casadi_free(&capsule->hess_vde_casadi[i]);
     }
     free(capsule->forw_vde_casadi);
     free(capsule->expl_ode_fun);
+    free(capsule->hess_vde_casadi);
 
     // cost
     external_function_param_casadi_free(&capsule->ext_cost_0_fun);
@@ -1070,8 +1069,13 @@ int quadrotor_acados_free(quadrotor_solver_capsule* capsule)
         external_function_param_casadi_free(&capsule->nl_constr_h_fun_jac[i]);
         external_function_param_casadi_free(&capsule->nl_constr_h_fun[i]);
     }
+    for (int i = 0; i < N; i++)
+    {
+        external_function_param_casadi_free(&capsule->nl_constr_h_fun_jac_hess[i]);
+    }
     free(capsule->nl_constr_h_fun_jac);
     free(capsule->nl_constr_h_fun);
+    free(capsule->nl_constr_h_fun_jac_hess);
 
     return 0;
 }

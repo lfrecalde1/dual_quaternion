@@ -316,10 +316,16 @@ def error_quaternion(qd, q):
     # Check shortest path
     q_error = ca.if_else(condition1, expr1, expr2) 
 
-    # Sux variable in roder to get a norm
-    q_3_aux = ca.DM([1.0, 0.0, 0.0, 0.0])
-    Q3_pose =  ca.vertcat(q_3_aux)
-    
-    q_e_ln = Q3_pose - q_error
+    norm = ca.norm_2(q_error[1:4] + ca.np.finfo(np.float64).eps)
+    angle = ca.atan2(norm, q_error[0])
 
-    return q_e_ln
+    ln_quaternion = ca.vertcat(0.0,  (1/2)*angle*q_error[1, 0]/norm, (1/2)*angle*q_error[2, 0]/norm, (1/2)*angle*q_error[3, 0]/norm)
+
+
+    # Sux variable in roder to get a norm
+    #q_3_aux = ca.DM([1.0, 0.0, 0.0, 0.0])
+    #Q3_pose =  ca.vertcat(q_3_aux)
+    
+    #q_e_ln = Q3_pose - q_error
+
+    return ln_quaternion

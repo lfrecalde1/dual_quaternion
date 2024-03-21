@@ -77,7 +77,7 @@ int quadrotor_acados_sim_create(sim_solver_capsule * capsule)
     bool tmp_bool;
 
     
-    double Tsim = 0.02857142857142857;
+    double Tsim = 0.02727272727272727;
 
     
     // explicit ode
@@ -108,6 +108,15 @@ int quadrotor_acados_sim_create(sim_solver_capsule * capsule)
     capsule->sim_expl_ode_fun_casadi->casadi_sparsity_out = &quadrotor_expl_ode_fun_sparsity_out;
     capsule->sim_expl_ode_fun_casadi->casadi_work = &quadrotor_expl_ode_fun_work;
     external_function_param_casadi_create(capsule->sim_expl_ode_fun_casadi, np);
+    capsule->sim_expl_ode_hess = (external_function_param_casadi *) malloc(sizeof(external_function_param_casadi));
+    // external_function_param_casadi impl_dae_jac_x_xdot_u_z;
+    capsule->sim_expl_ode_hess->casadi_fun = &quadrotor_expl_ode_hess;
+    capsule->sim_expl_ode_hess->casadi_work = &quadrotor_expl_ode_hess_work;
+    capsule->sim_expl_ode_hess->casadi_sparsity_in = &quadrotor_expl_ode_hess_sparsity_in;
+    capsule->sim_expl_ode_hess->casadi_sparsity_out = &quadrotor_expl_ode_hess_sparsity_out;
+    capsule->sim_expl_ode_hess->casadi_n_in = &quadrotor_expl_ode_hess_n_in;
+    capsule->sim_expl_ode_hess->casadi_n_out = &quadrotor_expl_ode_hess_n_out;
+    external_function_param_casadi_create(capsule->sim_expl_ode_hess, np);
 
     
 
@@ -140,7 +149,7 @@ int quadrotor_acados_sim_create(sim_solver_capsule * capsule)
  
     tmp_int = 4;
     sim_opts_set(quadrotor_sim_config, quadrotor_sim_opts, "num_stages", &tmp_int);
-    tmp_int = 3;
+    tmp_int = 1;
     sim_opts_set(quadrotor_sim_config, quadrotor_sim_opts, "num_steps", &tmp_int);
     tmp_bool = 0;
     sim_opts_set(quadrotor_sim_config, quadrotor_sim_opts, "jac_reuse", &tmp_bool);
@@ -162,6 +171,8 @@ int quadrotor_acados_sim_create(sim_solver_capsule * capsule)
                  "expl_vde_adj", capsule->sim_vde_adj_casadi);
     quadrotor_sim_config->model_set(quadrotor_sim_in->model,
                  "expl_ode_fun", capsule->sim_expl_ode_fun_casadi);
+    quadrotor_sim_config->model_set(quadrotor_sim_in->model,
+                "expl_ode_hess", capsule->sim_expl_ode_hess);
 
     // sim solver
     sim_solver *quadrotor_sim_solver = sim_solver_create(quadrotor_sim_config,
@@ -238,6 +249,7 @@ int quadrotor_acados_sim_free(sim_solver_capsule *capsule)
     external_function_param_casadi_free(capsule->sim_forw_vde_casadi);
     external_function_param_casadi_free(capsule->sim_vde_adj_casadi);
     external_function_param_casadi_free(capsule->sim_expl_ode_fun_casadi);
+    external_function_param_casadi_free(capsule->sim_expl_ode_hess);
 
     return 0;
 }
@@ -256,6 +268,7 @@ int quadrotor_acados_sim_update_params(sim_solver_capsule *capsule, double *p, i
     capsule->sim_forw_vde_casadi[0].set_param(capsule->sim_forw_vde_casadi, p);
     capsule->sim_vde_adj_casadi[0].set_param(capsule->sim_vde_adj_casadi, p);
     capsule->sim_expl_ode_fun_casadi[0].set_param(capsule->sim_expl_ode_fun_casadi, p);
+    capsule->sim_expl_ode_hess[0].set_param(capsule->sim_expl_ode_hess, p);
 
     return status;
 }

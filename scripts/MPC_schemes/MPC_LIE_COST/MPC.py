@@ -63,7 +63,7 @@ def main(odom_pub_1, odom_pub_2, L):
     hz = int(1/(sample_time))
     loop_rate = rospy.Rate(hz)
 
-    t_N = 1.0
+    t_N = 0.3
     # Prediction Node of the NMPC formulation
     N = np.arange(0, t_N + sample_time, sample_time)
     N_prediction = N.shape[0]
@@ -174,6 +174,9 @@ def main(odom_pub_1, odom_pub_2, L):
     x_dim = ocp.model.x.size()[0]
     u_dim = ocp.model.u.size()[0]
 
+    # Reset Solver
+    acados_ocp_solver.reset()
+
     # Initial Conditions optimization problem
     for stage in range(N_prediction + 1):
         acados_ocp_solver.set(stage, "x", X[:, 0])
@@ -183,6 +186,8 @@ def main(odom_pub_1, odom_pub_2, L):
     # Simulation loop
     for k in range(0, t.shape[0] - N_prediction):
         tic = rospy.get_time()
+        acados_ocp_solver.options_set("rti_phase", 1)
+        acados_ocp_solver.solve()
         # Check properties
         real = X[0:4, k]
         dual = X[4:8, k]
@@ -210,7 +215,12 @@ def main(odom_pub_1, odom_pub_2, L):
         acados_ocp_solver.set(N_prediction, "p", aux_ref_N)
 
         # Check Solution since there can be possible errors 
+        acados_ocp_solver.options_set("rti_phase", 2)
         acados_ocp_solver.solve()
+
+        stat_fields = ['time_tot', 'time_lin', 'time_qp', 'time_qp_solver_call', 'time_reg', 'sqp_iter']
+        for field in stat_fields:
+            print(f"{field} : {acados_ocp_solver.get_stats(field)}")
 
         # Get the control Action
         aux_control = acados_ocp_solver.get(0, "u")

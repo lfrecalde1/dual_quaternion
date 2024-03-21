@@ -42,12 +42,14 @@ MODEL_SRC=
 MODEL_SRC+= quadrotor_model/quadrotor_expl_ode_fun.c
 MODEL_SRC+= quadrotor_model/quadrotor_expl_vde_forw.c
 MODEL_SRC+= quadrotor_model/quadrotor_expl_vde_adj.c
+MODEL_SRC+= quadrotor_model/quadrotor_expl_ode_hess.c
 MODEL_OBJ := $(MODEL_SRC:.c=.o)
 
 # optimal control problem - mostly CasADi exports
 OCP_SRC=
 OCP_SRC+= quadrotor_constraints/quadrotor_constr_h_fun_jac_uxt_zt.c
 OCP_SRC+= quadrotor_constraints/quadrotor_constr_h_fun.c
+OCP_SRC+= quadrotor_constraints/quadrotor_constr_h_fun_jac_uxt_zt_hess.c
 OCP_SRC+= quadrotor_cost/quadrotor_cost_ext_cost_0_fun.c
 OCP_SRC+= quadrotor_cost/quadrotor_cost_ext_cost_0_fun_jac.c
 OCP_SRC+= quadrotor_cost/quadrotor_cost_ext_cost_0_fun_jac_hess.c
