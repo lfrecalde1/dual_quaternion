@@ -324,6 +324,7 @@ def error_manifold(qd, q):
     
     q_e_ln = Q3_pose - q_error
     return q_e_ln
+
 def error_lie(qd, q):
     qd_conjugate = ca.vertcat(qd[0], -qd[1], -qd[2], -qd[3], qd[4], -qd[5], -qd[6], -qd[7])
     quat_d_data = qd_conjugate[0:4]
@@ -362,19 +363,17 @@ def error_lie(qd, q):
     angle = ca.atan2(norm, q_error_real[0])
 
     ## Dual Part
-    H_error_real_plus = ca.vertcat(ca.horzcat(q_error_real_c[0, 0], -q_error_real_c[1, 0], -q_error_real_c[2, 0], -q_error_real_c[3, 0]),
-                                ca.horzcat(q_error_real_c[1, 0], q_error_real_c[0, 0], -q_error_real_c[3, 0], q_error_real_c[2, 0]),
-                                ca.horzcat(q_error_real_c[2, 0], q_error_real_c[3, 0], q_error_real_c[0, 0], -q_error_real_c[1, 0]),
-                                ca.horzcat(q_error_real_c[3, 0], -q_error_real_c[2, 0], q_error_real_c[1, 0], q_error_real_c[0, 0]))
+    H_error_real_plus = ca.vertcat(ca.horzcat(q_error_dual[0, 0], -q_error_dual[1, 0], -q_error_dual[2, 0], -q_error_dual[3, 0]),
+                                ca.horzcat(q_error_dual[1, 0], q_error_dual[0, 0], -q_error_dual[3, 0], q_error_dual[2, 0]),
+                                ca.horzcat(q_error_dual[2, 0], q_error_dual[3, 0], q_error_dual[0, 0], -q_error_dual[1, 0]),
+                                ca.horzcat(q_error_dual[3, 0], -q_error_dual[2, 0], q_error_dual[1, 0], q_error_dual[0, 0]))
 
-    trans_error = 2 * H_error_real_plus@q_error_dual
+    trans_error = 2 * H_error_real_plus@q_error_real_c
     # Computing log map
     ln_quaternion = ca.vertcat(0.0,  (1/2)*angle*q_error_real[1, 0]/norm, (1/2)*angle*q_error_real[2, 0]/norm, (1/2)*angle*q_error_real[3, 0]/norm)
-    #ln_quaternion = ca.vertcat(0.0,  (1/2)*1*q_error_real[1, 0], (1/2)*1*q_error_real[2, 0], (1/2)*1*q_error_real[3, 0])
     ln_trans = ca.vertcat(0.0, (1/2)*trans_error[1, 0], (1/2)*trans_error[2, 0], (1/2)*trans_error[3, 0])
     q_e_ln = ca.vertcat(ln_quaternion, ln_trans)
     return q_e_ln
-
 def error_quaternion(qd, q):
     qd_conjugate = ca.vertcat(qd[0, 0], -qd[1, 0], -qd[2, 0], -qd[3, 0], qd[4, 0], -qd[5, 0], -qd[6, 0], -qd[7, 0])
     quat_d_data = qd_conjugate[0:4, 0]

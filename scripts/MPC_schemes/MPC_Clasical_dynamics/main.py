@@ -286,7 +286,7 @@ if __name__ == '__main__':
         # Time parameters
         ts = 0.03
         t_f = 30
-        t_N = 0.1
+        t_N = 0.3
 
         # Parameters of the system  (mass, inertial matrix, gravity)
         m = 1                                                                             

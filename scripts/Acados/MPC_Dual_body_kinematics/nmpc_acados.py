@@ -78,13 +78,13 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
     Q_t[7, 7] = 0.2
 
 
-    #ocp.model.cost_expr_ext_cost = 10*(error_total_lie.T@Q_l@error_total_lie) + 1*(error_nominal_input.T @ R @ error_nominal_input)
+    ocp.model.cost_expr_ext_cost = 10*(error_total_lie.T@Q_l@error_total_lie) + 1*(error_nominal_input.T @ R @ error_nominal_input)
 
-    #ocp.model.cost_expr_ext_cost_e =  10*(error_total_lie.T@Q_l@error_total_lie)
+    ocp.model.cost_expr_ext_cost_e =  10*(error_total_lie.T@Q_l@error_total_lie)
 
-    ocp.model.cost_expr_ext_cost = 10*(error_total_manifold.T@Q_t@error_total_manifold) + 1*(error_nominal_input.T @ R @ error_nominal_input)
+    #ocp.model.cost_expr_ext_cost = 10*(error_total_manifold.T@Q_t@error_total_manifold) + 1*(error_nominal_input.T @ R @ error_nominal_input)
 
-    ocp.model.cost_expr_ext_cost_e =  10*(error_total_manifold.T@Q_t@error_total_manifold)
+    #ocp.model.cost_expr_ext_cost_e =  10*(error_total_manifold.T@Q_t@error_total_manifold)
 
     # Auxiliary variable initialization
     ocp.parameter_values = np.zeros(nx + nu)

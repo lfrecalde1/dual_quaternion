@@ -364,12 +364,12 @@ def error_lie(qd, q):
     angle = ca.atan2(norm, q_error_real[0])
 
     ## Dual Part
-    H_error_real_plus = ca.vertcat(ca.horzcat(q_error_real_c[0, 0], -q_error_real_c[1, 0], -q_error_real_c[2, 0], -q_error_real_c[3, 0]),
-                                ca.horzcat(q_error_real_c[1, 0], q_error_real_c[0, 0], -q_error_real_c[3, 0], q_error_real_c[2, 0]),
-                                ca.horzcat(q_error_real_c[2, 0], q_error_real_c[3, 0], q_error_real_c[0, 0], -q_error_real_c[1, 0]),
-                                ca.horzcat(q_error_real_c[3, 0], -q_error_real_c[2, 0], q_error_real_c[1, 0], q_error_real_c[0, 0]))
+    H_error_real_plus = ca.vertcat(ca.horzcat(q_error_dual[0, 0], -q_error_dual[1, 0], -q_error_dual[2, 0], -q_error_dual[3, 0]),
+                                ca.horzcat(q_error_dual[1, 0], q_error_dual[0, 0], -q_error_dual[3, 0], q_error_dual[2, 0]),
+                                ca.horzcat(q_error_dual[2, 0], q_error_dual[3, 0], q_error_dual[0, 0], -q_error_dual[1, 0]),
+                                ca.horzcat(q_error_dual[3, 0], -q_error_dual[2, 0], q_error_dual[1, 0], q_error_dual[0, 0]))
 
-    trans_error = 2 * H_error_real_plus@q_error_dual
+    trans_error = 2 * H_error_real_plus@q_error_real_c
     # Computing log map
     ln_quaternion = ca.vertcat(0.0,  (1/2)*angle*q_error_real[1, 0]/norm, (1/2)*angle*q_error_real[2, 0]/norm, (1/2)*angle*q_error_real[3, 0]/norm)
     ln_trans = ca.vertcat(0.0, (1/2)*trans_error[1, 0], (1/2)*trans_error[2, 0], (1/2)*trans_error[3, 0])
@@ -468,7 +468,7 @@ def noise(dual, noise):
 
     # Translation part
     trans_noise = trans_np + noise_position
-    trans_noise_aux = np.array([0.0, trans_noise[0], trans_noise[1], trans_noise[1]])
+    trans_noise_aux = np.array([0.0, trans_noise[0], trans_noise[1], trans_noise[2]])
 
     # Rotational part
     noise_quat = noise[3:6]
