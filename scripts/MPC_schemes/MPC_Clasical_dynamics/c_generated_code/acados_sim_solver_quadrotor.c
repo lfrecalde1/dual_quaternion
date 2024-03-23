@@ -77,7 +77,7 @@ int quadrotor_acados_sim_create(sim_solver_capsule * capsule)
     bool tmp_bool;
 
     
-    double Tsim = 0.027777777777777776;
+    double Tsim = 0.027999999999999997;
 
     
     capsule->sim_impl_dae_fun = (external_function_param_casadi *) malloc(sizeof(external_function_param_casadi));

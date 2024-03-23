@@ -62,9 +62,9 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
     Q_l[1, 1] = 2
     Q_l[2, 2] = 2
     Q_l[3, 3] = 2
-    Q_l[5, 5] = 1.5
-    Q_l[6, 6] = 1.5
-    Q_l[7, 7] = 1.5
+    Q_l[5, 5] = 1.6
+    Q_l[6, 6] = 1.6
+    Q_l[7, 7] = 1.6
 
     Q_t = DM.zeros(8, 8)
     Q_t[0, 0] = 1

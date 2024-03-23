@@ -407,7 +407,7 @@ void quadrotor_acados_create_5_set_nlp_in(quadrotor_solver_capsule* capsule, con
     if (new_time_steps) {
         quadrotor_acados_update_time_steps(capsule, N, new_time_steps);
     } else {// all time_steps are identical
-        double time_step = 0.027777777777777776;
+        double time_step = 0.027999999999999997;
         for (int i = 0; i < N; i++)
         {
             ocp_nlp_in_set(nlp_config, nlp_dims, nlp_in, i, "Ts", &time_step);
@@ -490,22 +490,22 @@ void quadrotor_acados_create_5_set_nlp_in(quadrotor_solver_capsule* capsule, con
     double* lbx0 = lubx0;
     double* ubx0 = lubx0 + NBX0;
     // change only the non-zero elements:
-    lbx0[0] = 0.10162697525646218;
-    ubx0[0] = 0.10162697525646218;
-    lbx0[1] = -0.5904791213704192;
-    ubx0[1] = -0.5904791213704192;
-    lbx0[2] = 0.35178047698386683;
-    ubx0[2] = 0.35178047698386683;
-    lbx0[3] = -0.7192057154520141;
-    ubx0[3] = -0.7192057154520141;
-    lbx0[4] = 0.7484808672832666;
-    ubx0[4] = 0.7484808672832666;
-    lbx0[5] = 0.9951890413370996;
-    ubx0[5] = 0.9951890413370996;
-    lbx0[6] = 0.6274986462761825;
-    ubx0[6] = 0.6274986462761825;
-    lbx0[7] = -0.4043776694270538;
-    ubx0[7] = -0.4043776694270538;
+    lbx0[0] = 0.918190199631176;
+    ubx0[0] = 0.918190199631176;
+    lbx0[1] = 0.2518700829756109;
+    ubx0[1] = 0.2518700829756109;
+    lbx0[2] = 0.13932701389615826;
+    ubx0[2] = 0.13932701389615826;
+    lbx0[3] = 0.27216943583345227;
+    ubx0[3] = 0.27216943583345227;
+    lbx0[4] = -0.026078386912105345;
+    ubx0[4] = -0.026078386912105345;
+    lbx0[5] = 1.568072307976531;
+    ubx0[5] = 1.568072307976531;
+    lbx0[6] = -1.6678110836235465;
+    ubx0[6] = -1.6678110836235465;
+    lbx0[7] = -0.5093681610067748;
+    ubx0[7] = -0.5093681610067748;
 
     ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, 0, "idxbx", idxbx0);
     ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, 0, "lbx", lbx0);
@@ -725,14 +725,14 @@ void quadrotor_acados_create_7_set_nlp_out(quadrotor_solver_capsule* capsule)
 
     // initialize with x0
     
-    x0[0] = 0.10162697525646218;
-    x0[1] = -0.5904791213704192;
-    x0[2] = 0.35178047698386683;
-    x0[3] = -0.7192057154520141;
-    x0[4] = 0.7484808672832666;
-    x0[5] = 0.9951890413370996;
-    x0[6] = 0.6274986462761825;
-    x0[7] = -0.4043776694270538;
+    x0[0] = 0.918190199631176;
+    x0[1] = 0.2518700829756109;
+    x0[2] = 0.13932701389615826;
+    x0[3] = 0.27216943583345227;
+    x0[4] = -0.026078386912105345;
+    x0[5] = 1.568072307976531;
+    x0[6] = -1.6678110836235465;
+    x0[7] = -0.5093681610067748;
 
 
     double* u0 = xu0 + NX;

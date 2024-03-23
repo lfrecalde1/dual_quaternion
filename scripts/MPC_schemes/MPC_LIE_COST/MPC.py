@@ -76,7 +76,7 @@ def main(odom_pub_1, odom_pub_2, L, x0, initial):
     hz = int(1/(sample_time))
     loop_rate = rospy.Rate(hz)
 
-    t_N = 0.5
+    t_N = 0.7
     # Prediction Node of the NMPC formulation
     N = np.arange(0, t_N + sample_time, sample_time)
     N_prediction = N.shape[0]
@@ -94,7 +94,6 @@ def main(odom_pub_1, odom_pub_2, L, x0, initial):
     quat_1_d_msg = Odometry()
     
     # Defining initial condition of the system and verify properties
-    print(x0.shape)
     theta1 = x0[3]
     nx = x0[4]
     ny = x0[5]
@@ -339,40 +338,33 @@ def main(odom_pub_1, odom_pub_2, L, x0, initial):
 
     fig11, ax11, ax12, ax13, ax14 = fancy_plots_4()
     plot_states_quaternion(fig11, ax11, ax12, ax13, ax14, Q1_quat_data[0:4, :], Q2_quat_data[0:4, :], t, "Quaternion Results Based On LieAlgebra Cost "+ str(initial), folder_path)
-    plt.show()
 
     fig21, ax21, ax22, ax23 = fancy_plots_3()
     plot_states_position(fig21, ax21, ax22, ax23, Q1_trans_data[1:4, :], Q2_trans_data[1:4, :], t, "Position Results Based On LieAlgebra Cost "+ str(initial), folder_path)
-    plt.show()
+
     fig31, ax31, ax32, ax33 = fancy_plots_3()
     plot_angular_velocities(fig31, ax31, ax32, ax33, Q1_velocities_data[0:3, :], t, "Body Angular velocities Based On LieAlgebra Cost "+ str(initial), folder_path)
-    plt.show()
 
     fig41, ax41, ax42, ax43 = fancy_plots_3()
     plot_linear_velocities(fig41, ax41, ax42, ax43, Q1_velocities_data[3:6, :], t, "Inertial Linear velocities Based On LieAlgebra Cost "+ str(initial), folder_path)
-    plt.show()
 
     # Control Actions
     fig51, ax51, ax52, ax53, ax54 = fancy_plots_4()
     plot_control_actions(fig51, ax51, ax52, ax53, ax54, F, M, t, "Control Actions of the System Based On LieAlgebra Cost "+ str(initial), folder_path)
-    plt.show()
 
     # Sampling time
     fig61, ax61  = fancy_plots_1()
     plot_time(fig61, ax61, t_sample, delta_t, t, "Computational Time Based On LieAlgebra Cost "+ str(initial), folder_path)
-    plt.show()
 
     fig71, ax71  = fancy_plots_1()
     plot_cost_orientation(fig71, ax71, orientation_cost, t, "Cost Orientation Based On LieAlgebra Cost "+ str(initial), folder_path)
-    plt.show()
 
     fig81, ax81  = fancy_plots_1()
     plot_cost_translation(fig81, ax81, translation_cost, t, "Cost Translation Based On LieAlgebra Cost "+ str(initial), folder_path)
-    plt.show()
 
     fig91, ax91  = fancy_plots_1()
     plot_cost_control(fig91, ax91, control_cost, t, "Cost Control Based On LieAlgebra Cost "+ str(initial), folder_path)
-    plt.show()
+
     return X, X_d, F, M, orientation_cost, translation_cost, control_cost, t, N_prediction
 
 if __name__ == '__main__':

@@ -286,34 +286,27 @@ def main(ts: float, t_f: float, t_N: float, x_0: np.ndarray, L: list, odom_pub_1
     # Position
     fig11, ax11, ax21, ax31 = fancy_plots_3()
     plot_states_position(fig11, ax11, ax21, ax31, x[0:3, :], xref[0:3, :], t, "Position of the System "+ str(initial), folder_path)
-    plt.show()
 
     # Orientation
     fig12, ax12, ax22, ax32, ax42 = fancy_plots_4()
     plot_states_quaternion(fig12, ax12, ax22, ax32, ax42, x[6:10, :], xref[6:10, :], t, "Quaternions of the System "+ str(initial), folder_path)
-    plt.show()
 
     # Control Actions
     fig13, ax13, ax23, ax33, ax43 = fancy_plots_4()
     plot_control_actions(fig13, ax13, ax23, ax33, ax43, F, M, t, "Control Actions of the System "+ str(initial), folder_path)
-    plt.show()
 
     # Sampling time
     fig14, ax14  = fancy_plots_1()
     plot_time(fig14, ax14, t_sample, delta_t, t, "Computational Time "+ str(initial), folder_path)
-    plt.show()
 
     fig15, ax15  = fancy_plots_1()
     plot_cost_orientation(fig15, ax15, orientation_cost, t, "Cost Orientation "+ str(initial), folder_path)
-    plt.show()
 
     fig16, ax16  = fancy_plots_1()
     plot_cost_translation(fig16, ax16, translation_cost, t, "Cost Translation "+ str(initial), folder_path)
-    plt.show()
 
     fig17, ax17  = fancy_plots_1()
     plot_cost_control(fig17, ax17, control_cost, t, "Cost Control "+ str(initial), folder_path)
-    plt.show()
 
     return x, xref, F, M, orientation_cost, translation_cost, control_cost, t, N_prediction
 
@@ -332,7 +325,7 @@ if __name__ == '__main__':
         # Time parameters
         ts = 0.03
         t_f = 10
-        t_N = 0.5
+        t_N = 0.7
 
         # Parameters of the system  (mass, inertial matrix, gravity)
         m = 1                                                                             
@@ -345,7 +338,7 @@ if __name__ == '__main__':
         # Initial conditions of the system
         X_total = []
         X_total_aux = []
-        for i_random in range(10):
+        for i_random in range(20):
             pos_0 = get_random_position()
             vel_0 = np.array([0.0, 0.0, 0.0], dtype=np.double)
             omega_0 = np.array([0.0, 0.0, 0.0], dtype=np.double)
