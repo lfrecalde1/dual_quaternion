@@ -2,7 +2,7 @@ import numpy as np
 import time
 import matplotlib.pyplot as plt
 from fancy_plots import fancy_plots_3, fancy_plots_4, fancy_plots_1
-from fancy_plots import plot_states_position, plot_states_quaternion, plot_control_actions, plot_states_euler, plot_time, plot_cost_orientation, plot_cost_translation
+from fancy_plots import plot_states_position, plot_states_quaternion, plot_control_actions, plot_states_euler, plot_time, plot_cost_orientation, plot_cost_translation, plot_cost_control
 from system_functions import f_d, axisToquaternion, f_d_casadi, ref_trajectory, compute_desired_quaternion, get_euler_angles
 from system_functions import send_odom_msg, set_odom_msg, init_marker, set_marker, send_marker_msg, ref_trajectory_agresive
 from system_functions import init_marker_ref, set_marker_ref
@@ -15,6 +15,8 @@ from visualization_msgs.msg import Marker
 from functions import dualquat_from_pose_casadi
 from ode_acados import dualquat_trans_casadi, dualquat_quat_casadi, rotation_casadi, rotation_inverse_casadi, dual_velocity_casadi, dual_quat_casadi, velocities_from_twist_casadi
 from ode_acados import f_rk4_casadi_simple, noise, cost_quaternion_casadi, cost_translation_casadi
+from scipy.io import savemat
+
 
 dualquat_from_pose = dualquat_from_pose_casadi()
 get_trans = dualquat_trans_casadi()
@@ -24,9 +26,13 @@ f_rk4 = f_rk4_casadi_simple()
 cost_quaternion = cost_quaternion_casadi()
 cost_translation = cost_translation_casadi()
 
+import os
+script_dir = os.path.dirname(__file__)
+#folder_path = os.path.join(script_dir, 'cost_with_velocities/')
+folder_path = os.path.join(script_dir, 'cost_without_velocities/')
+# Check if the folder exists, and create it if it doesn't
 
-
-def main(ts: float, t_f: float, t_N: float, x_0: np.ndarray, L: list, odom_pub_1, odom_pub_2, pub_planning, pub_ref)-> None:
+def main(ts: float, t_f: float, t_N: float, x_0: np.ndarray, L: list, odom_pub_1, odom_pub_2, pub_planning, pub_ref, initial)-> None:
     # DESCRIPTION
     # simulation of a quadrotor using a NMPC as a controller
     # INPUTS
@@ -123,11 +129,13 @@ def main(ts: float, t_f: float, t_N: float, x_0: np.ndarray, L: list, odom_pub_1
 
 
     # No Cython
-    acados_ocp_solver = AcadosOcpSolver(ocp, json_file="acados_ocp_" + ocp.model.name + ".json", build= True, generate= True)
+    #acados_ocp_solver = AcadosOcpSolver(ocp, json_file="acados_ocp_" + ocp.model.name + ".json", build= True, generate= True)
+    acados_ocp_solver = AcadosOcpSolver(ocp, json_file="acados_ocp_" + ocp.model.name + ".json", build= False, generate= False)
 
     
     # Integration using Acados
-    acados_integrator = AcadosSimSolver(ocp, json_file="acados_sim_" + ocp.model.name + ".json")
+    #acados_integrator = AcadosSimSolver(ocp, json_file="acados_sim_" + ocp.model.name + ".json", build= True, generate= True)
+    acados_integrator = AcadosSimSolver(ocp, json_file="acados_sim_" + ocp.model.name + ".json", build= False, generate= False)
     # Auxiliary variables and control
     nx = ocp.model.x.size()[0]
     nu = ocp.model.u.size()[0]
@@ -193,6 +201,7 @@ def main(ts: float, t_f: float, t_N: float, x_0: np.ndarray, L: list, odom_pub_1
     # Cost Values
     orientation_cost = np.zeros((1, t.shape[0] - N_prediction), dtype=np.double)
     translation_cost = np.zeros((1, t.shape[0] - N_prediction), dtype=np.double)
+    control_cost = np.zeros((1, t.shape[0] - N_prediction), dtype=np.double)
 
     # Loop simulation
     for k in range(0, t.shape[0] - N_prediction):
@@ -237,6 +246,8 @@ def main(ts: float, t_f: float, t_N: float, x_0: np.ndarray, L: list, odom_pub_1
         u[0, k] = F[:, k]
         u[1:4, k] = M[:, k]
 
+        control_cost[:, k] = np.dot(u[:, k], u[:, k])
+
         # run time
         loop_rate.sleep()
         toc_solver = rospy.get_time() - tic
@@ -267,45 +278,61 @@ def main(ts: float, t_f: float, t_N: float, x_0: np.ndarray, L: list, odom_pub_1
         rospy.loginfo(message_ros + str(toc_solver))
 
     # Normalize cost
-    orientation_cost = orientation_cost/np.max(orientation_cost)
-    translation_cost = translation_cost/np.max(translation_cost)
+    orientation_cost = orientation_cost/1
+    translation_cost = translation_cost/1
+    control_cost = control_cost/1
 
     # Results
     # Position
     fig11, ax11, ax21, ax31 = fancy_plots_3()
-    plot_states_position(fig11, ax11, ax21, ax31, x[0:3, :], xref[0:3, :], t, "Position of the System")
+    plot_states_position(fig11, ax11, ax21, ax31, x[0:3, :], xref[0:3, :], t, "Position of the System "+ str(initial), folder_path)
     plt.show()
 
     # Orientation
     fig12, ax12, ax22, ax32, ax42 = fancy_plots_4()
-    plot_states_quaternion(fig12, ax12, ax22, ax32, ax42, x[6:10, :], xref[6:10, :], t, "Quaternions of the System")
+    plot_states_quaternion(fig12, ax12, ax22, ax32, ax42, x[6:10, :], xref[6:10, :], t, "Quaternions of the System "+ str(initial), folder_path)
     plt.show()
 
     # Control Actions
     fig13, ax13, ax23, ax33, ax43 = fancy_plots_4()
-    plot_control_actions(fig13, ax13, ax23, ax33, ax43, F, M, t, "Control Actions of the System")
+    plot_control_actions(fig13, ax13, ax23, ax33, ax43, F, M, t, "Control Actions of the System "+ str(initial), folder_path)
     plt.show()
 
     # Sampling time
     fig14, ax14  = fancy_plots_1()
-    plot_time(fig14, ax14, t_sample, delta_t, t, "Computational Time")
+    plot_time(fig14, ax14, t_sample, delta_t, t, "Computational Time "+ str(initial), folder_path)
     plt.show()
 
     fig15, ax15  = fancy_plots_1()
-    plot_cost_orientation(fig15, ax15, orientation_cost, t, "Cost Orientation")
+    plot_cost_orientation(fig15, ax15, orientation_cost, t, "Cost Orientation "+ str(initial), folder_path)
     plt.show()
 
     fig16, ax16  = fancy_plots_1()
-    plot_cost_translation(fig16, ax16, translation_cost, t, "Cost Translation")
+    plot_cost_translation(fig16, ax16, translation_cost, t, "Cost Translation "+ str(initial), folder_path)
     plt.show()
 
+    fig17, ax17  = fancy_plots_1()
+    plot_cost_control(fig17, ax17, control_cost, t, "Cost Control "+ str(initial), folder_path)
+    plt.show()
+
+    return x, xref, F, M, orientation_cost, translation_cost, control_cost, t, N_prediction
+
+def get_random_quaternion(min_angle=0.0, max_angle=np.math.pi):
+    axis = np.random.uniform(-1.0, 1.0, 3)
+    axis /= np.linalg.norm(axis)
+    angle = np.random.uniform(min_angle, max_angle)
+    return angle, axis
+
+def get_random_position(min_trans=-4.0, max_trans=4.0):
+    trans = np.random.uniform(min_trans, max_trans, 3)
+    return trans
 
 if __name__ == '__main__':
     try: #################################### Simulation  #####################################################
         # Time parameters
         ts = 0.03
-        t_f = 30
-        t_N = 0.3
+        t_f = 10
+        t_N = 0.5
 
         # Parameters of the system  (mass, inertial matrix, gravity)
         m = 1                                                                             
@@ -316,15 +343,22 @@ if __name__ == '__main__':
         L = [m, Jxx, Jyy, Jzz, g]
 
         # Initial conditions of the system
-        pos_0 = np.array([-4.0, -4.0, 4.0], dtype=np.double)
-        vel_0 = np.array([0.0, 0.0, 0.0], dtype=np.double)
-        angle_0 = 3.8134
-        axis_0 = [0.4896, 0.2032, 0.8480]
-        quat_0 = axisToquaternion(angle_0, axis_0)
-        omega_0 = np.array([0.0, 0.0, 0.0], dtype=np.double)
+        X_total = []
+        X_total_aux = []
+        for i_random in range(10):
+            pos_0 = get_random_position()
+            vel_0 = np.array([0.0, 0.0, 0.0], dtype=np.double)
+            omega_0 = np.array([0.0, 0.0, 0.0], dtype=np.double)
+            angle_0, axis_0 = get_random_quaternion()
+            quat_0 = axisToquaternion(angle_0, axis_0)
+            x = np.hstack((pos_0, vel_0, quat_0, omega_0))
+            x_aux = np.hstack((pos_0, angle_0, axis_0, omega_0, vel_0))
+            X_total.append(x)
+            X_total_aux.append(x_aux)
 
-        # Generalized vector of initial conditions
-        x_0 = np.hstack((pos_0, vel_0, quat_0, omega_0))
+        # Matrix of initial conditions
+        X_total = np.array(X_total)
+        X_total_aux = np.array(X_total_aux)
 
         # Ros Definition
         rospy.init_node("quadrotor",disable_signals=True, anonymous=True)
@@ -342,9 +376,46 @@ if __name__ == '__main__':
         ref_topic = "/quadrotor/ref"
         ref_publisher = rospy.Publisher(ref_topic, Marker, queue_size=10, tcp_nodelay=True)
 
-        # Simulation
-        main(ts, t_f, t_N, x_0, L, odometry_publisher_1, odometry_publisher_2, planning_publisher, ref_publisher)
+        Data_States = []
+        Data_reference = []
+        Data_F = []
+        Data_M = []
+        Data_orientation_cost = []
+        Data_translation_cost = []
+        Data_control_cost = []
+        Data_time = []
+        Data_N_prediction = []
 
+        for k in range(0, X_total.shape[0]):
+            # Simulation
+            x, xref, F, M, orientation_cost, translation_cost, control_cost, t, N_prediction = main(ts, t_f, t_N, X_total[k, :], L, odometry_publisher_1, odometry_publisher_2, planning_publisher, ref_publisher, k)
+            Data_States.append(x)
+            Data_reference.append(xref)
+            Data_F.append(F)
+            Data_M.append(M)
+            Data_orientation_cost.append(orientation_cost)
+            Data_translation_cost.append(translation_cost)
+            Data_control_cost.append(control_cost)
+            Data_time.append(t)
+            Data_N_prediction.append(N_prediction)
+
+        Data_States = np.array(Data_States)
+        Data_reference = np.array(Data_reference)
+        Data_F = np.array(Data_F)
+        Data_M = np.array(Data_M)
+        Data_orientation_cost = np.array(Data_orientation_cost)
+        Data_translation_cost = np.array(Data_translation_cost)
+        Data_control_cost = np.array(Data_control_cost)
+        Data_time = np.array(Data_time)
+        Data_N_prediction = np.array(Data_N_prediction)
+
+
+        # Save Data matlab 
+        mdic_x = {"x": Data_States, "xref": Data_reference, "F": Data_F, "M": Data_M, "orientation_cost": Data_orientation_cost,
+                "translation_cost": Data_translation_cost, "control_cost": Data_control_cost, "t": Data_time, "N": Data_N_prediction,
+                 "x_init": X_total_aux}
+        #savemat("Separed_cost" + ".mat", mdic_x)
+        savemat("Separed_cost_without_velocities" + ".mat", mdic_x)
     except(KeyboardInterrupt):
         print("Error System")
         pass

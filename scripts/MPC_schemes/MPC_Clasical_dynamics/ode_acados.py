@@ -629,6 +629,6 @@ def noise(x, noise):
     values_twist_w = w + values_twist_aux[3:6]
     values_pose = np.array([trans_noise_aux[1], trans_noise_aux[2], trans_noise_aux[3],
                             values_twist_v[0], values_twist_v[1], values_twist_v[2],
-                            quat_noise_aux[0], quat_noise_aux[1], quat_noise_aux[2], quat_noise_aux[3],
+                            quat_noise_aux[0, 0], quat_noise_aux[1, 0], quat_noise_aux[2, 0], quat_noise_aux[3, 0],
                             values_twist_w[0], values_twist_w[1], values_twist_w[2]])
     return values_pose
