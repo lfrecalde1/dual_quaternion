@@ -3,11 +3,11 @@ import rospy
 import numpy as np
 import matplotlib.pyplot as plt
 import casadi as ca
-from dual_quaternion import plot_states_quaternion, plot_states_position, fancy_plots_4, plot_angular_velocities, plot_linear_velocities, fancy_plots_3, plot_control_actions, fancy_plots_1, plot_time
+from dual_quaternion import plot_states_quaternion, plot_states_position, fancy_plots_4, plot_angular_velocities, plot_linear_velocities, fancy_plots_3, plot_control_actions, fancy_plots_1, plot_time, plot_cost_orientation, plot_cost_translation
 from nav_msgs.msg import Odometry
 from functions import dualquat_from_pose_casadi
 from ode_acados import dualquat_trans_casadi, dualquat_quat_casadi, rotation_casadi, rotation_inverse_casadi, dual_velocity_casadi, dual_quat_casadi, velocities_from_twist_casadi
-from ode_acados import f_rk4_casadi_simple, noise
+from ode_acados import f_rk4_casadi_simple, noise, cost_quaternion_casadi, cost_translation_casadi, error_lie_norm
 from nmpc_acados import create_ocp_solver
 from acados_template import AcadosOcpSolver, AcadosSimSolver
 
@@ -21,6 +21,9 @@ velocity_from_twist = velocities_from_twist_casadi()
 rot = rotation_casadi()
 inverse_rot = rotation_inverse_casadi()
 f_rk4 = f_rk4_casadi_simple()
+cost_quaternion = cost_quaternion_casadi()
+cost_translation = cost_translation_casadi()
+error_lie = error_lie_norm()
 
 
 def get_odometry(odom_msg, dqd, name):
@@ -85,9 +88,9 @@ def main(odom_pub_1, odom_pub_2, L):
     nx = 0.4896
     ny = 0.2032
     nz = 0.8480
-    tx1 = -2.0
-    ty1 = -2.0
-    tz1 = 2
+    tx1 = -4
+    ty1 = -4
+    tz1 = 4
 
     # Initial Dualquaternion
     dual_1 = dualquat_from_pose(theta1, nx, ny,  nz, tx1, ty1, tz1)
@@ -184,18 +187,18 @@ def main(odom_pub_1, odom_pub_2, L):
         acados_ocp_solver.set(stage, "u", u_d[:, 0])
 
     # Noise
-    sigma_x = 0.01
-    sigma_y = 0.01
-    sigma_z = 0.01
-    sigma_theta_x = 0.001
-    sigma_theta_y = 0.001
-    sigma_theta_z = 0.001
-    sigma_vx = 0.0001
-    sigma_vy = 0.0001
-    sigma_vz = 0.0001
-    sigma_wx = 0.0001
-    sigma_wy = 0.0001
-    sigma_wz = 0.0001
+    sigma_x = 0.00
+    sigma_y = 0.00
+    sigma_z = 0.00
+    sigma_theta_x = 0.000
+    sigma_theta_y = 0.000
+    sigma_theta_z = 0.000
+    sigma_vx = 0.0000
+    sigma_vy = 0.0000
+    sigma_vz = 0.0000
+    sigma_wx = 0.0000
+    sigma_wy = 0.0000
+    sigma_wz = 0.0000
     aux_noise = np.zeros(12)
     aux_noise[0] = sigma_x**2
     aux_noise[1] = sigma_y**2
@@ -210,12 +213,29 @@ def main(odom_pub_1, odom_pub_2, L):
     aux_noise[10] = sigma_wy**2
     aux_noise[11] = sigma_wz**2
     uav_white_noise_cov = np.diag(aux_noise)
+
+    # Cost Values
+    orientation_cost = np.zeros((1, t.shape[0] - N_prediction), dtype=np.double)
+    translation_cost = np.zeros((1, t.shape[0] - N_prediction), dtype=np.double)
+
+    lie_cost = np.zeros((2, t.shape[0] - N_prediction), dtype=np.double)
+    lie_cost_real = np.zeros((1, t.shape[0] - N_prediction), dtype=np.double)
+    lie_cost_dual = np.zeros((1, t.shape[0] - N_prediction), dtype=np.double)
+
     # Simulation loop
     for k in range(0, t.shape[0] - N_prediction):
         tic = rospy.get_time()
         white_noise = np.random.multivariate_normal(np.zeros(12),uav_white_noise_cov)
         #acados_ocp_solver.options_set("rti_phase", 1)
         #acados_ocp_solver.solve()
+
+        # Compute cost
+        orientation_cost[:, k] = cost_quaternion(get_quat(X_d[0:8, k]), get_quat(X[0:8, k]))
+        translation_cost[:, k] = cost_translation(get_trans(X_d[0:8, k]), get_trans(X[0:8, k]))
+        lie_cost[:, k] = np.array(error_lie(X_d[0:8, k], X[0:8, k])).reshape((2, ))
+        lie_cost_real[:, k] = lie_cost[0, k]
+        lie_cost_dual[:, k] = lie_cost[1, k]
+
         # Check properties
         real = X[0:4, k]
         dual = X[4:8, k]
@@ -292,6 +312,10 @@ def main(odom_pub_1, odom_pub_2, L):
         send_odometry(quat_1_d_msg, odom_pub_2)
 
         rospy.loginfo(message_ros + str(delta_t[:, k]))
+    
+    # Normalize cost
+    orientation_cost = orientation_cost/np.max(orientation_cost)
+    translation_cost = translation_cost/np.max(translation_cost)
 
     fig11, ax11, ax12, ax13, ax14 = fancy_plots_4()
     plot_states_quaternion(fig11, ax11, ax12, ax13, ax14, Q1_quat_data[0:4, :], Q2_quat_data[0:4, :], t, "Quaternion Results Based On LieAlgebra Cost")
@@ -315,10 +339,24 @@ def main(odom_pub_1, odom_pub_2, L):
 
     # Sampling time
     fig61, ax61  = fancy_plots_1()
-    plot_time(fig61, ax61, t_sample, delta_t, t, "Computational Time")
+    plot_time(fig61, ax61, t_sample, delta_t, t, "Computational Time Based On LieAlgebra Cost")
     plt.show()
 
+    fig71, ax71  = fancy_plots_1()
+    plot_cost_orientation(fig71, ax71, orientation_cost, t, "Cost Orientation Based On LieAlgebra Cost")
+    plt.show()
 
+    fig81, ax81  = fancy_plots_1()
+    plot_cost_translation(fig81, ax81, translation_cost, t, "Cost Translation Based On LieAlgebra Cost")
+    plt.show()
+
+    #fig91, ax91  = fancy_plots_1()
+    #plot_cost_orientation(fig91, ax91, lie_cost_real, t, "Cost Lie Real Based On LieAlgebra Cost")
+    #plt.show()
+
+    #fig101, ax101  = fancy_plots_1()
+    #plot_cost_translation(fig101, ax101, lie_cost_dual, t, "Cost Lie Dual Based On LieAlgebra Cost")
+    #plt.show()
     return None
 if __name__ == '__main__':
     try:

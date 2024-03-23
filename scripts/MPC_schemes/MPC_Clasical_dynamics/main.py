@@ -2,7 +2,7 @@ import numpy as np
 import time
 import matplotlib.pyplot as plt
 from fancy_plots import fancy_plots_3, fancy_plots_4, fancy_plots_1
-from fancy_plots import plot_states_position, plot_states_quaternion, plot_control_actions, plot_states_euler, plot_time
+from fancy_plots import plot_states_position, plot_states_quaternion, plot_control_actions, plot_states_euler, plot_time, plot_cost_orientation, plot_cost_translation
 from system_functions import f_d, axisToquaternion, f_d_casadi, ref_trajectory, compute_desired_quaternion, get_euler_angles
 from system_functions import send_odom_msg, set_odom_msg, init_marker, set_marker, send_marker_msg, ref_trajectory_agresive
 from system_functions import init_marker_ref, set_marker_ref
@@ -14,13 +14,15 @@ from nav_msgs.msg import Odometry
 from visualization_msgs.msg import Marker
 from functions import dualquat_from_pose_casadi
 from ode_acados import dualquat_trans_casadi, dualquat_quat_casadi, rotation_casadi, rotation_inverse_casadi, dual_velocity_casadi, dual_quat_casadi, velocities_from_twist_casadi
-from ode_acados import f_rk4_casadi_simple, noise
+from ode_acados import f_rk4_casadi_simple, noise, cost_quaternion_casadi, cost_translation_casadi
 
 dualquat_from_pose = dualquat_from_pose_casadi()
 get_trans = dualquat_trans_casadi()
 get_quat = dualquat_quat_casadi()
 dual_twist = dual_velocity_casadi()
 f_rk4 = f_rk4_casadi_simple()
+cost_quaternion = cost_quaternion_casadi()
+cost_translation = cost_translation_casadi()
 
 
 
@@ -161,18 +163,18 @@ def main(ts: float, t_f: float, t_N: float, x_0: np.ndarray, L: list, odom_pub_1
     ref_marker_msg, aux_trajectory_ref = init_marker_ref(ref_marker_msg, xref[:, 0])
 
     # Noise
-    sigma_x = 0.01
-    sigma_y = 0.01
-    sigma_z = 0.01
-    sigma_theta_x = 0.001
-    sigma_theta_y = 0.001
-    sigma_theta_z = 0.001
-    sigma_vx = 0.0001
-    sigma_vy = 0.0001
-    sigma_vz = 0.0001
-    sigma_wx = 0.0001
-    sigma_wy = 0.0001
-    sigma_wz = 0.0001
+    sigma_x = 0.00
+    sigma_y = 0.00
+    sigma_z = 0.00
+    sigma_theta_x = 0.000
+    sigma_theta_y = 0.000
+    sigma_theta_z = 0.000
+    sigma_vx = 0.0000
+    sigma_vy = 0.0000
+    sigma_vz = 0.0000
+    sigma_wx = 0.0000
+    sigma_wy = 0.0000
+    sigma_wz = 0.0000
     aux_noise = np.zeros(12)
     aux_noise[0] = sigma_x**2
     aux_noise[1] = sigma_y**2
@@ -187,12 +189,21 @@ def main(ts: float, t_f: float, t_N: float, x_0: np.ndarray, L: list, odom_pub_1
     aux_noise[10] = sigma_wy**2
     aux_noise[11] = sigma_wz**2
     uav_white_noise_cov = np.diag(aux_noise)
+
+    # Cost Values
+    orientation_cost = np.zeros((1, t.shape[0] - N_prediction), dtype=np.double)
+    translation_cost = np.zeros((1, t.shape[0] - N_prediction), dtype=np.double)
+
     # Loop simulation
     for k in range(0, t.shape[0] - N_prediction):
         tic = rospy.get_time()
         white_noise = np.random.multivariate_normal(np.zeros(12),uav_white_noise_cov)
         #acados_ocp_solver.options_set("rti_phase", 1)
         #acados_ocp_solver.solve()
+
+        # Compute cost
+        orientation_cost[:, k] = cost_quaternion(xref[6:10, k], x[6:10, k])
+        translation_cost[:, k] = cost_translation(xref[0:3, k], x[0:3, k])
         # Control Law Acados
         acados_ocp_solver.set(0, "lbx", x[:, k])
         acados_ocp_solver.set(0, "ubx", x[:, k])
@@ -255,6 +266,10 @@ def main(ts: float, t_f: float, t_N: float, x_0: np.ndarray, L: list, odom_pub_1
         send_marker_msg(ref_marker_msg, pub_ref)
         rospy.loginfo(message_ros + str(toc_solver))
 
+    # Normalize cost
+    orientation_cost = orientation_cost/np.max(orientation_cost)
+    translation_cost = translation_cost/np.max(translation_cost)
+
     # Results
     # Position
     fig11, ax11, ax21, ax31 = fancy_plots_3()
@@ -276,10 +291,14 @@ def main(ts: float, t_f: float, t_N: float, x_0: np.ndarray, L: list, odom_pub_1
     plot_time(fig14, ax14, t_sample, delta_t, t, "Computational Time")
     plt.show()
 
-    #fig14, ax14, ax24, ax34 = fancy_plots_3()
-    #plot_states_euler(fig14, ax14, ax24, ax34, euler[0:3, :], euler_d[0:3, :], t, "Euler Angles of the System")
-    #plt.show()
-    #None
+    fig15, ax15  = fancy_plots_1()
+    plot_cost_orientation(fig15, ax15, orientation_cost, t, "Cost Orientation")
+    plt.show()
+
+    fig16, ax16  = fancy_plots_1()
+    plot_cost_translation(fig16, ax16, translation_cost, t, "Cost Translation")
+    plt.show()
+
 
 if __name__ == '__main__':
     try: #################################### Simulation  #####################################################
@@ -297,7 +316,7 @@ if __name__ == '__main__':
         L = [m, Jxx, Jyy, Jzz, g]
 
         # Initial conditions of the system
-        pos_0 = np.array([-2.0, -2.0, 2.0], dtype=np.double)
+        pos_0 = np.array([-4.0, -4.0, 4.0], dtype=np.double)
         vel_0 = np.array([0.0, 0.0, 0.0], dtype=np.double)
         angle_0 = 3.8134
         axis_0 = [0.4896, 0.2032, 0.8480]

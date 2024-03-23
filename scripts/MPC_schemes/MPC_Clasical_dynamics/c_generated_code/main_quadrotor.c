@@ -117,12 +117,12 @@ int main()
 
     double lbx0[NBX0];
     double ubx0[NBX0];
-    lbx0[0] = -2;
-    ubx0[0] = -2;
-    lbx0[1] = -2;
-    ubx0[1] = -2;
-    lbx0[2] = 2;
-    ubx0[2] = 2;
+    lbx0[0] = -4;
+    ubx0[0] = -4;
+    lbx0[1] = -4;
+    ubx0[1] = -4;
+    lbx0[2] = 4;
+    ubx0[2] = 4;
     lbx0[3] = 0;
     ubx0[3] = 0;
     lbx0[4] = 0;

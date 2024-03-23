@@ -404,6 +404,51 @@ def error_quaternion(qd, q):
     q_e_ln = Q3_pose - q_error
 
     return q_e_ln
+
+def cost_quaternion_casadi():
+    qd = ca.MX.sym('qd', 4, 1)
+    q = ca.MX.sym('q', 4, 1)
+    qd_conjugate = ca.vertcat(qd[0, 0], -qd[1, 0], -qd[2, 0], -qd[3, 0])
+    quat_d_data = qd_conjugate[0:4, 0]
+    quaternion = q[0:4, 0]
+
+    H_r_plus = ca.vertcat(ca.horzcat(quat_d_data[0, 0], -quat_d_data[1, 0], -quat_d_data[2, 0], -quat_d_data[3, 0]),
+                                ca.horzcat(quat_d_data[1, 0], quat_d_data[0, 0], -quat_d_data[3, 0], quat_d_data[2, 0]),
+                                ca.horzcat(quat_d_data[2, 0], quat_d_data[3, 0], quat_d_data[0, 0], -quat_d_data[1, 0]),
+                                ca.horzcat(quat_d_data[3, 0], -quat_d_data[2, 0], quat_d_data[1, 0], quat_d_data[0, 0]))
+
+
+
+    q_e_aux = H_r_plus @ quaternion
+    
+    condition1 = q_e_aux[0, 0] > 0.0
+
+    # Define expressions for each condition
+    expr1 =  q_e_aux[:, 0]
+    expr2 = -q_e_aux[:, 0]
+
+    # Check shortest path
+    q_error = ca.if_else(condition1, expr1, expr2) 
+
+    # Sux variable in roder to get a norm
+    q_3_aux = ca.DM([1.0, 0.0, 0.0, 0.0])
+    Q3_pose =  ca.vertcat(q_3_aux)
+    
+    q_e_ln = Q3_pose - q_error
+
+    cost = q_e_ln.T@q_e_ln
+    f_cost = Function('f_cost', [qd, q], [cost])
+    return f_cost
+
+def cost_translation_casadi():
+    td = ca.MX.sym('td', 3, 1)
+    t = ca.MX.sym('t', 3, 1)
+
+    te = td - t
+    
+    cost = te.T@te
+    f_cost = Function('f_cost', [td, t], [cost])
+    return f_cost
 def dual_aceleraction_casadi(dual, omega, u, L):
     # Split Control Actions
     force = u[0, 0]

@@ -1,6 +1,7 @@
 from acados_template import AcadosOcp, AcadosOcpSolver, AcadosSimSolver
 from ode_acados import quadrotorModel
 from casadi import Function, MX, vertcat, sin, cos, fabs, DM
+import casadi as ca
 
 import numpy as np
 
@@ -11,7 +12,7 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
     ocp = AcadosOcp()
 
     # Model of the system
-    model, get_trans, get_quat, constraint, error_manifold, error_lie, error_quaternion = quadrotorModel(L)
+    model, get_trans, get_quat, constraint, error_manifold, error_lie, error_quaternion, error_lie_norm, error_manifold_norm = quadrotorModel(L)
 
     # Constructing the optimal control problem
     ocp.model = model
@@ -43,7 +44,9 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
     dual = model.x[0:8]
 
     error_total_lie = error_lie(dual_d, dual)
+    #error_total_lie_norm = error_lie_norm(dual_d, dual)
     #error_total_manifold = error_manifold(dual_d, dual)
+    #error_total_manifold_norm = error_manifold_norm(dual_d, dual)
 
     # Inputs
     nominal_input = ocp.p[14:18]
@@ -59,9 +62,9 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
     Q_l[1, 1] = 2
     Q_l[2, 2] = 2
     Q_l[3, 3] = 2
-    Q_l[5, 5] = 2
-    Q_l[6, 6] = 2
-    Q_l[7, 7] = 2
+    Q_l[5, 5] = 1
+    Q_l[6, 6] = 1
+    Q_l[7, 7] = 1
 
     Q_t = DM.zeros(8, 8)
     Q_t[0, 0] = 1
@@ -73,10 +76,13 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
     Q_t[6, 6] = 2
     Q_t[7, 7] = 2
 
+    #ocp.model.cost_expr_ext_cost = 1*(ca.max(ca.fabs(error_total_lie))) + 1*(error_nominal_input.T @ R @ error_nominal_input)+ 1*(w.T@w)+ 1*(v.T@v)
 
-    ocp.model.cost_expr_ext_cost = 10*(error_total_lie.T@Q_l@error_total_lie) + 1*(error_nominal_input.T @ R @ error_nominal_input)+ 1*(w.T@w)+ 1*(v.T@v)
+    #ocp.model.cost_expr_ext_cost_e =  1*(ca.max(ca.fabs(error_total_lie))) + 1*(w.T@w)+ 1*(v.T@v)
 
-    ocp.model.cost_expr_ext_cost_e =  10*(error_total_lie.T@Q_l@error_total_lie) + 1*(w.T@w)+ 1*(v.T@v)
+    ocp.model.cost_expr_ext_cost = 10*(error_total_lie.T@Q_l@error_total_lie) + 1*(error_nominal_input.T @ R @ error_nominal_input)
+
+    ocp.model.cost_expr_ext_cost_e =  10*(error_total_lie.T@Q_l@error_total_lie)
 
     #ocp.model.cost_expr_ext_cost = 10*(error_total_manifold.T@Q_t@error_total_manifold) + 1*(error_nominal_input.T @ R @ error_nominal_input)+ 1*(w.T@w)+ 1*(v.T@v)
 

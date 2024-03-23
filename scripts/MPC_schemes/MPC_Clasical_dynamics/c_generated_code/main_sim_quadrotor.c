@@ -81,9 +81,9 @@ int main()
     x_current[12] = 0.0;
 
   
-    x_current[0] = -2;
-    x_current[1] = -2;
-    x_current[2] = 2;
+    x_current[0] = -4;
+    x_current[1] = -4;
+    x_current[2] = 4;
     x_current[3] = 0;
     x_current[4] = 0;
     x_current[5] = 0;
