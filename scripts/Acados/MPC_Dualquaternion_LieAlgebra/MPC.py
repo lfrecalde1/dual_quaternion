@@ -10,6 +10,8 @@ from ode_acados import dualquat_trans_casadi, dualquat_quat_casadi, rotation_cas
 from nmpc_acados import create_ocp_solver
 from acados_template import AcadosOcpSolver, AcadosSimSolver
 from ode_acados import error_manifold, error_lie
+import scipy.io
+from scipy.io import savemat
 
 # Creating Funtions based on Casadi
 dual_quat = dual_quat_casadi()
@@ -21,7 +23,14 @@ velocity_from_twist = velocities_from_twist_casadi()
 rot = rotation_casadi()
 inverse_rot = rotation_inverse_casadi()
 
+#Identification = scipy.io.loadmat('Separed_cost.mat') 
+Identification = scipy.io.loadmat('Separed_cost_without_velocities.mat') 
+x_0 = Identification['x_init']
 
+import os
+script_dir = os.path.dirname(__file__)
+#folder_path = os.path.join(script_dir, 'cost_with_velocities/')
+folder_path = os.path.join(script_dir, 'cost_without_velocities/')
 def get_odometry(odom_msg, dqd, name):
     # Function to send the Oritentation of the Quaternion
     # Get Information from the DualQuaternion
@@ -47,13 +56,13 @@ def send_odometry(odom_msg, odom_pub):
     odom_pub.publish(odom_msg)
     return None
 
-def main(odom_pub_1, odom_pub_2, L):
+def main(odom_pub_1, odom_pub_2, L, initial):
     # Split Values
     m = L[0]
     g = L[4]
     # Sample Time Defintion
     sample_time = 0.03
-    t_f = 30
+    t_f = 10
 
     # Time defintion aux variable
     t = np.arange(0, t_f + sample_time, sample_time)
@@ -62,7 +71,7 @@ def main(odom_pub_1, odom_pub_2, L):
     hz = int(1/(sample_time))
     loop_rate = rospy.Rate(hz)
 
-    t_N = 1.0
+    t_N = 0.5
     # Prediction Node of the NMPC formulation
     N = np.arange(0, t_N + sample_time, sample_time)
     N_prediction = N.shape[0]
@@ -246,24 +255,20 @@ def main(odom_pub_1, odom_pub_2, L):
 
 
     fig11, ax11, ax12, ax13, ax14 = fancy_plots_4()
-    plot_states_quaternion(fig11, ax11, ax12, ax13, ax14, Q1_quat_data[0:4, :], Q2_quat_data[0:4, :], t, "Quaternion Results Based On LieAlgebra Cost")
-    plt.show()
+    plot_states_quaternion(fig11, ax11, ax12, ax13, ax14, Q1_quat_data[0:4, :], Q2_quat_data[0:4, :], t, "Quaternion Results Based On LieAlgebra Cost "+ str(initial), folder_path)
 
     fig21, ax21, ax22, ax23 = fancy_plots_3()
-    plot_states_position(fig21, ax21, ax22, ax23, Q1_trans_data[1:4, :], Q2_trans_data[1:4, :], t, "Position Results Based On LieAlgebra Cost")
-    plt.show()
+    plot_states_position(fig21, ax21, ax22, ax23, Q1_trans_data[1:4, :], Q2_trans_data[1:4, :], t, "Position Results Based On LieAlgebra Cost "+ str(initial), folder_path)
+
     fig31, ax31, ax32, ax33 = fancy_plots_3()
-    plot_angular_velocities(fig31, ax31, ax32, ax33, Q1_velocities_data[0:3, :], t, "Body Angular velocities Based On LieAlgebra Cost")
-    plt.show()
+    plot_angular_velocities(fig31, ax31, ax32, ax33, Q1_velocities_data[0:3, :], t, "Body Angular velocities Based On LieAlgebra Cost "+ str(initial), folder_path)
 
     fig41, ax41, ax42, ax43 = fancy_plots_3()
-    plot_linear_velocities(fig41, ax41, ax42, ax43, Q1_velocities_data[3:6, :], t, "Inertial Linear velocities Based On LieAlgebra Cost")
-    plt.show()
+    plot_linear_velocities(fig41, ax41, ax42, ax43, Q1_velocities_data[3:6, :], t, "Inertial Linear velocities Based On LieAlgebra Cost "+ str(initial), folder_path)
 
     # Control Actions
     fig51, ax51, ax52, ax53, ax54 = fancy_plots_4()
-    plot_control_actions(fig51, ax51, ax52, ax53, ax54, F, M, t, "Control Actions of the System Based On LieAlgebra Cost")
-    plt.show()
+    plot_control_actions(fig51, ax51, ax52, ax53, ax54, F, M, t, "Control Actions of the System Based On LieAlgebra Cost "+ str(initial), folder_path)
 
     return None
 if __name__ == '__main__':
@@ -282,7 +287,7 @@ if __name__ == '__main__':
         Jzz = 4.96e-3
         g = 9.8
         L = [m, Jxx, Jyy, Jzz, g]
-        main(odometry_publisher_1, odometry_publisher_2, L)
+        main(odometry_publisher_1, odometry_publisher_2, L, 0)
     except(rospy.ROSInterruptException, KeyboardInterrupt):
         print("Error System")
         pass

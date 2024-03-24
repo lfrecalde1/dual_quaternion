@@ -69,14 +69,14 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
     Q_l[1, 1] = 2
     Q_l[2, 2] = 2
     Q_l[3, 3] = 2
-    Q_l[5, 5] = 0.25
-    Q_l[6, 6] = 0.25
-    Q_l[7, 7] = 0.25
+    Q_l[5, 5] = 2
+    Q_l[6, 6] = 2
+    Q_l[7, 7] = 2
 
 
     ocp.model.cost_expr_ext_cost = 10*(error_total_lie.T@Q_l@error_total_lie) + 1*(error_nominal_input.T @ R @ error_nominal_input)
 
-    ocp.model.cost_expr_ext_cost_e =  10*(error_total_lie.T@Q_l@error_total_lie) + 1*(w.T@w)+ 1*(v.T@v)
+    ocp.model.cost_expr_ext_cost_e =  10*(error_total_lie.T@Q_l@error_total_lie)
 
 
     # Auxiliary variable initialization
@@ -112,19 +112,19 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
     ocp.constraints.idxsh = np.array(range(nsh))
 #
     # Set options
-    ocp.solver_options.qp_solver = "PARTIAL_CONDENSING_HPIPM" 
+    ocp.solver_options.qp_solver = "FULL_CONDENSING_HPIPM" 
     ocp.solver_options.hessian_approx = "GAUSS_NEWTON"  
-    ocp.solver_options.integrator_type = "ERK"
+    #ocp.solver_options.regularize_method = "CONVEXIFY"  
+    ocp.solver_options.integrator_type = "IRK"
     ocp.solver_options.nlp_solver_type = "SQP_RTI"
     ocp.solver_options.Tsim = ts
-    ocp.solver_options.levenberg_marquardt = 0.01
     ocp.solver_options.sim_method_num_stages = 4
-    ocp.solver_options.sim_method_num_steps = 3 # Verify the meaning of this value
+    ocp.solver_options.sim_method_num_steps = 1 # Verify the meaning of this value
     ocp.solver_options.nlp_solver_max_iter = 200
     ocp.solver_options.tol = 1e-4
-
-
     ocp.solver_options.tf = t_horizon
+    ocp.solver_options.levenberg_marquardt = 1e-5
+    ocp.solver_options.line_search_use_sufficient_descent
 
 
     return ocp

@@ -2,7 +2,7 @@ import numpy as np
 import time
 import matplotlib.pyplot as plt
 from fancy_plots import fancy_plots_3, fancy_plots_4, fancy_plots_1
-from fancy_plots import plot_states_position, plot_states_quaternion, plot_control_actions, plot_states_euler, plot_time, plot_cost_orientation, plot_cost_translation, plot_cost_control
+from fancy_plots import plot_states_position, plot_states_quaternion, plot_control_actions, plot_states_euler, plot_time, plot_cost_orientation, plot_cost_translation, plot_cost_control, plot_cost_total
 from system_functions import f_d, axisToquaternion, f_d_casadi, ref_trajectory, compute_desired_quaternion, get_euler_angles
 from system_functions import send_odom_msg, set_odom_msg, init_marker, set_marker, send_marker_msg, ref_trajectory_agresive
 from system_functions import init_marker_ref, set_marker_ref
@@ -28,8 +28,8 @@ cost_translation = cost_translation_casadi()
 
 import os
 script_dir = os.path.dirname(__file__)
-#folder_path = os.path.join(script_dir, 'cost_with_velocities/')
-folder_path = os.path.join(script_dir, 'cost_without_velocities/')
+folder_path = os.path.join(script_dir, 'cost_with_velocities/')
+#folder_path = os.path.join(script_dir, 'cost_without_velocities/')
 # Check if the folder exists, and create it if it doesn't
 
 def main(ts: float, t_f: float, t_N: float, x_0: np.ndarray, L: list, odom_pub_1, odom_pub_2, pub_planning, pub_ref, initial)-> None:
@@ -171,18 +171,18 @@ def main(ts: float, t_f: float, t_N: float, x_0: np.ndarray, L: list, odom_pub_1
     ref_marker_msg, aux_trajectory_ref = init_marker_ref(ref_marker_msg, xref[:, 0])
 
     # Noise
-    sigma_x = 0.00
-    sigma_y = 0.00
-    sigma_z = 0.00
-    sigma_theta_x = 0.000
-    sigma_theta_y = 0.000
-    sigma_theta_z = 0.000
-    sigma_vx = 0.0000
-    sigma_vy = 0.0000
-    sigma_vz = 0.0000
-    sigma_wx = 0.0000
-    sigma_wy = 0.0000
-    sigma_wz = 0.0000
+    sigma_x = 0.01
+    sigma_y = 0.01
+    sigma_z = 0.01
+    sigma_theta_x = 0.001
+    sigma_theta_y = 0.001
+    sigma_theta_z = 0.001
+    sigma_vx = 0.0001
+    sigma_vy = 0.0001
+    sigma_vz = 0.0001
+    sigma_wx = 0.0001
+    sigma_wy = 0.0001
+    sigma_wz = 0.0001
     aux_noise = np.zeros(12)
     aux_noise[0] = sigma_x**2
     aux_noise[1] = sigma_y**2
@@ -202,6 +202,7 @@ def main(ts: float, t_f: float, t_N: float, x_0: np.ndarray, L: list, odom_pub_1
     orientation_cost = np.zeros((1, t.shape[0] - N_prediction), dtype=np.double)
     translation_cost = np.zeros((1, t.shape[0] - N_prediction), dtype=np.double)
     control_cost = np.zeros((1, t.shape[0] - N_prediction), dtype=np.double)
+    total_cost = np.zeros((1, t.shape[0] - N_prediction), dtype=np.double)
 
     # Loop simulation
     for k in range(0, t.shape[0] - N_prediction):
@@ -213,6 +214,7 @@ def main(ts: float, t_f: float, t_N: float, x_0: np.ndarray, L: list, odom_pub_1
         # Compute cost
         orientation_cost[:, k] = cost_quaternion(xref[6:10, k], x[6:10, k])
         translation_cost[:, k] = cost_translation(xref[0:3, k], x[0:3, k])
+        total_cost[:, k] = orientation_cost[:, k] + translation_cost[:, k]
         # Control Law Acados
         acados_ocp_solver.set(0, "lbx", x[:, k])
         acados_ocp_solver.set(0, "ubx", x[:, k])
@@ -281,6 +283,7 @@ def main(ts: float, t_f: float, t_N: float, x_0: np.ndarray, L: list, odom_pub_1
     orientation_cost = orientation_cost/1
     translation_cost = translation_cost/1
     control_cost = control_cost/1
+    total_cost = total_cost/np.max(total_cost)
 
     # Results
     # Position
@@ -296,17 +299,20 @@ def main(ts: float, t_f: float, t_N: float, x_0: np.ndarray, L: list, odom_pub_1
     plot_control_actions(fig13, ax13, ax23, ax33, ax43, F, M, t, "Control Actions of the System "+ str(initial), folder_path)
 
     # Sampling time
-    fig14, ax14  = fancy_plots_1()
-    plot_time(fig14, ax14, t_sample, delta_t, t, "Computational Time "+ str(initial), folder_path)
+    #fig14, ax14  = fancy_plots_1()
+    #plot_time(fig14, ax14, t_sample, delta_t, t, "Computational Time "+ str(initial), folder_path)
 
-    fig15, ax15  = fancy_plots_1()
-    plot_cost_orientation(fig15, ax15, orientation_cost, t, "Cost Orientation "+ str(initial), folder_path)
+    #fig15, ax15  = fancy_plots_1()
+    #plot_cost_orientation(fig15, ax15, orientation_cost, t, "Cost Orientation "+ str(initial), folder_path)
 
-    fig16, ax16  = fancy_plots_1()
-    plot_cost_translation(fig16, ax16, translation_cost, t, "Cost Translation "+ str(initial), folder_path)
+    #fig16, ax16  = fancy_plots_1()
+    #plot_cost_translation(fig16, ax16, translation_cost, t, "Cost Translation "+ str(initial), folder_path)
 
-    fig17, ax17  = fancy_plots_1()
-    plot_cost_control(fig17, ax17, control_cost, t, "Cost Control "+ str(initial), folder_path)
+    #fig17, ax17  = fancy_plots_1()
+    #plot_cost_control(fig17, ax17, control_cost, t, "Cost Control "+ str(initial), folder_path)
+
+    fig18, ax18  = fancy_plots_1()
+    plot_cost_total(fig18, ax18, total_cost, t, "Cost Total "+ str(initial), folder_path)
 
     return x, xref, F, M, orientation_cost, translation_cost, control_cost, t, N_prediction
 
@@ -325,7 +331,7 @@ if __name__ == '__main__':
         # Time parameters
         ts = 0.03
         t_f = 10
-        t_N = 0.7
+        t_N = 0.5
 
         # Parameters of the system  (mass, inertial matrix, gravity)
         m = 1                                                                             
@@ -338,7 +344,7 @@ if __name__ == '__main__':
         # Initial conditions of the system
         X_total = []
         X_total_aux = []
-        for i_random in range(20):
+        for i_random in range(30):
             pos_0 = get_random_position()
             vel_0 = np.array([0.0, 0.0, 0.0], dtype=np.double)
             omega_0 = np.array([0.0, 0.0, 0.0], dtype=np.double)
@@ -407,8 +413,8 @@ if __name__ == '__main__':
         mdic_x = {"x": Data_States, "xref": Data_reference, "F": Data_F, "M": Data_M, "orientation_cost": Data_orientation_cost,
                 "translation_cost": Data_translation_cost, "control_cost": Data_control_cost, "t": Data_time, "N": Data_N_prediction,
                  "x_init": X_total_aux}
-        #savemat("Separed_cost" + ".mat", mdic_x)
-        savemat("Separed_cost_without_velocities" + ".mat", mdic_x)
+        savemat("Separed_cost" + ".mat", mdic_x)
+        #savemat("Separed_cost_without_velocities" + ".mat", mdic_x)
     except(KeyboardInterrupt):
         print("Error System")
         pass

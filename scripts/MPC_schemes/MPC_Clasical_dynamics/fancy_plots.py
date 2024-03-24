@@ -577,6 +577,33 @@ def plot_cost_translation(fig11, ax11, x_sample_real, t, name, path):
         fig11.savefig(png_file_path)
         return None
 
+def plot_cost_total(fig11, ax11, x_sample_real, t, name, path):
+        t = t[0:x_sample_real.shape[1]]
+        ax11.set_xlim((t[0], t[-1]))
+
+        #ax11.set_xticklabels([])
+
+        state_1_e_d, = ax11.plot(t[0:t.shape[0]], x_sample_real[0, 0:t.shape[0]],
+                    color='#1D2121', lw=1.0, ls="-")
+
+
+        ax11.set_ylabel(r"$\textrm{Cost}$", rotation='vertical')
+        ax11.legend([state_1_e_d],
+                [r'$||~\mathbf{t}^{i}_{d, k}- \textrm{trans}(\mathbf{x}_k)||^{2} + ||{\mathbf{q}_{d, k}} - \textrm{quat}(\mathbf{x}_k)||^{2}$'],
+                loc="best",
+                frameon=True, fancybox=True, shadow=False, ncol=2,
+                borderpad=0.5, labelspacing=0.5, handlelength=3, handletextpad=0.1,
+                borderaxespad=0.3, columnspacing=2)
+        ax11.grid(color='#949494', linestyle='-.', linewidth=0.5)
+        ax11.set_xlabel(r"$\textrm{Time}[s]$", labelpad=5)
+
+        pdf_file_path = os.path.join(path, name + ".pdf")
+        png_file_path = os.path.join(path, name + ".png")
+
+        fig11.savefig(pdf_file_path)
+        fig11.savefig(png_file_path)
+        return None
+
 def plot_cost_control(fig11, ax11, x_sample_real, t, name, path):
         t = t[0:x_sample_real.shape[1]]
         ax11.set_xlim((t[0], t[-1]))

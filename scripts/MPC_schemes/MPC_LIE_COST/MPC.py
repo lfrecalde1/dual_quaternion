@@ -3,7 +3,7 @@ import rospy
 import numpy as np
 import matplotlib.pyplot as plt
 import casadi as ca
-from dual_quaternion import plot_states_quaternion, plot_states_position, fancy_plots_4, plot_angular_velocities, plot_linear_velocities, fancy_plots_3, plot_control_actions, fancy_plots_1, plot_time, plot_cost_orientation, plot_cost_translation, plot_cost_control
+from dual_quaternion import plot_states_quaternion, plot_states_position, fancy_plots_4, plot_angular_velocities, plot_linear_velocities, fancy_plots_3, plot_control_actions, fancy_plots_1, plot_time, plot_cost_orientation, plot_cost_translation, plot_cost_control, plot_cost_total
 from nav_msgs.msg import Odometry
 from functions import dualquat_from_pose_casadi
 from ode_acados import dualquat_trans_casadi, dualquat_quat_casadi, rotation_casadi, rotation_inverse_casadi, dual_velocity_casadi, dual_quat_casadi, velocities_from_twist_casadi
@@ -27,14 +27,14 @@ cost_quaternion = cost_quaternion_casadi()
 cost_translation = cost_translation_casadi()
 error_lie = error_lie_norm()
 
-#Identification = scipy.io.loadmat('Separed_cost.mat') 
-Identification = scipy.io.loadmat('Separed_cost_without_velocities.mat') 
+Identification = scipy.io.loadmat('Separed_cost.mat') 
+#Identification = scipy.io.loadmat('Separed_cost_without_velocities.mat') 
 x_0 = Identification['x_init']
 
 import os
 script_dir = os.path.dirname(__file__)
-#folder_path = os.path.join(script_dir, 'cost_with_velocities/')
-folder_path = os.path.join(script_dir, 'cost_without_velocities/')
+folder_path = os.path.join(script_dir, 'cost_with_velocities/')
+#folder_path = os.path.join(script_dir, 'cost_without_velocities/')
 
 def get_odometry(odom_msg, dqd, name):
     # Function to send the Oritentation of the Quaternion
@@ -76,7 +76,7 @@ def main(odom_pub_1, odom_pub_2, L, x0, initial):
     hz = int(1/(sample_time))
     loop_rate = rospy.Rate(hz)
 
-    t_N = 0.7
+    t_N = 0.5
     # Prediction Node of the NMPC formulation
     N = np.arange(0, t_N + sample_time, sample_time)
     N_prediction = N.shape[0]
@@ -115,6 +115,7 @@ def main(odom_pub_1, odom_pub_2, L, x0, initial):
 
     # Vector of the generalized states
     X = np.zeros((14, t.shape[0] + 1 - N_prediction), dtype=np.double)
+    #X_aux = np.zeros((8, t.shape[0] + 1 - N_prediction), dtype=np.double)
 
     # Control Actions 
     u = np.zeros((4, t.shape[0] - N_prediction), dtype=np.double)
@@ -126,6 +127,7 @@ def main(odom_pub_1, odom_pub_2, L, x0, initial):
     Q1_quat_data[:, 0] = np.array(get_quat(dual_1)).reshape((4, ))
     Q1_velocities_data[:, 0] = np.array(velocities).reshape((6, ))
     X[:, 0] = np.array(ca.vertcat(dual_1, dual_twist_1)).reshape((14, ))
+    #X_aux[:, 0] = np.array(ca.vertcat(get_trans(dual_1), get_quat(dual_1))).reshape((8, ))
 
     # Constraints on control actions
     F_max = L[0]*L[4] + 20
@@ -202,18 +204,18 @@ def main(odom_pub_1, odom_pub_2, L, x0, initial):
         acados_ocp_solver.set(stage, "u", u_d[:, 0])
 
     # Noise
-    sigma_x = 0.00
-    sigma_y = 0.00
-    sigma_z = 0.00
-    sigma_theta_x = 0.000
-    sigma_theta_y = 0.000
-    sigma_theta_z = 0.000
-    sigma_vx = 0.0000
-    sigma_vy = 0.0000
-    sigma_vz = 0.0000
-    sigma_wx = 0.0000
-    sigma_wy = 0.0000
-    sigma_wz = 0.0000
+    sigma_x = 0.01
+    sigma_y = 0.01
+    sigma_z = 0.01
+    sigma_theta_x = 0.001
+    sigma_theta_y = 0.001
+    sigma_theta_z = 0.001
+    sigma_vx = 0.0001
+    sigma_vy = 0.0001
+    sigma_vz = 0.0001
+    sigma_wx = 0.0001
+    sigma_wy = 0.0001
+    sigma_wz = 0.0001
     aux_noise = np.zeros(12)
     aux_noise[0] = sigma_x**2
     aux_noise[1] = sigma_y**2
@@ -233,6 +235,7 @@ def main(odom_pub_1, odom_pub_2, L, x0, initial):
     orientation_cost = np.zeros((1, t.shape[0] - N_prediction), dtype=np.double)
     translation_cost = np.zeros((1, t.shape[0] - N_prediction), dtype=np.double)
     control_cost = np.zeros((1, t.shape[0] - N_prediction), dtype=np.double)
+    total_cost = np.zeros((1, t.shape[0] - N_prediction), dtype=np.double)
 
     lie_cost = np.zeros((2, t.shape[0] - N_prediction), dtype=np.double)
     lie_cost_real = np.zeros((1, t.shape[0] - N_prediction), dtype=np.double)
@@ -248,6 +251,7 @@ def main(odom_pub_1, odom_pub_2, L, x0, initial):
         # Compute cost
         orientation_cost[:, k] = cost_quaternion(get_quat(X_d[0:8, k]), get_quat(X[0:8, k]))
         translation_cost[:, k] = cost_translation(get_trans(X_d[0:8, k]), get_trans(X[0:8, k]))
+        total_cost[:, k] = orientation_cost[:, k] + translation_cost[:, k]
         lie_cost[:, k] = np.array(error_lie(X_d[0:8, k], X[0:8, k])).reshape((2, ))
         lie_cost_real[:, k] = lie_cost[0, k]
         lie_cost_dual[:, k] = lie_cost[1, k]
@@ -335,6 +339,7 @@ def main(odom_pub_1, odom_pub_2, L, x0, initial):
     orientation_cost = orientation_cost/1
     translation_cost = translation_cost/1
     control_cost = control_cost/1
+    total_cost = total_cost/np.max(total_cost)
 
     fig11, ax11, ax12, ax13, ax14 = fancy_plots_4()
     plot_states_quaternion(fig11, ax11, ax12, ax13, ax14, Q1_quat_data[0:4, :], Q2_quat_data[0:4, :], t, "Quaternion Results Based On LieAlgebra Cost "+ str(initial), folder_path)
@@ -342,28 +347,31 @@ def main(odom_pub_1, odom_pub_2, L, x0, initial):
     fig21, ax21, ax22, ax23 = fancy_plots_3()
     plot_states_position(fig21, ax21, ax22, ax23, Q1_trans_data[1:4, :], Q2_trans_data[1:4, :], t, "Position Results Based On LieAlgebra Cost "+ str(initial), folder_path)
 
-    fig31, ax31, ax32, ax33 = fancy_plots_3()
-    plot_angular_velocities(fig31, ax31, ax32, ax33, Q1_velocities_data[0:3, :], t, "Body Angular velocities Based On LieAlgebra Cost "+ str(initial), folder_path)
+    #fig31, ax31, ax32, ax33 = fancy_plots_3()
+    #plot_angular_velocities(fig31, ax31, ax32, ax33, Q1_velocities_data[0:3, :], t, "Body Angular velocities Based On LieAlgebra Cost "+ str(initial), folder_path)
 
-    fig41, ax41, ax42, ax43 = fancy_plots_3()
-    plot_linear_velocities(fig41, ax41, ax42, ax43, Q1_velocities_data[3:6, :], t, "Inertial Linear velocities Based On LieAlgebra Cost "+ str(initial), folder_path)
+    #fig41, ax41, ax42, ax43 = fancy_plots_3()
+    #plot_linear_velocities(fig41, ax41, ax42, ax43, Q1_velocities_data[3:6, :], t, "Inertial Linear velocities Based On LieAlgebra Cost "+ str(initial), folder_path)
 
     # Control Actions
     fig51, ax51, ax52, ax53, ax54 = fancy_plots_4()
     plot_control_actions(fig51, ax51, ax52, ax53, ax54, F, M, t, "Control Actions of the System Based On LieAlgebra Cost "+ str(initial), folder_path)
 
     # Sampling time
-    fig61, ax61  = fancy_plots_1()
-    plot_time(fig61, ax61, t_sample, delta_t, t, "Computational Time Based On LieAlgebra Cost "+ str(initial), folder_path)
+    #fig61, ax61  = fancy_plots_1()
+    #plot_time(fig61, ax61, t_sample, delta_t, t, "Computational Time Based On LieAlgebra Cost "+ str(initial), folder_path)
 
-    fig71, ax71  = fancy_plots_1()
-    plot_cost_orientation(fig71, ax71, orientation_cost, t, "Cost Orientation Based On LieAlgebra Cost "+ str(initial), folder_path)
+    #fig71, ax71  = fancy_plots_1()
+    #plot_cost_orientation(fig71, ax71, orientation_cost, t, "Cost Orientation Based On LieAlgebra Cost "+ str(initial), folder_path)
 
-    fig81, ax81  = fancy_plots_1()
-    plot_cost_translation(fig81, ax81, translation_cost, t, "Cost Translation Based On LieAlgebra Cost "+ str(initial), folder_path)
+    #fig81, ax81  = fancy_plots_1()
+    #plot_cost_translation(fig81, ax81, translation_cost, t, "Cost Translation Based On LieAlgebra Cost "+ str(initial), folder_path)
 
-    fig91, ax91  = fancy_plots_1()
-    plot_cost_control(fig91, ax91, control_cost, t, "Cost Control Based On LieAlgebra Cost "+ str(initial), folder_path)
+    #fig91, ax91  = fancy_plots_1()
+    #plot_cost_control(fig91, ax91, control_cost, t, "Cost Control Based On LieAlgebra Cost "+ str(initial), folder_path)
+
+    fig101, ax101  = fancy_plots_1()
+    plot_cost_total(fig101, ax101, total_cost, t, "Cost Total Based On LieAlgebra Cost "+ str(initial), folder_path)
 
     return X, X_d, F, M, orientation_cost, translation_cost, control_cost, t, N_prediction
 
@@ -422,8 +430,8 @@ if __name__ == '__main__':
         # Save Data matlab 
         mdic_x = {"x": Data_States, "xref": Data_reference, "F": Data_F, "M": Data_M, "orientation_cost": Data_orientation_cost,
                 "translation_cost": Data_translation_cost, "control_cost": Data_control_cost, "t": Data_time, "N": Data_N_prediction}
-        #savemat("Dual_cost" + ".mat", mdic_x)
-        savemat("Dual_cost_without_velocities" + ".mat", mdic_x)
+        savemat("Dual_cost" + ".mat", mdic_x)
+        #savemat("Dual_cost_without_velocities" + ".mat", mdic_x)
     except(rospy.ROSInterruptException, KeyboardInterrupt):
         print("Error System")
         pass
