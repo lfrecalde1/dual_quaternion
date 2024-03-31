@@ -82,8 +82,8 @@ C17 = [255 0 0]/255;
 number_experiments = size(Aux_cost_dual, 1);
 
 % Location Plots
-dimension_x = [0.05, 0.38, 0.71];
-dimension_y = [1.0, 0.8,  0.6];
+dimension_x = [0.05, 0.33, 0.71];
+dimension_y = [1.0, 0.8,  0.58, 0.35];
 %% plot Results
 figure('Position', [500 500 sizeX sizeY])
 set(gcf, 'Position', [500 500 sizeX sizeY]);
@@ -92,7 +92,7 @@ fig1_comps.fig = gcf;
 
 
 axes('Position',[dimension_x(1) dimension_y(1)-0.20  .25 .15]);
-colors = crameri('romao',number_experiments);
+colors = crameri('cork',number_experiments);
 
 for k=1:number_experiments
     
@@ -102,8 +102,8 @@ for k=1:number_experiments
     %% Legend nomeclature
     set(gca,'ticklabelinterpreter','latex',...
         'fontsize',1.3*fontsizeTicks)
-    title("Proposed NMPC Based on Dualquaternions", 'fontsize', 12, 'interpreter', 'latex', 'Color', 'black');
-    ylabel('$||~\mathbf{t}^{i}_{d, k}- \textrm{trans}(\mathbf{x}_k)||^{2}$','fontsize',12,'interpreter','latex', 'Color',C18);
+    title("Translation Error DQ-NMPC", 'fontsize', 12, 'interpreter', 'latex', 'Color', 'black');
+    ylabel('$||~\mathbf{t}_{d}- \textrm{trans}(\mathbf{x})||^{2}$','fontsize',12,'interpreter','latex', 'Color',C18);
     %% Figure properties
     ax_1 = gca;
     ax_1.Box = 'on';
@@ -120,7 +120,7 @@ for k=1:number_experiments
     ax_1.XLim = [t_dual(1), t_dual(end)]; % Set limits for x-axis
     
 end
-axes('Position',[dimension_x(2) dimension_y(1)-0.20  .25 .15]);
+axes('Position',[dimension_x(1) dimension_y(2)-0.20  .25 .15]);
 for k=1:number_experiments
     
     %% Data generation
@@ -129,8 +129,8 @@ for k=1:number_experiments
     %% Legend nomeclature
     set(gca,'ticklabelinterpreter','latex',...
         'fontsize',1.3*fontsizeTicks)
-    title("Proposed NMPC Based on Dualquaternions", 'fontsize', 12, 'interpreter', 'latex', 'Color', 'black');
-    ylabel('$||\textrm{Log}(\mathbf{q}^{*}_{d, k} \circ \textrm{quat}(\mathbf{x}_k))||^{2}$','fontsize',12,'interpreter','latex', 'Color',C18);
+    title("Orientation Error DQ-NMPC", 'fontsize', 12, 'interpreter', 'latex', 'Color', 'black');
+    ylabel('$||\textrm{Log}(\mathbf{q}^{*}_{d} \circ \textrm{quat}(\mathbf{x}))||^{2}$','fontsize',12,'interpreter','latex', 'Color',C18);
     %% Figure properties
     ax_1 = gca;
     ax_1.Box = 'on';
@@ -148,7 +148,7 @@ for k=1:number_experiments
     
 end
 
-axes('Position',[dimension_x(1) dimension_y(2)-0.20  .25 .15]);
+axes('Position',[dimension_x(2) dimension_y(1)-0.20  .25 .15]);
 for k=1:number_experiments
     
     %% Data generation
@@ -157,8 +157,8 @@ for k=1:number_experiments
     %% Legend nomeclature
     set(gca,'ticklabelinterpreter','latex',...
         'fontsize',1.3*fontsizeTicks)
-    title("Classical NMPC", 'fontsize', 12, 'interpreter', 'latex', 'Color', 'black');
-    ylabel('$||~\mathbf{t}^{i}_{d, k}- \textrm{trans}(\mathbf{x}_k)||^{2}$','fontsize',12,'interpreter','latex', 'Color',C18);
+    title("Translation Error Baseline-NMPC", 'fontsize', 12, 'interpreter', 'latex', 'Color', 'black');
+    %ylabel('$||~\mathbf{t}_{d, k}- \textrm{trans}(\mathbf{x}_k)||^{2}$','fontsize',12,'interpreter','latex', 'Color',C18);
     %xlabel('$\textrm{Time}[s]$','fontsize',12,'interpreter','latex','Color',C18);
     %% Figure properties
     ax_1 = gca;
@@ -177,29 +177,6 @@ for k=1:number_experiments
     
 end
 
-%% Computing RMS
-axes('Position',[dimension_x(1) dimension_y(3)-0.20  .25 .15]);
-plot_areaerrorbar_2(abs(reshape(Aux_cost_separed(:, 1, :), number_experiments, length(Aux_cost_dual))),t_dual);
-plot_areaerrorbar(abs(reshape(Aux_cost_dual(:, 1, :), number_experiments, length(Aux_cost_dual))),t_dual);
-set(gca,'ticklabelinterpreter','latex',...
-    'fontsize',1.3*fontsizeTicks)
-title("Mean and standard deviation translation", 'fontsize', 12, 'interpreter', 'latex', 'Color', 'black');
-%ylabel('$||\textrm{Log}(\mathbf{q}^{*}_{d, k} \circ \textrm{quat}(\mathbf{x}_k))||^{2}$','fontsize',12,'interpreter','latex', 'Color',C18);
-xlabel('$\textrm{Time}[s]$','fontsize',12,'interpreter','latex','Color',C18);
-%% Figure properties
-ax_1 = gca;
-ax_1.Box = 'on';
-ax_1.BoxStyle = 'full';
-ax_1.TickLength = [0.01;0.01];
-ax_1.TickDirMode = 'auto';
-ax_1.YMinorTick = 'on';
-ax_1.XMinorTick = 'on';
-ax_1.XMinorGrid = 'on';
-ax_1.YMinorGrid = 'on';
-ax_1.MinorGridAlpha = 0.15;
-ax_1.LineWidth = 0.8;
-ax_1.XLim = [t_dual(1), t_dual(end)]; % Set limits for x-axis
-
 axes('Position',[dimension_x(2) dimension_y(2)-0.20  .25 .15]);
 for k=1:number_experiments
     
@@ -209,8 +186,8 @@ for k=1:number_experiments
     %% Legend nomeclature
     set(gca,'ticklabelinterpreter','latex',...
         'fontsize',1.3*fontsizeTicks)
-    title("Classical NMPC", 'fontsize', 12, 'interpreter', 'latex', 'Color', 'black');
-    ylabel('$||\textrm{Log}(\mathbf{q}^{*}_{d, k} \circ \textrm{quat}(\mathbf{x}_k))||^{2}$','fontsize',12,'interpreter','latex', 'Color',C18);
+    title("Orientation Error Baseline-NMPC", 'fontsize', 12, 'interpreter', 'latex', 'Color', 'black');
+    %ylabel('$||\textrm{Log}(\mathbf{q}^{*}_{d, k} \circ \textrm{quat}(\mathbf{x}_k))||^{2}$','fontsize',12,'interpreter','latex', 'Color',C18);
 %     xlabel('$\textrm{Time}[s]$','fontsize',12,'interpreter','latex','Color',C18);
     %% Figure properties
     ax_1 = gca;
@@ -228,16 +205,111 @@ for k=1:number_experiments
     ax_1.XLim = [t_dual(1), t_dual(end)]; % Set limits for x-axis
     
 end
+%% RMSE Translation dual
+Data_dual = reshape(Aux_cost_dual(:, 1, :), number_experiments, length(Aux_cost_dual));
+Data_dual = Data_dual';
+% %% Computing RMS
+axes('Position',[dimension_x(1) dimension_y(3)-0.20  .25 .18]);
+data_mean_dual = mean(Data_dual');
+rmse_dual = (data_mean_dual);
+std_dual = std(Data_dual');
 
-axes('Position',[dimension_x(2) dimension_y(3)-0.20  .25 .15]);
-plot_areaerrorbar_2(abs(reshape(Aux_cost_separed(:, 2, :), number_experiments, length(Aux_cost_dual))),t_dual);
-plot_areaerrorbar(abs(reshape(Aux_cost_dual(:, 2, :), number_experiments, length(Aux_cost_dual))),t_dual);
+% Plooting STD
+x_vector_dual = [t_dual, fliplr(t_dual)];
+patch_dual = fill(x_vector_dual, [rmse_dual+std_dual,fliplr(rmse_dual-std_dual)], colors(1, :));
+% patch_separed = fill(x_vector_separed, [rmse_separed+std_separed,fliplr(rmse_separed-std_separed)], colors(2, :));
+
+F_dual_plot = line(t_dual, rmse_dual);
+set(F_dual_plot, 'LineStyle', '-', 'Color', colors(1,:), 'LineWidth', 1*lw);
+
 set(gca,'ticklabelinterpreter','latex',...
     'fontsize',1.3*fontsizeTicks)
-title("Mean and standard deviation Orientation", 'fontsize', 12, 'interpreter', 'latex', 'Color', 'black');
-%ylabel('$||\textrm{Log}(\mathbf{q}^{*}_{d, k} \circ \textrm{quat}(\mathbf{x}_k))||^{2}$','fontsize',12,'interpreter','latex', 'Color',C18);
+set(patch_dual, 'edgecolor', 'none');
+set(patch_dual, 'FaceAlpha', 0.2);
+title("MSE-STD Translation DQ-NMPC", 'fontsize', 12, 'interpreter', 'latex', 'Color', 'black');
+ylabel('$\frac{1}{N} \sum_{i=1}^{N}(||~\mathbf{t}^{i}_{d}- \textrm{trans}(\mathbf{x}^{i})||^{2})$','fontsize',12,'interpreter','latex', 'Color',C18);
+%xlabel('$\textrm{Time}[s]$','fontsize',12,'interpreter','latex','Color',C18);
+ax_1 = gca;
+ax_1.Box = 'on';
+ax_1.BoxStyle = 'full';
+ax_1.TickLength = [0.01;0.01];
+ax_1.XTickLabel = [];
+ax_1.TickDirMode = 'auto';
+ax_1.YMinorTick = 'on';
+ax_1.XMinorTick = 'on';
+ax_1.XMinorGrid = 'on';
+ax_1.YMinorGrid = 'on';
+ax_1.MinorGridAlpha = 0.15;
+ax_1.LineWidth = 0.8;
+ax_1.XLim = [t_dual(1), t_dual(end)]; % Set limits for x-axis
+
+%% RMSE Separed Translation
+Data_separed = reshape(Aux_cost_separed(:, 1, :), number_experiments, length(Aux_cost_separed));
+Data_separed = Data_separed';
+
+
+%% Computing RMS
+axes('Position',[dimension_x(2) dimension_y(3)-0.20  .25 .18]);
+data_mean_separed = mean(Data_separed');
+rmse_separed = (data_mean_separed);
+std_separed = std(Data_separed');
+
+% Plooting STD
+x_vector_separed = [t_dual, fliplr(t_dual)];
+patch_separed = fill(x_vector_separed, [rmse_separed+std_separed,fliplr(rmse_separed-std_separed)], colors(7, :));
+% patch_separed = fill(x_vector_separed, [rmse_separed+std_separed,fliplr(rmse_separed-std_separed)], colors(2, :));
+
+F_dual_plot = line(t_dual, rmse_separed);
+set(F_dual_plot, 'LineStyle', '-', 'Color', colors(7,:), 'LineWidth', 1*lw);
+
+set(gca,'ticklabelinterpreter','latex',...
+    'fontsize',1.3*fontsizeTicks)
+set(patch_separed, 'edgecolor', 'none');
+set(patch_separed, 'FaceAlpha', 0.2);
+title("MSE-STD Translation Baseline-NMPC", 'fontsize', 12, 'interpreter', 'latex', 'Color', 'black');
+%ylabel('$\frac{1}{N} \sum_{i=1}^{N}(||~\mathbf{t}^{i}_{d, k}- \textrm{trans}(\mathbf{x}^{i}_k)||^{2})$','fontsize',12,'interpreter','latex', 'Color',C18);
+%xlabel('$\textrm{Time}[s]$','fontsize',12,'interpreter','latex','Color',C18);
+ax_1 = gca;
+ax_1.Box = 'on';
+ax_1.BoxStyle = 'full';
+ax_1.TickLength = [0.01;0.01];
+ax_1.XTickLabel = [];
+ax_1.TickDirMode = 'auto';
+ax_1.YMinorTick = 'on';
+ax_1.XMinorTick = 'on';
+ax_1.XMinorGrid = 'on';
+ax_1.YMinorGrid = 'on';
+ax_1.MinorGridAlpha = 0.15;
+ax_1.LineWidth = 0.8;
+ax_1.XLim = [t_dual(1), t_dual(end)]; % Set limits for x-axis
+
+
+
+
+%% Computing RMS Orientation Dual
+Data_dual = reshape(Aux_cost_dual(:, 2, :), number_experiments, length(Aux_cost_dual));
+Data_dual = Data_dual';
+% %% Computing RMS
+axes('Position',[dimension_x(1) dimension_y(4)-0.20  .25 .18]);
+data_mean_dual = mean(Data_dual');
+rmse_dual = (data_mean_dual);
+std_dual = std(Data_dual');
+
+% Plooting STD
+x_vector_dual = [t_dual, fliplr(t_dual)];
+patch_dual = fill(x_vector_dual, [rmse_dual+std_dual,fliplr(rmse_dual-std_dual)], colors(25, :));
+% patch_separed = fill(x_vector_separed, [rmse_separed+std_separed,fliplr(rmse_separed-std_separed)], colors(2, :));
+
+F_dual_plot = line(t_dual, rmse_dual);
+set(F_dual_plot, 'LineStyle', '-', 'Color', colors(25,:), 'LineWidth', 1*lw);
+
+set(gca,'ticklabelinterpreter','latex',...
+    'fontsize',1.3*fontsizeTicks)
+set(patch_dual, 'edgecolor', 'none');
+set(patch_dual, 'FaceAlpha', 0.2);
+title("MSE-STD Orientation DQ-NMPC", 'fontsize', 12, 'interpreter', 'latex', 'Color', 'black');
+ylabel('$\frac{1}{N} \sum_{i=1}^{N}(||\textrm{Log}(\mathbf{q}^{i*}_{d} \circ \textrm{quat}(\mathbf{x}^{i}))||^{2})$','fontsize',12,'interpreter','latex', 'Color',C18);
 xlabel('$\textrm{Time}[s]$','fontsize',12,'interpreter','latex','Color',C18);
-%% Figure properties
 ax_1 = gca;
 ax_1.Box = 'on';
 ax_1.BoxStyle = 'full';
@@ -251,5 +323,47 @@ ax_1.MinorGridAlpha = 0.15;
 ax_1.LineWidth = 0.8;
 ax_1.XLim = [t_dual(1), t_dual(end)]; % Set limits for x-axis
 
+
+%% RMSE Separed Orientation
+Data_separed = reshape(Aux_cost_separed(:, 2, :), number_experiments, length(Aux_cost_separed));
+Data_separed = Data_separed';
+
+
+% %% Computing RMS
+axes('Position',[dimension_x(2) dimension_y(4)-0.20  .25 .18]);
+data_mean_separed = mean(Data_separed');
+rmse_separed = (data_mean_separed);
+std_separed = std(Data_separed');
+
+% Plooting STD
+x_vector_separed = [t_dual, fliplr(t_dual)];
+patch_separed = fill(x_vector_separed, [rmse_separed+std_separed,fliplr(rmse_separed-std_separed)], colors(29, :));
+% patch_separed = fill(x_vector_separed, [rmse_separed+std_separed,fliplr(rmse_separed-std_separed)], colors(2, :));
+
+F_dual_plot = line(t_dual, rmse_separed);
+set(F_dual_plot, 'LineStyle', '-', 'Color', colors(29,:), 'LineWidth', 1*lw);
+
+set(gca,'ticklabelinterpreter','latex',...
+    'fontsize',1.3*fontsizeTicks)
+set(patch_separed, 'edgecolor', 'none');
+set(patch_separed, 'FaceAlpha', 0.2);
+title("MSE-STD Orientation  Baseline-NMPC", 'fontsize', 12, 'interpreter', 'latex', 'Color', 'black');
+%ylabel('$\frac{1}{N} \sum_{i=1}^{N}(||~\mathbf{t}^{i}_{d, k}- \textrm{trans}(\mathbf{x}^{i}_k)||^{2})$','fontsize',12,'interpreter','latex', 'Color',C18);
+xlabel('$\textrm{Time}[s]$','fontsize',12,'interpreter','latex','Color',C18);
+ax_1 = gca;
+ax_1.Box = 'on';
+ax_1.BoxStyle = 'full';
+ax_1.TickLength = [0.01;0.01];
+ax_1.TickDirMode = 'auto';
+ax_1.YMinorTick = 'on';
+ax_1.XMinorTick = 'on';
+ax_1.XMinorGrid = 'on';
+ax_1.YMinorGrid = 'on';
+ax_1.MinorGridAlpha = 0.15;
+ax_1.LineWidth = 0.8;
+ax_1.XLim = [t_dual(1), t_dual(end)]; % Set limits for x-axis
+
+
 set(gcf, 'Color', 'w'); % Sets axes background
 export_fig Cost_RMSE_0.5N.pdf -q101
+

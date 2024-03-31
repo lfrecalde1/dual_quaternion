@@ -120,9 +120,9 @@ fig1_comps.fig = gcf;
         for k=1:length(dimension_x)
         axes('Position',[dimension_x(k) dimension_y(j)-0.13  .25 .10]);
         %% Data generation
-        F_separed_plot = line(t_separed,reshape(F_separed(experiments(j, k), 1, :), 1, length(F_separed)));
+        F_separed_plot = line(t_separed,reshape(F_separed(experiments(j, k), 1, :)/(9.8+20), 1, length(F_separed)));
         set(F_separed_plot, 'LineStyle', '-', 'Color', [C5, 0.5], 'LineWidth', 1.2*lw);
-        F_dual_plot = line(t_dual,reshape(F_dual(experiments(j, k), 1, :), 1, length(F_dual)));
+        F_dual_plot = line(t_dual,reshape(F_dual(experiments(j, k), 1, :)/(9.8+20), 1, length(F_dual)));
         set(F_dual_plot, 'LineStyle', '-', 'Color', C3, 'LineWidth', 1.2*lw);
         ylabel('${[N]}$','fontsize',8,'interpreter','latex', 'Color',C18);
         %xlabel('$\textrm{Time}[s]$','fontsize',10,'interpreter','latex','Color',C18);
@@ -150,9 +150,9 @@ fig1_comps.fig = gcf;
 
         axes('Position',[dimension_x(k) dimension_y(j)-0.23 .25 .08]);
         %% Data generation
-        M_separed_plot = line(t_separed,reshape(M_separed(experiments(j, k), 1, :), 1, length(M_separed)));
+        M_separed_plot = line(t_separed,reshape(M_separed(experiments(j, k), 1, :)/0.1, 1, length(M_separed)));
         set(M_separed_plot, 'LineStyle', '-', 'Color', [C5, 0.5], 'LineWidth', 1.2*lw);
-        M_dual_plot = line(t_dual,reshape(M_dual(experiments(j, k), 1, :), 1, length(M_dual)));
+        M_dual_plot = line(t_dual,reshape(M_dual(experiments(j, k), 1, :)/0.1, 1, length(M_dual)));
         set(M_dual_plot, 'LineStyle', '-', 'Color', C3, 'LineWidth', 1.2*lw);
         ylabel('${[N.m]}$','fontsize',8,'interpreter','latex', 'Color',C18);
         %xlabel('$\textrm{Time}[s]$','fontsize',10,'interpreter','latex','Color',C18);
@@ -178,9 +178,9 @@ fig1_comps.fig = gcf;
 
         axes('Position',[dimension_x(k)  dimension_y(j)-0.33 .25 .08]);
         %% Data generation
-        M_separed_plot = line(t_separed,reshape(M_separed(experiments(j, k), 2, :), 1, length(M_separed)));
+        M_separed_plot = line(t_separed,reshape(M_separed(experiments(j, k), 2, :)/0.1, 1, length(M_separed)));
         set(M_separed_plot, 'LineStyle', '-', 'Color', [C5, 0.5], 'LineWidth', 1.2*lw);
-        M_dual_plot = line(t_dual,reshape(M_dual(experiments(j, k), 2, :), 1, length(M_dual)));
+        M_dual_plot = line(t_dual,reshape(M_dual(experiments(j, k), 2, :)/0.1, 1, length(M_dual)));
         set(M_dual_plot, 'LineStyle', '-', 'Color', C3, 'LineWidth', 1.2*lw);
         ylabel('${[N.m]}$','fontsize',8,'interpreter','latex', 'Color',C18);
         %xlabel('$\textrm{Time}[s]$','fontsize',10,'interpreter','latex','Color',C18);
@@ -206,9 +206,9 @@ fig1_comps.fig = gcf;
 
         axes('Position',[dimension_x(k)  dimension_y(j)-0.43 .25 .08]);
         %% Data generation
-        M_separed_plot = line(t_separed,reshape(M_separed(experiments(j, k), 3, :), 1, length(M_separed)));
+        M_separed_plot = line(t_separed,reshape(M_separed(experiments(j, k), 3, :)/0.1, 1, length(M_separed)));
         set(M_separed_plot, 'LineStyle', '-', 'Color', [C5, 0.5], 'LineWidth', 1.2*lw);
-        M_dual_plot = line(t_dual,reshape(M_dual(experiments(j, k), 3, :), 1, length(M_dual)));
+        M_dual_plot = line(t_dual,reshape(M_dual(experiments(j, k), 3, :)/0.1, 1, length(M_dual)));
         set(M_dual_plot, 'LineStyle', '-', 'Color', C3, 'LineWidth', 1.2*lw);
         ylabel('${[N.m]}$','fontsize',8,'interpreter','latex', 'Color',C18);
         xlabel('$\textrm{Time}[s]$','fontsize',8,'interpreter','latex','Color',C18);
