@@ -85,14 +85,14 @@ number_experiments = size(cost_t_dual, 1);
 dimension_x = [0.05, 0.33, 0.71];
 dimension_y = [1.0, 0.8,  0.58, 0.35];
 %% plot Results
-figure('Position', [500 500 sizeX sizeY])
-set(gcf, 'Position', [500 500 sizeX sizeY]);
-fig1_comps.fig = gcf;
-
-
-
-axes('Position',[dimension_x(1) dimension_y(1)-0.20  .25 .15]);
-colors = crameri('cork',number_experiments);
+% figure('Position', [500 500 sizeX sizeY])
+% set(gcf, 'Position', [500 500 sizeX sizeY]);
+% fig1_comps.fig = gcf;
+% 
+% 
+% 
+% axes('Position',[dimension_x(1) dimension_y(1)-0.20  .25 .15]);
+% colors = crameri('cork',number_experiments);
 
 %% Computing stabilization time
 stabilization_time_dual = zeros(number_experiments, 2);
@@ -116,126 +116,126 @@ for k=1:number_experiments
 
 end
 
-for k=1:number_experiments
-    
-    %% Data generation
-    F_dual_plot = line(t_dual,reshape(Aux_cost_dual(k, 1, :), 1, length(Aux_cost_dual)));
-    set(F_dual_plot, 'LineStyle', '-', 'Color', colors(k,:), 'LineWidth', 1*lw);
-    %% Legend nomeclature
-    set(gca,'ticklabelinterpreter','latex',...
-        'fontsize',1.3*fontsizeTicks)
-    hold on
-    title("Translation Error DQ-NMPC", 'fontsize', 12, 'interpreter', 'latex', 'Color', 'black');
-    ylabel('$||~\mathbf{t}_{d}- \textrm{trans}(\mathbf{x})||^{2}$','fontsize',12,'interpreter','latex', 'Color',C18);
-    plot(stabilization_time_dual(k, 1), 0, 'o');
-    %% Figure properties
-    ax_1 = gca;
-    ax_1.Box = 'on';
-    ax_1.BoxStyle = 'full';
-    ax_1.TickLength = [0.01;0.01];
-    ax_1.XTickLabel = [];
-    ax_1.TickDirMode = 'auto';
-    ax_1.YMinorTick = 'on';
-    ax_1.XMinorTick = 'on';
-    ax_1.XMinorGrid = 'on';
-    ax_1.YMinorGrid = 'on';
-    ax_1.MinorGridAlpha = 0.15;
-    ax_1.LineWidth = 0.8;
-    ax_1.XLim = [t_dual(1), t_dual(end)]; % Set limits for x-axis
-    
-end
-
-axes('Position',[dimension_x(1) dimension_y(2)-0.20  .25 .15]);
-for k=1:number_experiments
-    
-    %% Data generation
-    F_dual_plot = line(t_dual,reshape(Aux_cost_dual(k, 2, :), 1, length(Aux_cost_dual)));
-    set(F_dual_plot, 'LineStyle', '-', 'Color', colors(k,:), 'LineWidth', 1*lw);
-    %% Legend nomeclature
-    set(gca,'ticklabelinterpreter','latex',...
-        'fontsize',1.3*fontsizeTicks)
-    hold on;
-    title("Orientation Error DQ-NMPC", 'fontsize', 12, 'interpreter', 'latex', 'Color', 'black');
-    ylabel('$||\textrm{Log}(\mathbf{q}^{*}_{d} \circ \textrm{quat}(\mathbf{x}))||^{2}$','fontsize',12,'interpreter','latex', 'Color',C18);
-    plot(stabilization_time_dual(k, 2), 0, 'o');
-    %% Figure properties
-    ax_1 = gca;
-    ax_1.Box = 'on';
-    ax_1.BoxStyle = 'full';
-    ax_1.TickLength = [0.01;0.01];
-    ax_1.TickDirMode = 'auto';
-    ax_1.YMinorTick = 'on';
-    ax_1.XMinorTick = 'on';
-    ax_1.XMinorGrid = 'on';
-    ax_1.YMinorGrid = 'on';
-    ax_1.MinorGridAlpha = 0.15;
-    ax_1.LineWidth = 0.8;
-    ax_1.XLim = [t_dual(1), t_dual(end)]; % Set limits for x-axis
-    
-end
-
-axes('Position',[dimension_x(2) dimension_y(1)-0.20  .25 .15]);
-for k=1:number_experiments
-    
-    %% Data generation
-    F_dual_plot = line(t_dual,reshape(Aux_cost_separed(k, 1, :), 1, length(Aux_cost_separed)));
-    set(F_dual_plot, 'LineStyle', '-', 'Color', colors(k,:), 'LineWidth', 1*lw);
-    %% Legend nomeclature
-    set(gca,'ticklabelinterpreter','latex',...
-        'fontsize',1.3*fontsizeTicks)
-    hold on;
-    title("Translation Error Baseline-NMPC", 'fontsize', 12, 'interpreter', 'latex', 'Color', 'black');
-    %ylabel('$||~\mathbf{t}_{d, k}- \textrm{trans}(\mathbf{x}_k)||^{2}$','fontsize',12,'interpreter','latex', 'Color',C18);
-    %xlabel('$\textrm{Time}[s]$','fontsize',12,'interpreter','latex','Color',C18);
-    plot(stabilization_time_separed(k, 1), 0, 'o');
-
-    %% Figure properties
-    ax_1 = gca;
-    ax_1.Box = 'on';
-    ax_1.BoxStyle = 'full';
-    ax_1.XTickLabel = [];
-    ax_1.TickLength = [0.01;0.01];
-    ax_1.TickDirMode = 'auto';
-    ax_1.YMinorTick = 'on';
-    ax_1.XMinorTick = 'on';
-    ax_1.XMinorGrid = 'on';
-    ax_1.YMinorGrid = 'on';
-    ax_1.MinorGridAlpha = 0.15;
-    ax_1.LineWidth = 0.8;
-    ax_1.XLim = [t_dual(1), t_dual(end)]; % Set limits for x-axis
-    
-end
-
-axes('Position',[dimension_x(2) dimension_y(2)-0.20  .25 .15]);
-for k=1:number_experiments
-    
-    %% Data generation
-    F_dual_plot = line(t_dual,reshape(Aux_cost_separed(k, 2, :), 1, length(Aux_cost_separed)));
-    set(F_dual_plot, 'LineStyle', '-', 'Color', colors(k,:), 'LineWidth', 1*lw);
-    %% Legend nomeclature
-    set(gca,'ticklabelinterpreter','latex',...
-        'fontsize',1.3*fontsizeTicks)
-    hold on;
-    title("Orientation Error Baseline-NMPC", 'fontsize', 12, 'interpreter', 'latex', 'Color', 'black');
-    %ylabel('$||\textrm{Log}(\mathbf{q}^{*}_{d, k} \circ \textrm{quat}(\mathbf{x}_k))||^{2}$','fontsize',12,'interpreter','latex', 'Color',C18);
-%     xlabel('$\textrm{Time}[s]$','fontsize',12,'interpreter','latex','Color',C18);
-    %% Figure properties
-    plot(stabilization_time_separed(k, 2), 0, 'o');
-
-    ax_1 = gca;
-    ax_1.Box = 'on';
-    ax_1.BoxStyle = 'full';
-    ax_1.TickLength = [0.01;0.01];
-    ax_1.TickDirMode = 'auto';
-    ax_1.YMinorTick = 'on';
-    ax_1.XMinorTick = 'on';
-    ax_1.XMinorGrid = 'on';
-    ax_1.YMinorGrid = 'on';
-    ax_1.MinorGridAlpha = 0.15;
-    ax_1.LineWidth = 0.8;
-    ax_1.XLim = [t_dual(1), t_dual(end)]; % Set limits for x-axis
-    
-end
+% for k=1:number_experiments
+%     
+%     %% Data generation
+%     F_dual_plot = line(t_dual,reshape(Aux_cost_dual(k, 1, :), 1, length(Aux_cost_dual)));
+%     set(F_dual_plot, 'LineStyle', '-', 'Color', colors(k,:), 'LineWidth', 1*lw);
+%     %% Legend nomeclature
+%     set(gca,'ticklabelinterpreter','latex',...
+%         'fontsize',1.3*fontsizeTicks)
+%     hold on
+%     title("Translation Error DQ-NMPC", 'fontsize', 12, 'interpreter', 'latex', 'Color', 'black');
+%     ylabel('$||~\mathbf{t}_{d}- \textrm{trans}(\mathbf{x})||^{2}$','fontsize',12,'interpreter','latex', 'Color',C18);
+%     plot(stabilization_time_dual(k, 1), 0, 'o');
+%     %% Figure properties
+%     ax_1 = gca;
+%     ax_1.Box = 'on';
+%     ax_1.BoxStyle = 'full';
+%     ax_1.TickLength = [0.01;0.01];
+%     ax_1.XTickLabel = [];
+%     ax_1.TickDirMode = 'auto';
+%     ax_1.YMinorTick = 'on';
+%     ax_1.XMinorTick = 'on';
+%     ax_1.XMinorGrid = 'on';
+%     ax_1.YMinorGrid = 'on';
+%     ax_1.MinorGridAlpha = 0.15;
+%     ax_1.LineWidth = 0.8;
+%     ax_1.XLim = [t_dual(1), t_dual(end)]; % Set limits for x-axis
+%     
+% end
+% 
+% axes('Position',[dimension_x(1) dimension_y(2)-0.20  .25 .15]);
+% for k=1:number_experiments
+%     
+%     %% Data generation
+%     F_dual_plot = line(t_dual,reshape(Aux_cost_dual(k, 2, :), 1, length(Aux_cost_dual)));
+%     set(F_dual_plot, 'LineStyle', '-', 'Color', colors(k,:), 'LineWidth', 1*lw);
+%     %% Legend nomeclature
+%     set(gca,'ticklabelinterpreter','latex',...
+%         'fontsize',1.3*fontsizeTicks)
+%     hold on;
+%     title("Orientation Error DQ-NMPC", 'fontsize', 12, 'interpreter', 'latex', 'Color', 'black');
+%     ylabel('$||\textrm{Log}(\mathbf{q}^{*}_{d} \circ \textrm{quat}(\mathbf{x}))||^{2}$','fontsize',12,'interpreter','latex', 'Color',C18);
+%     plot(stabilization_time_dual(k, 2), 0, 'o');
+%     %% Figure properties
+%     ax_1 = gca;
+%     ax_1.Box = 'on';
+%     ax_1.BoxStyle = 'full';
+%     ax_1.TickLength = [0.01;0.01];
+%     ax_1.TickDirMode = 'auto';
+%     ax_1.YMinorTick = 'on';
+%     ax_1.XMinorTick = 'on';
+%     ax_1.XMinorGrid = 'on';
+%     ax_1.YMinorGrid = 'on';
+%     ax_1.MinorGridAlpha = 0.15;
+%     ax_1.LineWidth = 0.8;
+%     ax_1.XLim = [t_dual(1), t_dual(end)]; % Set limits for x-axis
+%     
+% end
+% 
+% axes('Position',[dimension_x(2) dimension_y(1)-0.20  .25 .15]);
+% for k=1:number_experiments
+%     
+%     %% Data generation
+%     F_dual_plot = line(t_dual,reshape(Aux_cost_separed(k, 1, :), 1, length(Aux_cost_separed)));
+%     set(F_dual_plot, 'LineStyle', '-', 'Color', colors(k,:), 'LineWidth', 1*lw);
+%     %% Legend nomeclature
+%     set(gca,'ticklabelinterpreter','latex',...
+%         'fontsize',1.3*fontsizeTicks)
+%     hold on;
+%     title("Translation Error Baseline-NMPC", 'fontsize', 12, 'interpreter', 'latex', 'Color', 'black');
+%     %ylabel('$||~\mathbf{t}_{d, k}- \textrm{trans}(\mathbf{x}_k)||^{2}$','fontsize',12,'interpreter','latex', 'Color',C18);
+%     %xlabel('$\textrm{Time}[s]$','fontsize',12,'interpreter','latex','Color',C18);
+%     plot(stabilization_time_separed(k, 1), 0, 'o');
+% 
+%     %% Figure properties
+%     ax_1 = gca;
+%     ax_1.Box = 'on';
+%     ax_1.BoxStyle = 'full';
+%     ax_1.XTickLabel = [];
+%     ax_1.TickLength = [0.01;0.01];
+%     ax_1.TickDirMode = 'auto';
+%     ax_1.YMinorTick = 'on';
+%     ax_1.XMinorTick = 'on';
+%     ax_1.XMinorGrid = 'on';
+%     ax_1.YMinorGrid = 'on';
+%     ax_1.MinorGridAlpha = 0.15;
+%     ax_1.LineWidth = 0.8;
+%     ax_1.XLim = [t_dual(1), t_dual(end)]; % Set limits for x-axis
+%     
+% end
+% 
+% axes('Position',[dimension_x(2) dimension_y(2)-0.20  .25 .15]);
+% for k=1:number_experiments
+%     
+%     %% Data generation
+%     F_dual_plot = line(t_dual,reshape(Aux_cost_separed(k, 2, :), 1, length(Aux_cost_separed)));
+%     set(F_dual_plot, 'LineStyle', '-', 'Color', colors(k,:), 'LineWidth', 1*lw);
+%     %% Legend nomeclature
+%     set(gca,'ticklabelinterpreter','latex',...
+%         'fontsize',1.3*fontsizeTicks)
+%     hold on;
+%     title("Orientation Error Baseline-NMPC", 'fontsize', 12, 'interpreter', 'latex', 'Color', 'black');
+%     %ylabel('$||\textrm{Log}(\mathbf{q}^{*}_{d, k} \circ \textrm{quat}(\mathbf{x}_k))||^{2}$','fontsize',12,'interpreter','latex', 'Color',C18);
+% %     xlabel('$\textrm{Time}[s]$','fontsize',12,'interpreter','latex','Color',C18);
+%     %% Figure properties
+%     plot(stabilization_time_separed(k, 2), 0, 'o');
+% 
+%     ax_1 = gca;
+%     ax_1.Box = 'on';
+%     ax_1.BoxStyle = 'full';
+%     ax_1.TickLength = [0.01;0.01];
+%     ax_1.TickDirMode = 'auto';
+%     ax_1.YMinorTick = 'on';
+%     ax_1.XMinorTick = 'on';
+%     ax_1.XMinorGrid = 'on';
+%     ax_1.YMinorGrid = 'on';
+%     ax_1.MinorGridAlpha = 0.15;
+%     ax_1.LineWidth = 0.8;
+%     ax_1.XLim = [t_dual(1), t_dual(end)]; % Set limits for x-axis
+%     
+% end
 
 % % Combine RMSE values
 %% plot Results

@@ -518,7 +518,7 @@ for k=1:number_experiments
         'fontsize',1.3*fontsizeTicks)
     %title("Translation Error Baseline-NMPC", 'fontsize', 12, 'interpreter', 'latex', 'Color', 'black');
     ylabel('$||{\tau_z(k) - \tau_z(k-1)}||$','fontsize',12,'interpreter','latex', 'Color',C18);
-    %xlabel('$\textrm{Time}[s]$','fontsize',12,'interpreter','latex','Color',C18);
+    xlabel('$\textrm{Time}[s]$','fontsize',12,'interpreter','latex','Color',C18);
     %% Figure properties
     ax_1 = gca;
     ax_1.Box = 'on';
@@ -546,7 +546,7 @@ for k=1:number_experiments
         'fontsize',1.3*fontsizeTicks)
     %title("Translation Error Baseline-NMPC", 'fontsize', 12, 'interpreter', 'latex', 'Color', 'black');
     %ylabel('$\frac{\tau_x(k) - \tau_x(k-1)}{t_s}$','fontsize',14,'interpreter','latex', 'Color',C18);
-    %xlabel('$\textrm{Time}[s]$','fontsize',12,'interpreter','latex','Color',C18);
+    xlabel('$\textrm{Time}[s]$','fontsize',12,'interpreter','latex','Color',C18);
     %% Figure properties
     ax_1 = gca;
     ax_1.Box = 'on';
@@ -601,7 +601,7 @@ set(gca,'ticklabelinterpreter','latex',...
 hLegend_1 = legend([F_dual_plot, F_separed_plot,],{'$DQ$','$Baseline$'},'fontsize',12,'interpreter','latex','Color',[255 255 255]/255,'NumColumns',1,'TextColor','black', 'Location', 'best');
 %title("ISE Rate of Change", 'fontsize', 14, 'interpreter', 'latex', 'Color', 'black');
 %ylabel('$\frac{1}{N} \sum_{i=1}^{N}(\sum_{k=1}^{t}(({f_z(k) - f_z(k-1)})^2 ts))$','fontsize',12,'interpreter','latex', 'Color',C18);
-%xlabel('$\textrm{Time}[s]$','fontsize',12,'interpreter','latex','Color',C18);
+xlabel('$\textrm{Time}[s]$','fontsize',12,'interpreter','latex','Color',C18);
 ax_1 = gca;
 ax_1.Box = 'on';
 ax_1.BoxStyle = 'full';

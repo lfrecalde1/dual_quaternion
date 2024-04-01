@@ -82,7 +82,7 @@ C17 = [255 0 0]/255;
 number_experiments = size(Aux_cost_dual, 1);
 
 % Location Plots
-dimension_x = [0.05, 0.33, 0.71];
+dimension_x = [0.05, 0.36, 0.71];
 dimension_y = [1.0, 0.8,  0.58, 0.35];
 %% plot Results
 figure('Position', [500 500 sizeX sizeY])
@@ -103,7 +103,7 @@ for k=1:number_experiments
     set(gca,'ticklabelinterpreter','latex',...
         'fontsize',1.3*fontsizeTicks)
     title("Translation Error DQ-NMPC", 'fontsize', 12, 'interpreter', 'latex', 'Color', 'black');
-    ylabel('$||~\mathbf{t}_{d}- \textrm{trans}(\mathbf{x})||^{2}$','fontsize',12,'interpreter','latex', 'Color',C18);
+    ylabel('$||~\mathbf{p}_{d}- \textrm{trans}(\hat{\mathbf{x}})||^{2}$','fontsize',12,'interpreter','latex', 'Color',C18);
     %% Figure properties
     ax_1 = gca;
     ax_1.Box = 'on';
@@ -130,7 +130,7 @@ for k=1:number_experiments
     set(gca,'ticklabelinterpreter','latex',...
         'fontsize',1.3*fontsizeTicks)
     title("Orientation Error DQ-NMPC", 'fontsize', 12, 'interpreter', 'latex', 'Color', 'black');
-    ylabel('$||\textrm{Log}(\mathbf{q}^{*}_{d} \circ \textrm{quat}(\mathbf{x}))||^{2}$','fontsize',12,'interpreter','latex', 'Color',C18);
+    ylabel('$||\textrm{log}(\mathbf{q}^{*}_{d} \circ \textrm{quat}(\hat{\mathbf{x}}))||^{2}$','fontsize',12,'interpreter','latex', 'Color',C18);
     %% Figure properties
     ax_1 = gca;
     ax_1.Box = 'on';
@@ -158,6 +158,8 @@ for k=1:number_experiments
     set(gca,'ticklabelinterpreter','latex',...
         'fontsize',1.3*fontsizeTicks)
     title("Translation Error Baseline-NMPC", 'fontsize', 12, 'interpreter', 'latex', 'Color', 'black');
+    ylabel('$||~\mathbf{p}_{d}- \mathbf{C}_t{\mathbf{x}}||^{2}$','fontsize',12,'interpreter','latex', 'Color',C18);
+
     %ylabel('$||~\mathbf{t}_{d, k}- \textrm{trans}(\mathbf{x}_k)||^{2}$','fontsize',12,'interpreter','latex', 'Color',C18);
     %xlabel('$\textrm{Time}[s]$','fontsize',12,'interpreter','latex','Color',C18);
     %% Figure properties
@@ -187,6 +189,8 @@ for k=1:number_experiments
     set(gca,'ticklabelinterpreter','latex',...
         'fontsize',1.3*fontsizeTicks)
     title("Orientation Error Baseline-NMPC", 'fontsize', 12, 'interpreter', 'latex', 'Color', 'black');
+    ylabel('$||\textrm{log}(\mathbf{q}^{*}_{d} \circ \mathbf{C}_a{\mathbf{x}})||^{2}$','fontsize',12,'interpreter','latex', 'Color',C18);
+
     %ylabel('$||\textrm{Log}(\mathbf{q}^{*}_{d, k} \circ \textrm{quat}(\mathbf{x}_k))||^{2}$','fontsize',12,'interpreter','latex', 'Color',C18);
 %     xlabel('$\textrm{Time}[s]$','fontsize',12,'interpreter','latex','Color',C18);
     %% Figure properties
@@ -227,7 +231,7 @@ set(gca,'ticklabelinterpreter','latex',...
 set(patch_dual, 'edgecolor', 'none');
 set(patch_dual, 'FaceAlpha', 0.2);
 title("MSE-STD Translation DQ-NMPC", 'fontsize', 12, 'interpreter', 'latex', 'Color', 'black');
-ylabel('$\frac{1}{N} \sum_{i=1}^{N}(||~\mathbf{t}^{i}_{d}- \textrm{trans}(\mathbf{x}^{i})||^{2})$','fontsize',12,'interpreter','latex', 'Color',C18);
+ylabel('$\frac{1}{N} \sum_{i=1}^{N}(||~\mathbf{p}^{i}_{d}- \textrm{trans}(\hat{\mathbf{x}}^{i})||^{2})$','fontsize',12,'interpreter','latex', 'Color',C18);
 %xlabel('$\textrm{Time}[s]$','fontsize',12,'interpreter','latex','Color',C18);
 ax_1 = gca;
 ax_1.Box = 'on';
@@ -267,6 +271,8 @@ set(gca,'ticklabelinterpreter','latex',...
 set(patch_separed, 'edgecolor', 'none');
 set(patch_separed, 'FaceAlpha', 0.2);
 title("MSE-STD Translation Baseline-NMPC", 'fontsize', 12, 'interpreter', 'latex', 'Color', 'black');
+ylabel('$\frac{1}{N} \sum_{i=1}^{N}(||~\mathbf{p}^{i}_{d}- \mathbf{C}_t{\mathbf{x}}^{i}||^{2})$','fontsize',12,'interpreter','latex', 'Color',C18);
+
 %ylabel('$\frac{1}{N} \sum_{i=1}^{N}(||~\mathbf{t}^{i}_{d, k}- \textrm{trans}(\mathbf{x}^{i}_k)||^{2})$','fontsize',12,'interpreter','latex', 'Color',C18);
 %xlabel('$\textrm{Time}[s]$','fontsize',12,'interpreter','latex','Color',C18);
 ax_1 = gca;
@@ -308,7 +314,7 @@ set(gca,'ticklabelinterpreter','latex',...
 set(patch_dual, 'edgecolor', 'none');
 set(patch_dual, 'FaceAlpha', 0.2);
 title("MSE-STD Orientation DQ-NMPC", 'fontsize', 12, 'interpreter', 'latex', 'Color', 'black');
-ylabel('$\frac{1}{N} \sum_{i=1}^{N}(||\textrm{Log}(\mathbf{q}^{i*}_{d} \circ \textrm{quat}(\mathbf{x}^{i}))||^{2})$','fontsize',12,'interpreter','latex', 'Color',C18);
+ylabel('$\frac{1}{N} \sum_{i=1}^{N}(||\textrm{log}(\mathbf{q}^{i*}_{d} \circ \textrm{quat}(\hat{\mathbf{x}}^{i}))||^{2})$','fontsize',12,'interpreter','latex', 'Color',C18);
 xlabel('$\textrm{Time}[s]$','fontsize',12,'interpreter','latex','Color',C18);
 ax_1 = gca;
 ax_1.Box = 'on';
@@ -348,6 +354,7 @@ set(gca,'ticklabelinterpreter','latex',...
 set(patch_separed, 'edgecolor', 'none');
 set(patch_separed, 'FaceAlpha', 0.2);
 title("MSE-STD Orientation  Baseline-NMPC", 'fontsize', 12, 'interpreter', 'latex', 'Color', 'black');
+ylabel('$\frac{1}{N} \sum_{i=1}^{N}(||\textrm{log}(\mathbf{q}^{i*}_{d} \circ \mathbf{C}_a{\mathbf{x}}^{i})||^{2})$','fontsize',12,'interpreter','latex', 'Color',C18);
 %ylabel('$\frac{1}{N} \sum_{i=1}^{N}(||~\mathbf{t}^{i}_{d, k}- \textrm{trans}(\mathbf{x}^{i}_k)||^{2})$','fontsize',12,'interpreter','latex', 'Color',C18);
 xlabel('$\textrm{Time}[s]$','fontsize',12,'interpreter','latex','Color',C18);
 ax_1 = gca;

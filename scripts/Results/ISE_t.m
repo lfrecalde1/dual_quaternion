@@ -8,7 +8,7 @@ number_experiments = size(Data_dual, 2);
 for i =1:number_experiments
     Ise_dual_aux = 0;
     for k=1:length(t_dual)
-        Ise_dual_aux = Ise_dual_aux + (t_dual(k)^2)*(sqrt(Data_dual(k, i)))*(dt);
+        Ise_dual_aux = Ise_dual_aux + (t_dual(k))*(sqrt(Data_dual(k, i)))*(dt);
         ISE_dual_plot(i, k) = Ise_dual_aux;   
     end
     ISE_dual_plot(i, :) = ISE_dual_plot(i, :)/1;

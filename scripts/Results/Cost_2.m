@@ -82,7 +82,7 @@ C17 = [255 0 0]/255;
 number_experiments = size(Aux_cost_dual, 1);
 
 % Location Plots
-dimension_x = [0.05, 0.33, 0.71];
+dimension_x = [0.05, 0.30, 0.71];
 dimension_y = [1.0, 0.8,  0.58, 0.35];
 %% plot Results
 figure('Position', [500 500 sizeX sizeY]);
@@ -124,7 +124,7 @@ set(gca,'ticklabelinterpreter','latex',...
     'fontsize',1.3*fontsizeTicks)
 title("ITSE Translation Error", 'fontsize', 14, 'interpreter', 'latex', 'Color', 'black');
 hLegend_1 = legend([F_dual_plot, F_separed_plot,],{'$DQ$','$Baseline$'},'fontsize',12,'interpreter','latex','Color',[255 255 255]/255,'NumColumns',1,'TextColor','black', 'Location', 'best');
-ylabel('$\frac{1}{N} \sum_{i=1}^{N}(\sum_{k=1}^{t}(t(k)^{2} ||~\mathbf{t}^{i}_{d, k}- \textrm{trans}(\mathbf{x}^{i}_k)|| t_s))$','fontsize',12,'interpreter','latex', 'Color',C18);
+ylabel('$\frac{1}{N} \sum_{i=1}^{N}(\sum_{k=1}^{t}(t(k) ||~\mathbf{p}_{d, k}- \textrm{trans}(\hat{\mathbf{x}}^{i}_k)|| t_s))$','fontsize',12,'interpreter','latex', 'Color',C18);
 xlabel('$\textrm{Time}[s]$','fontsize',12,'interpreter','latex','Color',C18);
 ax_1 = gca;
 ax_1.Box = 'on';
@@ -207,7 +207,7 @@ set(gca,'ticklabelinterpreter','latex',...
     'fontsize',1.3*fontsizeTicks)
 hLegend_1 = legend([F_dual_plot, F_separed_plot,],{'$DQ$','$Baseline$'},'fontsize',12,'interpreter','latex','Color',[255 255 255]/255,'NumColumns',1,'TextColor','black', 'Location', 'best');
 title("ITSE Orientation Error", 'fontsize', 14, 'interpreter', 'latex', 'Color', 'black');
-ylabel('$\frac{1}{N} \sum_{i=1}^{N}(\sum_{k=1}^{t}(t(k)^{2} ||\textrm{Log}(\mathbf{q}^{i*}_{d, k} \circ \textrm{quat}(\mathbf{x}^{i}_k))|| t_s))$','fontsize',12,'interpreter','latex', 'Color',C18);
+ylabel('$\frac{1}{N} \sum_{i=1}^{N}(\sum_{k=1}^{t}(t(k) ||\textrm{log}(\mathbf{q}^{i*}_{d, k} \circ \textrm{quat}(\hat{\mathbf{x}}^{i}_k))|| t_s))$','fontsize',12,'interpreter','latex', 'Color',C18);
 xlabel('$\textrm{Time}[s]$','fontsize',12,'interpreter','latex','Color',C18);
 ax_1 = gca;
 ax_1.Box = 'on';
