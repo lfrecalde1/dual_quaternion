@@ -138,11 +138,10 @@ for j=1:length(dimension_y)
         initial_conditions_y = string(round(Aux_X_separed(experiments(j, k), 2, 1), 1));
         initial_conditions_z = string(round(Aux_X_separed(experiments(j, k), 3, 1), 1));
         
-        initial_conditions_qw = string(round(Aux_X_separed(experiments(j, k), 4, 1), 1));
-        initial_conditions_qx = string(round(Aux_X_separed(experiments(j, k), 5, 1), 1));
-        initial_conditions_qy = string(round(Aux_X_separed(experiments(j, k), 6, 1), 1));
-        initial_conditions_qz = string(round(Aux_X_separed(experiments(j, k), 7, 1), 1));
-        title(['Experiment '+ aux_title + "~$\mathbf{p}_0 = [$" + initial_conditions_x + ", " + initial_conditions_y + ", " + initial_conditions_z + "$]$" + "~$\mathbf{q}_0 = [$" + initial_conditions_qw + ", " + initial_conditions_qx + ", " + initial_conditions_qy + ", " + initial_conditions_qz + "$]$"], 'FontSize', 11, 'Interpreter', 'latex', 'Color', 'black');
+        initial_conditions_x = string(round(Aux_X_separed(experiments(j, k), 1, 1), 1));
+        initial_conditions_y = string(round(Aux_X_separed(experiments(j, k), 2, 1), 1));
+        initial_conditions_z = string(round(Aux_X_separed(experiments(j, k), 3, 1), 1));
+        title(['Experiment '+ aux_title + "~$\mathbf{p}_0 = [$" + initial_conditions_x + ", " + initial_conditions_y + ", " + initial_conditions_z + "$]$"], 'FontSize', 12, 'Interpreter', 'latex', 'Color', 'black');
         %% Figure properties
         ax_1 = gca;
         ax_1.Box = 'on';
@@ -230,8 +229,8 @@ for j=1:length(dimension_y)
         hLegend_1 = legend([M_separed_plot,M_dual_plot],{'$\tau_{z-baseline}$','$\tau_{z-dual}$'},'fontsize',12,'interpreter','latex','Color',[255 255 255]/255,'NumColumns',1,'TextColor','black');
         set(gca,'ticklabelinterpreter','latex',...
             'fontsize',1.3*fontsizeTicks)
-        ylabel('${[N.m]}$','fontsize',11,'interpreter','latex', 'Color',C18);
-        xlabel('$\textrm{Time}[s]$','fontsize',11,'interpreter','latex','Color',C18);
+        ylabel('${[N.m]}$','fontsize',10,'interpreter','latex', 'Color',C18);
+        xlabel('$\textrm{Time}[s]$','fontsize',10,'interpreter','latex','Color',C18);
         
         %% Figure properties
         ax_1 = gca;
@@ -280,9 +279,8 @@ for j=1:length(dimension_y)
         hLegend_1 = legend([F_separed_plot,F_dual_plot],{'$x_{baseline}$','$x_{dual}$'},'fontsize',12,'interpreter','latex','Color',[255 255 255]/255,'NumColumns',1,'TextColor','black');
         set(gca,'ticklabelinterpreter','latex',...
             'fontsize',1.3*fontsizeTicks)
-        ylabel('${[m]}$','fontsize',11,'interpreter','latex', 'Color',C18);
         aux_title = string(experiments(j, k));
-        title('Experiment ' + aux_title, 'fontsize', 11, 'interpreter', 'latex', 'Color', 'black');
+        title('Experiment ' + aux_title, 'fontsize', 12, 'interpreter', 'latex', 'Color', 'black');
         %% Figure properties
         ax_1 = gca;
         ax_1.Box = 'on';
@@ -311,8 +309,6 @@ for j=1:length(dimension_y)
         hLegend_1 = legend([M_separed_plot,M_dual_plot],{'$y_{baseline}$','$y_{dual}$'},'fontsize',12,'interpreter','latex','Color',[255 255 255]/255,'NumColumns',1,'TextColor','black');
         set(gca,'ticklabelinterpreter','latex',...
             'fontsize',1.3*fontsizeTicks)
-        ylabel('${[m]}$','fontsize',11,'interpreter','latex', 'Color',C18);
-
         %% Figure properties
         ax_1 = gca;
         ax_1.Box = 'on';
@@ -334,14 +330,13 @@ for j=1:length(dimension_y)
         set(M_separed_plot, 'LineStyle', '-', 'Color', [C5, 0.5], 'LineWidth', 1.2*lw);
         M_dual_plot = line(t_dual,reshape(Aux_X_dual(experiments(j, k), 3, :), 1, length(Aux_X_dual)));
         set(M_dual_plot, 'LineStyle', '-', 'Color', C3, 'LineWidth', 1.2*lw);
-       
+        ylabel('${[m]}$','fontsize',8,'interpreter','latex', 'Color',C18);
+        xlabel('$\textrm{Time}[s]$','fontsize',8,'interpreter','latex','Color',C18);
+        
         %% Legend nomeclature
         hLegend_1 = legend([M_separed_plot,M_dual_plot],{'$z_{baseline}$','$z_{dual}$'},'fontsize',12,'interpreter','latex','Color',[255 255 255]/255,'NumColumns',1,'TextColor','black');
         set(gca,'ticklabelinterpreter','latex',...
             'fontsize',1.3*fontsizeTicks)
-        ylabel('${[m]}$','fontsize',11,'interpreter','latex', 'Color',C18);
-        xlabel('$\textrm{Time}[s]$','fontsize',11,'interpreter','latex','Color',C18);
-        
         %% Figure properties
         ax_1 = gca;
         ax_1.Box = 'on';
@@ -376,6 +371,7 @@ fig1_comps.fig = gcf;
         set(F_separed_plot, 'LineStyle', '-', 'Color', [C5, 0.5], 'LineWidth', 1.2*lw);
         F_dual_plot = line(t_dual,reshape(Aux_X_dual(experiments(j, k), 4, :), 1, length(Aux_X_dual)));
         set(F_dual_plot, 'LineStyle', '-', 'Color', C3, 'LineWidth', 1.2*lw);
+        ylabel('${[]}$','fontsize',8,'interpreter','latex', 'Color',C18);
         %xlabel('$\textrm{Time}[s]$','fontsize',10,'interpreter','latex','Color',C18);
 
         %% Legend nomeclature
@@ -383,7 +379,7 @@ fig1_comps.fig = gcf;
          set(gca,'ticklabelinterpreter','latex',...
                  'fontsize',1.3*fontsizeTicks)
         aux_title = string(experiments(j, k));
-        title('Experiment ' + aux_title, 'fontsize', 11, 'interpreter', 'latex', 'Color', 'black');
+        title('Experiment ' + aux_title, 'fontsize', 12, 'interpreter', 'latex', 'Color', 'black');
         %% Figure properties
         ax_1 = gca;
         ax_1.Box = 'on';
@@ -405,6 +401,7 @@ fig1_comps.fig = gcf;
         set(M_separed_plot, 'LineStyle', '-', 'Color', [C5, 0.5], 'LineWidth', 1.2*lw);
         M_dual_plot = line(t_dual,reshape(Aux_X_dual(experiments(j, k), 5, :), 1, length(Aux_X_dual)));
         set(M_dual_plot, 'LineStyle', '-', 'Color', C3, 'LineWidth', 1.2*lw);
+        ylabel('${[]}$','fontsize',8,'interpreter','latex', 'Color',C18);
         %xlabel('$\textrm{Time}[s]$','fontsize',10,'interpreter','latex','Color',C18);
 
         %% Legend nomeclature
@@ -432,6 +429,7 @@ fig1_comps.fig = gcf;
         set(M_separed_plot, 'LineStyle', '-', 'Color', [C5, 0.5], 'LineWidth', 1.2*lw);
         M_dual_plot = line(t_dual,reshape(Aux_X_dual(experiments(j, k), 6, :), 1, length(Aux_X_dual)));
         set(M_dual_plot, 'LineStyle', '-', 'Color', C3, 'LineWidth', 1.2*lw);
+        ylabel('${[]}$','fontsize',8,'interpreter','latex', 'Color',C18);
         %xlabel('$\textrm{Time}[s]$','fontsize',10,'interpreter','latex','Color',C18);
 
         %% Legend nomeclature
@@ -459,13 +457,13 @@ fig1_comps.fig = gcf;
         set(M_separed_plot, 'LineStyle', '-', 'Color', [C5, 0.5], 'LineWidth', 1.2*lw);
         M_dual_plot = line(t_dual,reshape(Aux_X_dual(experiments(j, k), 7, :), 1, length(Aux_X_dual)));
         set(M_dual_plot, 'LineStyle', '-', 'Color', C3, 'LineWidth', 1.2*lw);
-       
+        ylabel('${[]}$','fontsize',8,'interpreter','latex', 'Color',C18);
+        xlabel('$\textrm{Time}[s]$','fontsize',8,'interpreter','latex','Color',C18);
+
         %% Legend nomeclature
         hLegend_1 = legend([M_separed_plot,M_dual_plot],{'$q_{z-baseline}$','$q_{z-dual}$'},'fontsize',12,'interpreter','latex','Color',[255 255 255]/255,'NumColumns',1,'TextColor','black');
          set(gca,'ticklabelinterpreter','latex',...
                  'fontsize',1.3*fontsizeTicks)
-        xlabel('$\textrm{Time}[s]$','fontsize',11,'interpreter','latex','Color',C18);
-
         %% Figure properties
         ax_1 = gca;
         ax_1.Box = 'on';
