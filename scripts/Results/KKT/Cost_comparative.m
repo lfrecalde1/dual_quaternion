@@ -1,5 +1,4 @@
 %% Cost of the experiments Dualquaternions and Separed cost Function
-
 clc, clear all, close all;
 
 %% Load Matrices
@@ -17,6 +16,7 @@ cost_q_separed = separed.orientation_cost;
 % Cost Values position quaternion and 
 Aux_cost_dual = zeros(30, 3, length(cost_t_dual));
 Aux_cost_separed = zeros(30, 3, length(cost_t_dual));
+
 
 for i=1:size(cost_t_dual, 1)
     for j=1:size(cost_t_dual, 3)
