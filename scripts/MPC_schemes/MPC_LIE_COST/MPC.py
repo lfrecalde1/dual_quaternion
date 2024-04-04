@@ -33,8 +33,8 @@ x_0 = Identification['x_init']
 
 import os
 script_dir = os.path.dirname(__file__)
-folder_path = os.path.join(script_dir, 'cost_with_velocities/')
-#folder_path = os.path.join(script_dir, 'cost_without_velocities/')
+#folder_path = os.path.join(script_dir, 'cost_with_velocities/')
+folder_path = os.path.join(script_dir, 'cost_without_velocities/')
 
 def get_odometry(odom_msg, dqd, name):
     # Function to send the Oritentation of the Quaternion
@@ -241,6 +241,10 @@ def main(odom_pub_1, odom_pub_2, L, x0, initial):
     lie_cost_real = np.zeros((1, t.shape[0] - N_prediction), dtype=np.double)
     lie_cost_dual = np.zeros((1, t.shape[0] - N_prediction), dtype=np.double)
 
+    # KKT conditions
+    kkt_values = np.zeros((4, t.shape[0] - N_prediction), dtype=np.double)
+    sqp_iteration = np.zeros((1, t.shape[0] - N_prediction), dtype=np.double)
+
     # Simulation loop
     for k in range(0, t.shape[0] - N_prediction):
         tic = rospy.get_time()
@@ -286,9 +290,12 @@ def main(odom_pub_1, odom_pub_2, L, x0, initial):
         #acados_ocp_solver.options_set("rti_phase", 2)
         acados_ocp_solver.solve()
 
-        stat_fields = ['time_tot', 'time_lin', 'time_qp', 'time_qp_solver_call', 'time_reg', 'sqp_iter']
+        stat_fields = ['statistics', 'time_tot', 'time_lin', 'time_sim', 'time_sim_ad', 'time_sim_la', 'time_qp', 'time_qp_solver_call', 'time_reg', 'sqp_iter', 'residuals', 'qp_iter', 'alpha']
         for field in stat_fields:
             print(f"{field} : {acados_ocp_solver.get_stats(field)}")
+
+        kkt_values[:, k]  = acados_ocp_solver.get_stats('residuals')
+        sqp_iteration[:, k] = acados_ocp_solver.get_stats('sqp_iter')
 
         # Get the control Action
         aux_control = acados_ocp_solver.get(0, "u")
@@ -373,7 +380,7 @@ def main(odom_pub_1, odom_pub_2, L, x0, initial):
     fig101, ax101  = fancy_plots_1()
     plot_cost_total(fig101, ax101, total_cost, t, "Cost Total Based On LieAlgebra Cost "+ str(initial), folder_path)
 
-    return X, X_d, F, M, orientation_cost, translation_cost, control_cost, t, N_prediction
+    return X, X_d, F, M, orientation_cost, translation_cost, control_cost, t, N_prediction, kkt_values, sqp_iteration
 
 if __name__ == '__main__':
     try:
@@ -402,10 +409,12 @@ if __name__ == '__main__':
         Data_control_cost = []
         Data_time = []
         Data_N_prediction = []
+        Data_KKT = []
+        Data_sqp = []
 
         # Multiple Experiments
         for k in range(x_0.shape[0]):
-            x, xref, F, M, orientation_cost, translation_cost, control_cost, t, N_prediction = main(odometry_publisher_1, odometry_publisher_2, L, x_0[k, :], k)
+            x, xref, F, M, orientation_cost, translation_cost, control_cost, t, N_prediction, kkt_values, sqp_iteration = main(odometry_publisher_1, odometry_publisher_2, L, x_0[k, :], k)
             Data_States.append(x)
             Data_reference.append(xref)
             Data_F.append(F)
@@ -415,6 +424,8 @@ if __name__ == '__main__':
             Data_control_cost.append(control_cost)
             Data_time.append(t)
             Data_N_prediction.append(N_prediction)
+            Data_KKT.append(kkt_values)
+            Data_sqp.append(sqp_iteration)
 
         Data_States = np.array(Data_States)
         Data_reference = np.array(Data_reference)
@@ -425,11 +436,13 @@ if __name__ == '__main__':
         Data_control_cost = np.array(Data_control_cost)
         Data_time = np.array(Data_time)
         Data_N_prediction = np.array(Data_N_prediction)
+        Data_KKT = np.array(Data_KKT)
+        Data_sqp = np.array(Data_sqp)
 
 
         # Save Data matlab 
         mdic_x = {"x": Data_States, "xref": Data_reference, "F": Data_F, "M": Data_M, "orientation_cost": Data_orientation_cost,
-                "translation_cost": Data_translation_cost, "control_cost": Data_control_cost, "t": Data_time, "N": Data_N_prediction}
+                "translation_cost": Data_translation_cost, "control_cost": Data_control_cost, "t": Data_time, "N": Data_N_prediction, 'KKT': Data_KKT, 'sqp': Data_sqp}
         savemat("Dual_cost" + ".mat", mdic_x)
         #savemat("Dual_cost_without_velocities" + ".mat", mdic_x)
     except(rospy.ROSInterruptException, KeyboardInterrupt):

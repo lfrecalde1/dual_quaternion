@@ -28,8 +28,8 @@ cost_translation = cost_translation_casadi()
 
 import os
 script_dir = os.path.dirname(__file__)
-folder_path = os.path.join(script_dir, 'cost_with_velocities/')
-#folder_path = os.path.join(script_dir, 'cost_without_velocities/')
+#folder_path = os.path.join(script_dir, 'cost_with_velocities/')
+folder_path = os.path.join(script_dir, 'cost_without_velocities/')
 # Check if the folder exists, and create it if it doesn't
 
 def main(ts: float, t_f: float, t_N: float, x_0: np.ndarray, L: list, odom_pub_1, odom_pub_2, pub_planning, pub_ref, initial)-> None:
@@ -204,6 +204,10 @@ def main(ts: float, t_f: float, t_N: float, x_0: np.ndarray, L: list, odom_pub_1
     control_cost = np.zeros((1, t.shape[0] - N_prediction), dtype=np.double)
     total_cost = np.zeros((1, t.shape[0] - N_prediction), dtype=np.double)
 
+    # KKT conditions
+    kkt_values = np.zeros((4, t.shape[0] - N_prediction), dtype=np.double)
+    sqp_iteration = np.zeros((1, t.shape[0] - N_prediction), dtype=np.double)
+
     # Loop simulation
     for k in range(0, t.shape[0] - N_prediction):
         tic = rospy.get_time()
@@ -237,9 +241,14 @@ def main(ts: float, t_f: float, t_N: float, x_0: np.ndarray, L: list, odom_pub_1
 
         # Check Solution since there can be possible errors 
         #acados_ocp_solver.solve()
-        stat_fields = ['time_tot', 'time_lin', 'time_qp', 'time_qp_solver_call', 'time_reg', 'sqp_iter']
+        stat_fields = ['statistics', 'time_tot', 'time_lin', 'time_sim', 'time_sim_ad', 'time_sim_la', 'time_qp', 'time_qp_solver_call', 'time_reg', 'sqp_iter', 'residuals', 'qp_iter', 'alpha']
         for field in stat_fields:
             print(f"{field} : {acados_ocp_solver.get_stats(field)}")
+        kkt_values[:, k]  = acados_ocp_solver.get_stats('residuals')
+        sqp_iteration[:, k] = acados_ocp_solver.get_stats('sqp_iter')
+        # compute gradient
+        #gradient = acados_ocp_solver.print_statistics()
+        #print(gradient)
 
         # Get the control Action
         aux_control = acados_ocp_solver.get(0, "u")
@@ -314,7 +323,7 @@ def main(ts: float, t_f: float, t_N: float, x_0: np.ndarray, L: list, odom_pub_1
     fig18, ax18  = fancy_plots_1()
     plot_cost_total(fig18, ax18, total_cost, t, "Cost Total "+ str(initial), folder_path)
 
-    return x, xref, F, M, orientation_cost, translation_cost, control_cost, t, N_prediction
+    return x, xref, F, M, orientation_cost, translation_cost, control_cost, t, N_prediction, kkt_values, sqp_iteration
 
 def get_random_quaternion(min_angle=0.0, max_angle=np.math.pi):
     axis = np.random.uniform(-1.0, 1.0, 3)
@@ -384,10 +393,12 @@ if __name__ == '__main__':
         Data_control_cost = []
         Data_time = []
         Data_N_prediction = []
+        Data_KKT = []
+        Data_sqp = []
 
         for k in range(0, X_total.shape[0]):
             # Simulation
-            x, xref, F, M, orientation_cost, translation_cost, control_cost, t, N_prediction = main(ts, t_f, t_N, X_total[k, :], L, odometry_publisher_1, odometry_publisher_2, planning_publisher, ref_publisher, k)
+            x, xref, F, M, orientation_cost, translation_cost, control_cost, t, N_prediction, kkt_values, sqp_iteration = main(ts, t_f, t_N, X_total[k, :], L, odometry_publisher_1, odometry_publisher_2, planning_publisher, ref_publisher, k)
             Data_States.append(x)
             Data_reference.append(xref)
             Data_F.append(F)
@@ -397,6 +408,8 @@ if __name__ == '__main__':
             Data_control_cost.append(control_cost)
             Data_time.append(t)
             Data_N_prediction.append(N_prediction)
+            Data_KKT.append(kkt_values)
+            Data_sqp.append(sqp_iteration)
 
         Data_States = np.array(Data_States)
         Data_reference = np.array(Data_reference)
@@ -407,12 +420,14 @@ if __name__ == '__main__':
         Data_control_cost = np.array(Data_control_cost)
         Data_time = np.array(Data_time)
         Data_N_prediction = np.array(Data_N_prediction)
+        Data_KKT = np.array(Data_KKT)
+        Data_sqp = np.array(Data_sqp)
 
 
         # Save Data matlab 
         mdic_x = {"x": Data_States, "xref": Data_reference, "F": Data_F, "M": Data_M, "orientation_cost": Data_orientation_cost,
                 "translation_cost": Data_translation_cost, "control_cost": Data_control_cost, "t": Data_time, "N": Data_N_prediction,
-                 "x_init": X_total_aux}
+                 "x_init": X_total_aux, "KKT": Data_KKT, 'sqp': Data_sqp}
         savemat("Separed_cost" + ".mat", mdic_x)
         #savemat("Separed_cost_without_velocities" + ".mat", mdic_x)
     except(KeyboardInterrupt):
