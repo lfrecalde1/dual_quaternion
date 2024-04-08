@@ -490,22 +490,22 @@ void quadrotor_acados_create_5_set_nlp_in(quadrotor_solver_capsule* capsule, con
     double* lbx0 = lubx0;
     double* ubx0 = lubx0 + NBX0;
     // change only the non-zero elements:
-    lbx0[0] = 0.04659628587107107;
-    ubx0[0] = 0.04659628587107107;
-    lbx0[1] = 0.3915850705114965;
-    ubx0[1] = 0.3915850705114965;
-    lbx0[2] = 0.8479014509750052;
-    ubx0[2] = 0.8479014509750052;
-    lbx0[3] = 0.3543346555588499;
-    ubx0[3] = 0.3543346555588499;
-    lbx0[4] = -0.8154566130466709;
-    ubx0[4] = -0.8154566130466709;
-    lbx0[5] = 0.9035734912340458;
-    ubx0[5] = 0.9035734912340458;
-    lbx0[6] = -0.469144083192472;
-    ubx0[6] = -0.469144083192472;
-    lbx0[7] = 0.23130480676733717;
-    ubx0[7] = 0.23130480676733717;
+    lbx0[0] = 0.8451631516666852;
+    ubx0[0] = 0.8451631516666852;
+    lbx0[1] = 0.2623352095664301;
+    ubx0[1] = 0.2623352095664301;
+    lbx0[2] = -0.4439032217344819;
+    ubx0[2] = -0.4439032217344819;
+    lbx0[3] = -0.14081695430707353;
+    ubx0[3] = -0.14081695430707353;
+    lbx0[4] = -0.784554633721094;
+    ubx0[4] = -0.784554633721094;
+    lbx0[5] = -0.38414274222623745;
+    ubx0[5] = -0.38414274222623745;
+    lbx0[6] = -1.311536154141402;
+    ubx0[6] = -1.311536154141402;
+    lbx0[7] = -1.290013055068749;
+    ubx0[7] = -1.290013055068749;
 
     ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, 0, "idxbx", idxbx0);
     ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, 0, "lbx", lbx0);
@@ -682,7 +682,7 @@ void quadrotor_acados_create_6_set_opts(quadrotor_solver_capsule* capsule)
     double nlp_solver_step_length = 1;
     ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "step_length", &nlp_solver_step_length);
 
-    double levenberg_marquardt = 0.00001;
+    double levenberg_marquardt = 0;
     ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "levenberg_marquardt", &levenberg_marquardt);
 
     /* options QP solver */
@@ -743,14 +743,14 @@ void quadrotor_acados_create_7_set_nlp_out(quadrotor_solver_capsule* capsule)
 
     // initialize with x0
     
-    x0[0] = 0.04659628587107107;
-    x0[1] = 0.3915850705114965;
-    x0[2] = 0.8479014509750052;
-    x0[3] = 0.3543346555588499;
-    x0[4] = -0.8154566130466709;
-    x0[5] = 0.9035734912340458;
-    x0[6] = -0.469144083192472;
-    x0[7] = 0.23130480676733717;
+    x0[0] = 0.8451631516666852;
+    x0[1] = 0.2623352095664301;
+    x0[2] = -0.4439032217344819;
+    x0[3] = -0.14081695430707353;
+    x0[4] = -0.784554633721094;
+    x0[5] = -0.38414274222623745;
+    x0[6] = -1.311536154141402;
+    x0[7] = -1.290013055068749;
 
 
     double* u0 = xu0 + NX;

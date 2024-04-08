@@ -291,11 +291,13 @@ def main(odom_pub_1, odom_pub_2, L, x0, initial):
         acados_ocp_solver.solve()
 
         stat_fields = ['statistics', 'time_tot', 'time_lin', 'time_sim', 'time_sim_ad', 'time_sim_la', 'time_qp', 'time_qp_solver_call', 'time_reg', 'sqp_iter', 'residuals', 'qp_iter', 'alpha']
+
         for field in stat_fields:
             print(f"{field} : {acados_ocp_solver.get_stats(field)}")
 
         kkt_values[:, k]  = acados_ocp_solver.get_stats('residuals')
         sqp_iteration[:, k] = acados_ocp_solver.get_stats('sqp_iter')
+        #acados_ocp_solver.print_statistics()
 
         # Get the control Action
         aux_control = acados_ocp_solver.get(0, "u")

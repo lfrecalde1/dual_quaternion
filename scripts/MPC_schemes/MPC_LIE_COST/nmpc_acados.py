@@ -129,6 +129,6 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
     #ocp.solver_options.nlp_solver_max_iter = 200
     ocp.solver_options.tol = 1e-4
     ocp.solver_options.tf = t_horizon
-    ocp.solver_options.levenberg_marquardt = 1e-5
+    #ocp.solver_options.levenberg_marquardt = 1e-5
     ocp.solver_options.line_search_use_sufficient_descent
     return ocp
