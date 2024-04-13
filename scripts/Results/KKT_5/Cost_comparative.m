@@ -14,8 +14,8 @@ cost_q_dual = dual.orientation_cost;
 cost_q_separed = separed.orientation_cost;
 
 % Cost Values position quaternion and 
-Aux_cost_dual = zeros(30, 3, length(cost_t_dual));
-Aux_cost_separed = zeros(30, 3, length(cost_t_dual));
+Aux_cost_dual = zeros(size(cost_t_dual, 1), 3, length(cost_t_dual));
+Aux_cost_separed = zeros(size(cost_t_separed, 1), 3, length(cost_t_dual));
 
 
 for i=1:size(cost_t_dual, 1)
@@ -92,7 +92,7 @@ fig1_comps.fig = gcf;
 
 
 axes('Position',[dimension_x(1) dimension_y(1)-0.20  .25 .15]);
-colors = crameri('cork',number_experiments);
+colors = crameri('hawaii',number_experiments);
 
 for k=1:number_experiments
     

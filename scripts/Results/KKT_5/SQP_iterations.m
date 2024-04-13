@@ -11,8 +11,8 @@ sqp_iter_separed = separed.sqp;
 
 
 % Cost Values position quaternion and 
-Aux_sqp_dual = zeros(1, 3, length(sqp_iter_dual));
-Aux_sqp_separed = zeros(1, 3, length(sqp_iter_dual));
+Aux_sqp_dual = zeros(size(sqp_iter_dual, 1), 1, length(sqp_iter_dual));
+Aux_sqp_separed = zeros(size(sqp_iter_separed, 1), 1, length(sqp_iter_dual));
 
 for i=1:size(sqp_iter_dual, 1)
     for j=1:size(sqp_iter_dual, 3)
@@ -84,7 +84,7 @@ fig1_comps.fig = gcf;
 
 
 axes('Position',[dimension_x(1) dimension_y(1)-0.20  .25 .15]);
-colors = crameri('cork',number_experiments);
+colors = crameri('hawaii',number_experiments);
 
 for k=1:number_experiments
     

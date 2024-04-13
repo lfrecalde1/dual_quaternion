@@ -16,6 +16,8 @@ from functions import dualquat_from_pose_casadi
 from ode_acados import dualquat_trans_casadi, dualquat_quat_casadi, rotation_casadi, rotation_inverse_casadi, dual_velocity_casadi, dual_quat_casadi, velocities_from_twist_casadi
 from ode_acados import f_rk4_casadi_simple, noise, cost_quaternion_casadi, cost_translation_casadi
 from scipy.io import savemat
+from scipy.spatial.transform import Rotation as R
+
 
 
 dualquat_from_pose = dualquat_from_pose_casadi()
@@ -330,6 +332,12 @@ def get_random_quaternion(min_angle=0.0, max_angle=np.math.pi):
     axis /= np.linalg.norm(axis)
     angle = np.random.uniform(min_angle, max_angle)
     return angle, axis
+def get_random_quaternion_complete(number):
+    random_rotation = R.random(number)
+    
+    # Convert the rotation to quaternion format
+    quaternion = random_rotation.as_quat()  # Returns (x, y, z, w)
+    return quaternion
 
 def get_random_position(min_trans=-4.0, max_trans=4.0):
     trans = np.random.uniform(min_trans, max_trans, 3)
@@ -353,14 +361,18 @@ if __name__ == '__main__':
         # Initial conditions of the system
         X_total = []
         X_total_aux = []
-        for i_random in range(30):
+        number_experiments = 90
+
+        # Random quaternions
+        ramdon_quaternions = get_random_quaternion_complete(number_experiments)
+        for i_random in range(number_experiments):
             pos_0 = get_random_position()
             vel_0 = np.array([0.0, 0.0, 0.0], dtype=np.double)
             omega_0 = np.array([0.0, 0.0, 0.0], dtype=np.double)
-            angle_0, axis_0 = get_random_quaternion()
-            quat_0 = axisToquaternion(angle_0, axis_0)
+            #angle_0, axis_0 = get_random_quaternion()
+            quat_0 = np.array([ramdon_quaternions[i_random, 3], ramdon_quaternions[i_random, 0], ramdon_quaternions[i_random, 1], ramdon_quaternions[i_random, 2]])
             x = np.hstack((pos_0, vel_0, quat_0, omega_0))
-            x_aux = np.hstack((pos_0, angle_0, axis_0, omega_0, vel_0))
+            x_aux = np.hstack((pos_0, quat_0, omega_0, vel_0))
             X_total.append(x)
             X_total_aux.append(x_aux)
 

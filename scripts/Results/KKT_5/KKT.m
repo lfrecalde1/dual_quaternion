@@ -11,8 +11,8 @@ KKT_separed = separed.KKT;
 
 
 % Cost Values position quaternion and 
-Aux_KKT_dual = zeros(1, 4, length(KKT_dual));
-Aux_KKT_separed = zeros(1, 4, length(KKT_dual));
+Aux_KKT_dual = zeros(size(KKT_dual, 1), 4, length(KKT_dual));
+Aux_KKT_separed = zeros(size(KKT_separed, 1), 4, length(KKT_dual));
 
 for i=1:size(KKT_dual, 1)
     for j=1:size(KKT_dual, 3)
@@ -93,7 +93,7 @@ fig1_comps.fig = gcf;
 
 
 axes('Position',[dimension_x(1) dimension_y(1)-0.20  .25 .15]);
-colors = crameri('cork',number_experiments);
+colors = crameri('hawaii',number_experiments);
 
 for k=1:number_experiments
     

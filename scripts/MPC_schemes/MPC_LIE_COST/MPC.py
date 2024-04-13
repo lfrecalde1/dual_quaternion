@@ -94,16 +94,16 @@ def main(odom_pub_1, odom_pub_2, L, x0, initial):
     quat_1_d_msg = Odometry()
     
     # Defining initial condition of the system and verify properties
-    theta1 = x0[3]
-    nx = x0[4]
-    ny = x0[5]
-    nz = x0[6]
+    qw1 = x0[3]
+    qx1 = x0[4]
+    qy1 = x0[5]
+    qz1 = x0[6]
     tx1 = x0[0]
     ty1 = x0[1]
     tz1 = x0[2]
 
     # Initial Dualquaternion
-    dual_1 = dualquat_from_pose(theta1, nx, ny,  nz, tx1, ty1, tz1)
+    dual_1 = dualquat_from_pose(qw1, qx1, qy1,  qz1, tx1, ty1, tz1)
     angular_linear_1 = np.array([x0[7], x0[8], x0[9], x0[10], x0[11], x0[12]]) # Angular Body linear Inertial
     dual_twist_1 = dual_twist(angular_linear_1, dual_1)
     velocities  = dual_twist_1
@@ -140,16 +140,16 @@ def main(odom_pub_1, odom_pub_2, L, x0, initial):
     taux_3_min = -0.1
 
     # Defining desired frame
-    theta1_d = 0.0
-    nx_d = 0.0
-    ny_d = 0.0
-    nz_d = 1.0
+    qw1_d = 1.0
+    qx1_d = 0.0
+    qy1_d = 0.0
+    qz1_d = 0.0
     tx1_d = 0
     ty1_d = 0
     tz1_d = 0
 
     # Initial Desired Dualquaternion
-    dual_1_d = dualquat_from_pose(theta1_d, nx_d, ny_d,  nz_d, tx1_d, ty1_d, tz1_d)
+    dual_1_d = dualquat_from_pose(qw1_d, qx1_d, qy1_d,  qz1_d, tx1_d, ty1_d, tz1_d)
 
     # Initial condition for the desired states
     X_d = np.zeros((14, t.shape[0]+1), dtype=np.double)
