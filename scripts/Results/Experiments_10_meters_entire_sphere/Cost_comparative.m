@@ -5,6 +5,11 @@ clc, clear all, close all;
 separed = load("Separed_cost.mat");
 dual = load("Dual_cost.mat");
 
+%% Compute stabilization time 
+[stabilization_time_separed, stabilization_time_dual] = stabilization_time(separed, dual);
+aux_time_dual = ~isnan(stabilization_time_dual(:, 1));
+aux_time_separed = ~isnan(stabilization_time_separed(:, 1));
+
 % Cost over time position
 cost_t_dual = dual.translation_cost;
 cost_t_separed = separed.translation_cost;
@@ -30,6 +35,8 @@ for i=1:size(cost_t_dual, 1)
     end
     
 end
+
+% Time
 t_dual = dual.t;
 t_separed = separed.t;
 
@@ -79,7 +86,7 @@ C17 = [255 0 0]/255;
 % 
 
 % Number of experiments
-number_experiments = size(Aux_cost_dual, 1);
+number_experiments = (1:size(Aux_cost_dual, 1));
 
 % Location Plots
 dimension_x = [0.05, 0.36, 0.71];
@@ -92,17 +99,20 @@ fig1_comps.fig = gcf;
 
 
 axes('Position',[dimension_x(1) dimension_y(1)-0.20  .25 .15]);
-colors = crameri('hawaii',number_experiments);
+colors = crameri('hawaii',length(number_experiments));
 
-for k=1:number_experiments
-    
+for i=1:length(number_experiments(aux_time_dual))
+    dual_valid_experiments = number_experiments(aux_time_dual);
+    k = dual_valid_experiments(i);
     %% Data generation
     F_dual_plot = line(t_dual,reshape(Aux_cost_dual(k, 1, :), 1, length(Aux_cost_dual)));
     set(F_dual_plot, 'LineStyle', '-', 'Color', colors(k,:), 'LineWidth', 1*lw);
     %% Legend nomeclature
     set(gca,'ticklabelinterpreter','latex',...
         'fontsize',1.3*fontsizeTicks)
-    title("Translation Error DQ-NMPC", 'fontsize', 12, 'interpreter', 'latex', 'Color', 'black');
+    
+    number_good_experiments = string(length(number_experiments(aux_time_dual)));
+    title("Translation Error DQ-NMPC " + number_good_experiments, 'fontsize', 12, 'interpreter', 'latex', 'Color', 'black');
     ylabel('$||~\mathbf{p}_{d}- \textrm{trans}(\hat{\mathbf{x}})||^{2}$','fontsize',12,'interpreter','latex', 'Color',C18);
     %% Figure properties
     ax_1 = gca;
@@ -121,7 +131,10 @@ for k=1:number_experiments
     
 end
 axes('Position',[dimension_x(1) dimension_y(2)-0.20  .25 .15]);
-for k=1:number_experiments
+for i=1:length(number_experiments(aux_time_dual))
+    
+    dual_valid_experiments = number_experiments(aux_time_dual);
+    k = dual_valid_experiments(i);
     
     %% Data generation
     F_dual_plot = line(t_dual,reshape(Aux_cost_dual(k, 2, :), 1, length(Aux_cost_dual)));
@@ -129,7 +142,8 @@ for k=1:number_experiments
     %% Legend nomeclature
     set(gca,'ticklabelinterpreter','latex',...
         'fontsize',1.3*fontsizeTicks)
-    title("Orientation Error DQ-NMPC", 'fontsize', 12, 'interpreter', 'latex', 'Color', 'black');
+    number_good_experiments = string(length(number_experiments(aux_time_dual)));
+    title("Orientation Error DQ-NMPC " + number_good_experiments, 'fontsize', 12, 'interpreter', 'latex', 'Color', 'black');
     ylabel('$||\textrm{log}(\mathbf{q}^{*}_{d} \circ \textrm{quat}(\hat{\mathbf{x}}))||^{2}$','fontsize',12,'interpreter','latex', 'Color',C18);
     %% Figure properties
     ax_1 = gca;
@@ -147,17 +161,20 @@ for k=1:number_experiments
     ax_1.XLim = [t_dual(1), t_dual(end)]; % Set limits for x-axis
     
 end
-
+% 
 axes('Position',[dimension_x(2) dimension_y(1)-0.20  .25 .15]);
-for k=1:number_experiments
+for i=1:length(number_experiments(aux_time_separed))
     
+    separed_valid_experiments = number_experiments(aux_time_separed);
+    k = separed_valid_experiments(i);
     %% Data generation
     F_dual_plot = line(t_dual,reshape(Aux_cost_separed(k, 1, :), 1, length(Aux_cost_separed)));
     set(F_dual_plot, 'LineStyle', '-', 'Color', colors(k,:), 'LineWidth', 1*lw);
     %% Legend nomeclature
     set(gca,'ticklabelinterpreter','latex',...
         'fontsize',1.3*fontsizeTicks)
-    title("Translation Error Baseline-NMPC", 'fontsize', 12, 'interpreter', 'latex', 'Color', 'black');
+    number_good_experiments = string(length(number_experiments(aux_time_separed)));
+    title("Translation Error Baseline-NMPC " + number_good_experiments, 'fontsize', 12, 'interpreter', 'latex', 'Color', 'black');
     ylabel('$||~\mathbf{p}_{d}- \mathbf{C}_t{\mathbf{x}}||^{2}$','fontsize',12,'interpreter','latex', 'Color',C18);
 
     %ylabel('$||~\mathbf{t}_{d, k}- \textrm{trans}(\mathbf{x}_k)||^{2}$','fontsize',12,'interpreter','latex', 'Color',C18);
@@ -178,17 +195,20 @@ for k=1:number_experiments
     ax_1.XLim = [t_dual(1), t_dual(end)]; % Set limits for x-axis
     
 end
-
+% 
 axes('Position',[dimension_x(2) dimension_y(2)-0.20  .25 .15]);
-for k=1:number_experiments
+for i=1:length(number_experiments(aux_time_separed))
     
+    separed_valid_experiments = number_experiments(aux_time_separed);
+    k = separed_valid_experiments(i);
     %% Data generation
     F_dual_plot = line(t_dual,reshape(Aux_cost_separed(k, 2, :), 1, length(Aux_cost_separed)));
     set(F_dual_plot, 'LineStyle', '-', 'Color', colors(k,:), 'LineWidth', 1*lw);
     %% Legend nomeclature
     set(gca,'ticklabelinterpreter','latex',...
         'fontsize',1.3*fontsizeTicks)
-    title("Orientation Error Baseline-NMPC", 'fontsize', 12, 'interpreter', 'latex', 'Color', 'black');
+    number_good_experiments = string(length(number_experiments(aux_time_separed)));
+    title("Orientation Error Baseline-NMPC " + number_good_experiments, 'fontsize', 12, 'interpreter', 'latex', 'Color', 'black');
     ylabel('$||\textrm{log}(\mathbf{q}^{*}_{d} \circ \mathbf{C}_a{\mathbf{x}})||^{2}$','fontsize',12,'interpreter','latex', 'Color',C18);
 
     %ylabel('$||\textrm{Log}(\mathbf{q}^{*}_{d, k} \circ \textrm{quat}(\mathbf{x}_k))||^{2}$','fontsize',12,'interpreter','latex', 'Color',C18);
@@ -210,7 +230,7 @@ for k=1:number_experiments
     
 end
 %% RMSE Translation dual
-Data_dual = reshape(Aux_cost_dual(:, 1, :), number_experiments, length(Aux_cost_dual));
+Data_dual = reshape(Aux_cost_dual(aux_time_dual, 1, :), length(number_experiments(aux_time_dual)), length(Aux_cost_dual));
 Data_dual = Data_dual';
 % %% Computing RMS
 axes('Position',[dimension_x(1) dimension_y(3)-0.20  .25 .18]);
@@ -246,9 +266,9 @@ ax_1.YMinorGrid = 'on';
 ax_1.MinorGridAlpha = 0.15;
 ax_1.LineWidth = 0.8;
 ax_1.XLim = [t_dual(1), t_dual(end)]; % Set limits for x-axis
-
+% 
 %% RMSE Separed Translation
-Data_separed = reshape(Aux_cost_separed(:, 1, :), number_experiments, length(Aux_cost_separed));
+Data_separed = reshape(Aux_cost_separed(aux_time_separed, 1, :), length(number_experiments(aux_time_separed)), length(Aux_cost_separed));
 Data_separed = Data_separed';
 
 
@@ -290,10 +310,10 @@ ax_1.LineWidth = 0.8;
 ax_1.XLim = [t_dual(1), t_dual(end)]; % Set limits for x-axis
 
 
-
-
+% 
+% 
 %% Computing RMS Orientation Dual
-Data_dual = reshape(Aux_cost_dual(:, 2, :), number_experiments, length(Aux_cost_dual));
+Data_dual = reshape(Aux_cost_dual(aux_time_dual, 2, :), length(number_experiments(aux_time_dual)), length(Aux_cost_dual));
 Data_dual = Data_dual';
 % %% Computing RMS
 axes('Position',[dimension_x(1) dimension_y(4)-0.20  .25 .18]);
@@ -328,11 +348,12 @@ ax_1.YMinorGrid = 'on';
 ax_1.MinorGridAlpha = 0.15;
 ax_1.LineWidth = 0.8;
 ax_1.XLim = [t_dual(1), t_dual(end)]; % Set limits for x-axis
-
-
+% 
+% 
 %% RMSE Separed Orientation
-Data_separed = reshape(Aux_cost_separed(:, 2, :), number_experiments, length(Aux_cost_separed));
+Data_separed = reshape(Aux_cost_separed(aux_time_separed, 2, :), length(number_experiments(aux_time_separed)), length(Aux_cost_separed));
 Data_separed = Data_separed';
+
 
 
 % %% Computing RMS
