@@ -246,6 +246,7 @@ def main(ts: float, t_f: float, t_N: float, x_0: np.ndarray, L: list, odom_pub_1
         stat_fields = ['statistics', 'time_tot', 'time_lin', 'time_sim', 'time_sim_ad', 'time_sim_la', 'time_qp', 'time_qp_solver_call', 'time_reg', 'sqp_iter', 'residuals', 'qp_iter', 'alpha']
         for field in stat_fields:
             print(f"{field} : {acados_ocp_solver.get_stats(field)}")
+        print(initial)
         kkt_values[:, k]  = acados_ocp_solver.get_stats('residuals')
         sqp_iteration[:, k] = acados_ocp_solver.get_stats('sqp_iter')
         # compute gradient
@@ -339,8 +340,12 @@ def get_random_quaternion_complete(number):
     quaternion = random_rotation.as_quat()  # Returns (x, y, z, w)
     return quaternion
 
-def get_random_position(min_trans=-4.0, max_trans=4.0):
-    trans = np.random.uniform(min_trans, max_trans, 3)
+def get_random_position(min_trans, max_trans, number):
+    x = np.random.uniform(min_trans, max_trans, number)
+    y = np.random.uniform(min_trans, max_trans, number)
+    z = np.random.uniform(min_trans, max_trans, number)
+    trans = np.array([x, y, z])
+    trans = trans.reshape(trans.shape[1], trans.shape[0])
     return trans
 
 if __name__ == '__main__':
@@ -361,12 +366,15 @@ if __name__ == '__main__':
         # Initial conditions of the system
         X_total = []
         X_total_aux = []
-        number_experiments = 90
+        number_experiments = 30
+        max_position = 10
+        min_position = -10
 
         # Random quaternions
         ramdon_quaternions = get_random_quaternion_complete(number_experiments)
+        ramdon_positions = get_random_position(min_position, max_position, number_experiments)
         for i_random in range(number_experiments):
-            pos_0 = get_random_position()
+            pos_0 = np.array([ramdon_positions[i_random, 0], ramdon_positions[i_random, 1], ramdon_positions[i_random, 2]])
             vel_0 = np.array([0.0, 0.0, 0.0], dtype=np.double)
             omega_0 = np.array([0.0, 0.0, 0.0], dtype=np.double)
             #angle_0, axis_0 = get_random_quaternion()

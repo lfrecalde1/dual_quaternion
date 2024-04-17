@@ -294,7 +294,7 @@ def main(odom_pub_1, odom_pub_2, L, x0, initial):
 
         for field in stat_fields:
             print(f"{field} : {acados_ocp_solver.get_stats(field)}")
-
+        print(initial)
         kkt_values[:, k]  = acados_ocp_solver.get_stats('residuals')
         sqp_iteration[:, k] = acados_ocp_solver.get_stats('sqp_iter')
         #acados_ocp_solver.print_statistics()
