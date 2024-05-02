@@ -12,7 +12,7 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
     ocp = AcadosOcp()
 
     # Model of the system
-    model, get_trans, get_quat, constraint, error_manifold, error_lie, error_quaternion, error_lie_norm, error_manifold_norm = quadrotorModel(L)
+    model, get_trans, get_quat, constraint, error_manifold, error_lie_2, error_quaternion, error_lie_norm, error_manifold_norm = quadrotorModel(L)
 
     # Constructing the optimal control problem
     ocp.model = model
@@ -43,7 +43,7 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
     # Current Dual Quaternion
     dual = model.x[0:8]
 
-    error_total_lie = error_lie(dual_d, dual)
+    error_total_lie = error_lie_2(dual_d, dual)
     #error_total_lie_norm = error_lie_norm(dual_d, dual)
     #error_total_manifold = error_manifold(dual_d, dual)
     #error_total_manifold_norm = error_manifold_norm(dual_d, dual)

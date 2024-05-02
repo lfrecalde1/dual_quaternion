@@ -65,12 +65,12 @@ def main():
 
     # Initial States of the robot manipulator
     # Link1
-    theta_1 = 0.8
-    theta_2 = 0.0
-    theta_3 = -0.5
-    theta_4 = -0.0
+    theta_1 = -0.8
+    theta_2 = 0.8
+    theta_3 = -0.0
+    theta_4 = -0.5
     theta_5 = 0.0
-    theta_6 = -0.8
+    theta_6 = 0.5
 
 
     link_1 = forward_kinematics_link1(theta_1)
