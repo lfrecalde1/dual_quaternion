@@ -367,8 +367,8 @@ if __name__ == '__main__':
         X_total = []
         X_total_aux = []
         number_experiments = 30
-        max_position = 10
-        min_position = -10
+        max_position = 4
+        min_position = -4
 
         # Random quaternions
         ramdon_quaternions = get_random_quaternion_complete(number_experiments)

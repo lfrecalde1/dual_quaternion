@@ -400,13 +400,14 @@ def error_lie_norm():
 
     q_e_aux = Hplus @ q
     
-    condition1 = q_e_aux[0, 0] > 0.0
+    #condition1 = q_e_aux[0, 0] > 0.0
 
     # Define expressions for each condition
-    expr1 =  q_e_aux
-    expr2 = -q_e_aux
+    #expr1 =  q_e_aux
+    #expr2 = -q_e_aux
 
-    q_error = ca.if_else(condition1, expr1, expr2) 
+    #q_error = ca.if_else(condition1, expr1, expr2) 
+    q_error = q_e_aux
     # Check shortest path
 
     q_error_real = q_error[0:4, 0]
@@ -418,28 +419,26 @@ def error_lie_norm():
     angle = ca.atan2(norm, q_error_real[0])
 
     ## Dual Part
-    H_error_real_plus = ca.vertcat(ca.horzcat(q_error_dual[0, 0], -q_error_dual[1, 0], -q_error_dual[2, 0], -q_error_dual[3, 0]),
+    H_error_dual_plus = ca.vertcat(ca.horzcat(q_error_dual[0, 0], -q_error_dual[1, 0], -q_error_dual[2, 0], -q_error_dual[3, 0]),
                                 ca.horzcat(q_error_dual[1, 0], q_error_dual[0, 0], -q_error_dual[3, 0], q_error_dual[2, 0]),
                                 ca.horzcat(q_error_dual[2, 0], q_error_dual[3, 0], q_error_dual[0, 0], -q_error_dual[1, 0]),
                                 ca.horzcat(q_error_dual[3, 0], -q_error_dual[2, 0], q_error_dual[1, 0], q_error_dual[0, 0]))
 
-    trans_error = 2 * H_error_real_plus@q_error_real_c
+    trans_error = 2 * H_error_dual_plus@q_error_real_c
     # Computing log map
     ln_quaternion = ca.vertcat(0.0,  (1/2)*angle*q_error_real[1, 0]/norm, (1/2)*angle*q_error_real[2, 0]/norm, (1/2)*angle*q_error_real[3, 0]/norm)
     ln_trans = ca.vertcat(0.0, (1/2)*trans_error[1, 0], (1/2)*trans_error[2, 0], (1/2)*trans_error[3, 0])
 
+    #norm_ln_quaternion = ca.norm_2(ln_quaternion+ ca.np.finfo(np.float64).eps)
+    #norm_ln_trans = ca.norm_2(ln_trans+ ca.np.finfo(np.float64).eps)
+
+    q_e_ln = ca.vertcat(ln_quaternion, ln_trans)
     norm_ln_quaternion = ca.norm_2(ln_quaternion)
     norm_ln_trans = ca.norm_2(ln_trans)
-
-    condition1_norm = norm_ln_quaternion[0, 0] > 0.0
-
-    # Define expressions for each condition
-    expr1_norm =  ca.vertcat(norm_ln_quaternion, (ca.dot(ln_quaternion[0:4, 0], ln_trans[0:4, 0]))/(2*norm_ln_quaternion))
-    expr2_norm = ca.vertcat(norm_ln_quaternion, norm_ln_trans)
-
-    norm = ca.if_else(condition1_norm, expr1_norm, expr2_norm) 
+    norm = ca.norm_2(q_e_ln)
     f_norm = Function('f_norm', [qd, q], [norm])
     return f_norm
+
 def error_lie(qd, q):
     qd_conjugate = ca.vertcat(qd[0], -qd[1], -qd[2], -qd[3], qd[4], -qd[5], -qd[6], -qd[7])
     quat_d_data = qd_conjugate[0:4]
@@ -460,14 +459,14 @@ def error_lie(qd, q):
 
     q_e_aux = Hplus @ q
     
-    #condition1 = q_e_aux[0, 0] > 0.0
+    condition1 = q_e_aux[0, 0] > 0.0
 
     # Define expressions for each condition
-    #expr1 =  q_e_aux
-    #expr2 = -q_e_aux
+    expr1 =  q_e_aux
+    expr2 = -q_e_aux
 
-    #q_error = ca.if_else(condition1, expr1, expr2) 
-    q_error = q_e_aux
+    q_error = ca.if_else(condition1, expr1, expr2) 
+    #q_error = q_e_aux
     # Check shortest path
 
     q_error_real = q_error[0:4, 0]
@@ -782,22 +781,25 @@ def cost_quaternion_casadi():
 
     q_e_aux = H_r_plus @ quaternion
     
+
+    # Check shortest path
     condition1 = q_e_aux[0, 0] > 0.0
 
     # Define expressions for each condition
-    expr1 =  q_e_aux[:, 0]
-    expr2 = -q_e_aux[:, 0]
+    expr1 =  q_e_aux
+    expr2 = -q_e_aux
 
-    # Check shortest path
     q_error = ca.if_else(condition1, expr1, expr2) 
+    #q_error = q_e_aux
+
+    norm = ca.norm_2(q_error[1:4] + ca.np.finfo(np.float64).eps)
+    angle = ca.atan2(norm, q_error[0])
+
+    ln_quaternion = ca.vertcat(0.0,  (1/2)*angle*q_error[1, 0]/norm, (1/2)*angle*q_error[2, 0]/norm, (1/2)*angle*q_error[3, 0]/norm)
+
+    cost = ln_quaternion.T@ln_quaternion
 
     # Sux variable in roder to get a norm
-    q_3_aux = ca.DM([1.0, 0.0, 0.0, 0.0])
-    Q3_pose =  ca.vertcat(q_3_aux)
-    
-    q_e_ln = Q3_pose - q_error
-
-    cost = q_e_ln.T@q_e_ln
     f_cost = Function('f_cost', [qd, q], [cost])
     return f_cost
 
@@ -810,3 +812,63 @@ def cost_translation_casadi():
     cost = te.T@te
     f_cost = Function('f_cost', [td, t], [cost])
     return f_cost
+
+def ref_trajectory_agresive(t, ts, V_max, a_max, n):
+        # Compute the desired Trajecotry of the system
+        # INPUT 
+        # t                                                - time
+        # OUTPUT
+        # xd, yd, zd                                       - desired position
+        # theta                                            - desired orientation
+        # theta_p                                          - desired angular velocity
+        t = t
+        r_max = (V_max**2)/a_max
+        k = a_max/V_max
+        r_min = (r_max)/n
+
+        # Compute desired reference x y z
+        xd = r_max * np.sin(k * t)
+        yd = r_min * np.cos(k * t)
+        zd = 5 * np.ones((t.shape[0], ))
+
+        # Compute velocities
+        xd_p = r_max * k * np.cos(k * t)
+        yd_p = -r_min * k * np.sin(k * t)
+        zd_p = 0 * np.ones((t.shape[0], ))
+
+        # Compute acceleration
+        xd_pp = - r_max * k * k * np.sin(k * t)
+        yd_pp = - r_min * k * k * np.cos(k * t)
+        zd_pp = 0 * np.ones((t.shape[0], ))
+
+        # Compute jerk
+        xd_ppp = - r_max * k * k * k * np.cos(k * t)
+        yd_ppp =  r_min * k * k * k * np.sin(k * t) 
+        zd_ppp = 0 * np.ones((t.shape[0], ))
+
+        # Compute snap
+        xd_pppp =  r_max * k * k * k * k * np.sin(k * t)
+        yd_pppp =  r_min * k * k * k * k * np.cos(k * t) 
+        zd_pppp = 0 * np.ones((t.shape[0], ))
+
+        # Compute angular displacement
+        theta = np.arctan2(yd_p, xd_p)
+        theta = theta
+
+        # Compute angular velocity
+        theta_p = (1. / ((yd_p / xd_p) ** 2 + 1)) * ((yd_pp * xd_p - yd_p * xd_pp) / xd_p ** 2)
+        theta_p[0] = 0.0
+
+        theta_pp = np.zeros((theta.shape[0]))
+        theta_pp[0] = 0.0
+
+        # Compute the angular acceleration
+        for k in range(1, theta_p.shape[0]):
+            theta_pp[k] = (theta_p[k] - theta_p[k-1])/ts
+        hd = np.vstack((xd, yd, zd))
+        hd_p = np.vstack((xd_p, yd_p, zd_p))
+        hd_pp = np.vstack((xd_pp, yd_pp, zd_pp))
+        hd_ppp = np.vstack((xd_ppp, yd_ppp, zd_ppp))
+        hd_pppp = np.vstack((xd_pppp, yd_pppp, zd_pppp))
+
+        return hd, theta, hd_p, theta_p, hd_pp, hd_ppp, hd_pppp, theta_pp

@@ -161,6 +161,7 @@ void quadrotor_acados_create_1_set_plan(ocp_nlp_plan_t* nlp_solver_plan, const i
     {nlp_solver_plan->nlp_constraints[i] = BGH;
     }
     nlp_solver_plan->nlp_constraints[N] = BGH;
+    nlp_solver_plan->regularization = CONVEXIFY;
 }
 
 
@@ -490,22 +491,22 @@ void quadrotor_acados_create_5_set_nlp_in(quadrotor_solver_capsule* capsule, con
     double* lbx0 = lubx0;
     double* ubx0 = lubx0 + NBX0;
     // change only the non-zero elements:
-    lbx0[0] = -0.415435823109473;
-    ubx0[0] = -0.415435823109473;
-    lbx0[1] = 0.8399508919938194;
-    ubx0[1] = 0.8399508919938194;
-    lbx0[2] = 0.05451381220348009;
-    ubx0[2] = 0.05451381220348009;
-    lbx0[3] = -0.3448533314253838;
-    ubx0[3] = -0.3448533314253838;
-    lbx0[4] = 0.8385107942521;
-    ubx0[4] = 0.8385107942521;
-    lbx0[5] = 1.4935145872830062;
-    ubx0[5] = 1.4935145872830062;
-    lbx0[6] = -3.3442550412713197;
-    ubx0[6] = -3.3442550412713197;
-    lbx0[7] = 2.0989311413221796;
-    ubx0[7] = 2.0989311413221796;
+    lbx0[0] = 0.010145663505874352;
+    ubx0[0] = 0.010145663505874352;
+    lbx0[1] = -0.05344773145037275;
+    ubx0[1] = -0.05344773145037275;
+    lbx0[2] = 0.4036540193407042;
+    ubx0[2] = 0.4036540193407042;
+    lbx0[3] = -0.9132928545570302;
+    ubx0[3] = -0.9132928545570302;
+    lbx0[4] = 0.6360907834999021;
+    ubx0[4] = 0.6360907834999021;
+    lbx0[5] = -2.2411416508270325;
+    ubx0[5] = -2.2411416508270325;
+    lbx0[6] = 0.12522810156544284;
+    ubx0[6] = 0.12522810156544284;
+    lbx0[7] = 0.193570250542767;
+    ubx0[7] = 0.193570250542767;
 
     ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, 0, "idxbx", idxbx0);
     ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, 0, "lbx", lbx0);
@@ -694,16 +695,16 @@ void quadrotor_acados_create_6_set_opts(quadrotor_solver_capsule* capsule)
 
 
     // set SQP specific options
-    double nlp_solver_tol_stat = 0.0001;
+    double nlp_solver_tol_stat = 0.000001;
     ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "tol_stat", &nlp_solver_tol_stat);
 
-    double nlp_solver_tol_eq = 0.0001;
+    double nlp_solver_tol_eq = 0.000001;
     ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "tol_eq", &nlp_solver_tol_eq);
 
-    double nlp_solver_tol_ineq = 0.0001;
+    double nlp_solver_tol_ineq = 0.000001;
     ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "tol_ineq", &nlp_solver_tol_ineq);
 
-    double nlp_solver_tol_comp = 0.0001;
+    double nlp_solver_tol_comp = 0.000001;
     ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "tol_comp", &nlp_solver_tol_comp);
 
     int nlp_solver_max_iter = 100;
@@ -743,14 +744,14 @@ void quadrotor_acados_create_7_set_nlp_out(quadrotor_solver_capsule* capsule)
 
     // initialize with x0
     
-    x0[0] = -0.415435823109473;
-    x0[1] = 0.8399508919938194;
-    x0[2] = 0.05451381220348009;
-    x0[3] = -0.3448533314253838;
-    x0[4] = 0.8385107942521;
-    x0[5] = 1.4935145872830062;
-    x0[6] = -3.3442550412713197;
-    x0[7] = 2.0989311413221796;
+    x0[0] = 0.010145663505874352;
+    x0[1] = -0.05344773145037275;
+    x0[2] = 0.4036540193407042;
+    x0[3] = -0.9132928545570302;
+    x0[4] = 0.6360907834999021;
+    x0[5] = -2.2411416508270325;
+    x0[6] = 0.12522810156544284;
+    x0[7] = 0.193570250542767;
 
 
     double* u0 = xu0 + NX;

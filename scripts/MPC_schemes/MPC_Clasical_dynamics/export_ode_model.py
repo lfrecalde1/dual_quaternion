@@ -256,7 +256,7 @@ def quadrotorModel(L: list)-> AcadosModel:
     model.z = z
     model.p = p
     model.name = model_name
-    return model, f_system, constraint, f_error, error_quaternion, f_rotation_inverse
+    return model, f_system, constraint, f_error, error_quaternion, f_rotation_inverse, error_quaternion_li
 
 def conjugate_quaternion(q):
     # Compute the conjugate of a specified quaternion
@@ -346,16 +346,14 @@ def error_quaternion(qd, q):
 
 
     q_e_aux = H_r_plus @ quaternion
-    
-    #condition1 = q_e_aux[0, 0] > 0.0
+
+    condition1 = q_e_aux[0, 0] > 0.0
 
     # Define expressions for each condition
-    #expr1 =  q_e_aux[:, 0]
-    #expr2 = -q_e_aux[:, 0]
+    expr1 =  q_e_aux
+    expr2 = -q_e_aux
 
-    # Check shortest path
-    #q_error = ca.if_else(condition1, expr1, expr2) 
-    q_error = q_e_aux
+    q_error = ca.if_else(condition1, expr1, expr2) 
 
     norm = ca.norm_2(q_error[1:4] + ca.np.finfo(np.float64).eps)
     angle = ca.atan2(norm, q_error[0])
@@ -370,3 +368,19 @@ def error_quaternion(qd, q):
     #q_e_ln = Q3_pose - q_error
 
     return ln_quaternion
+
+def error_quaternion_li(qk, qd, weight):
+    q_aux = ca.vertcat(
+     qd[0] * qk[0] + qd[1] * qk[1] + qd[2] * qk[2] + qd[3] * qk[3],
+    -qd[1] * qk[0] + qd[0] * qk[1] + qd[3] * qk[2] - qd[2] * qk[3],
+    -qd[2] * qk[0] - qd[3] * qk[1] + qd[0] * qk[2] + qd[1] * qk[3],
+    -qd[3] * qk[0] + qd[2] * qk[1] - qd[1] * qk[2] + qd[0] * qk[3])
+
+    q_att_denom = ca.sqrt(q_aux[0] * q_aux[0] + q_aux[3] * q_aux[3] + 1e-3)
+
+    q_att = ca.vertcat(
+    q_aux[0] * q_aux[1] - q_aux[2] * q_aux[3],
+    q_aux[0] * q_aux[2] + q_aux[1] * q_aux[3],
+    q_aux[3]) / q_att_denom
+
+    return ca.transpose(q_att) @ weight @ q_att

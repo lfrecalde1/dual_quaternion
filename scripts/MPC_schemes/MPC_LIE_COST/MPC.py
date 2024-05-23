@@ -25,7 +25,7 @@ inverse_rot = rotation_inverse_casadi()
 f_rk4 = f_rk4_casadi_simple()
 cost_quaternion = cost_quaternion_casadi()
 cost_translation = cost_translation_casadi()
-error_lie = error_lie_norm()
+error_lie_n = error_lie_norm()
 
 Identification = scipy.io.loadmat('Separed_cost.mat') 
 #Identification = scipy.io.loadmat('Separed_cost_without_velocities.mat') 
@@ -237,9 +237,7 @@ def main(odom_pub_1, odom_pub_2, L, x0, initial):
     control_cost = np.zeros((1, t.shape[0] - N_prediction), dtype=np.double)
     total_cost = np.zeros((1, t.shape[0] - N_prediction), dtype=np.double)
 
-    lie_cost = np.zeros((2, t.shape[0] - N_prediction), dtype=np.double)
-    lie_cost_real = np.zeros((1, t.shape[0] - N_prediction), dtype=np.double)
-    lie_cost_dual = np.zeros((1, t.shape[0] - N_prediction), dtype=np.double)
+    lie_cost = np.zeros((1, t.shape[0] - N_prediction), dtype=np.double)
 
     # KKT conditions
     kkt_values = np.zeros((4, t.shape[0] - N_prediction), dtype=np.double)
@@ -256,9 +254,7 @@ def main(odom_pub_1, odom_pub_2, L, x0, initial):
         orientation_cost[:, k] = cost_quaternion(get_quat(X_d[0:8, k]), get_quat(X[0:8, k]))
         translation_cost[:, k] = cost_translation(get_trans(X_d[0:8, k]), get_trans(X[0:8, k]))
         total_cost[:, k] = orientation_cost[:, k] + translation_cost[:, k]
-        lie_cost[:, k] = np.array(error_lie(X_d[0:8, k], X[0:8, k])).reshape((2, ))
-        lie_cost_real[:, k] = lie_cost[0, k]
-        lie_cost_dual[:, k] = lie_cost[1, k]
+        lie_cost[:, k] = np.array(error_lie_n(X_d[0:8, k], X[0:8, k])).reshape((1, ))
 
         # Check properties
         real = X[0:4, k]

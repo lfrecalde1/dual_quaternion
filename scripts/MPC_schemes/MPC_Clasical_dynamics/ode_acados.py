@@ -421,22 +421,26 @@ def cost_quaternion_casadi():
 
     q_e_aux = H_r_plus @ quaternion
     
+
+    # Check shortest path
+    # Check shortest path
     condition1 = q_e_aux[0, 0] > 0.0
 
     # Define expressions for each condition
-    expr1 =  q_e_aux[:, 0]
-    expr2 = -q_e_aux[:, 0]
+    expr1 =  q_e_aux
+    expr2 = -q_e_aux
 
-    # Check shortest path
     q_error = ca.if_else(condition1, expr1, expr2) 
+    
+
+    norm = ca.norm_2(q_error[1:4] + ca.np.finfo(np.float64).eps)
+    angle = ca.atan2(norm, q_error[0])
+
+    ln_quaternion = ca.vertcat(0.0,  (1/2)*angle*q_error[1, 0]/norm, (1/2)*angle*q_error[2, 0]/norm, (1/2)*angle*q_error[3, 0]/norm)
+
+    cost = ln_quaternion.T@ln_quaternion
 
     # Sux variable in roder to get a norm
-    q_3_aux = ca.DM([1.0, 0.0, 0.0, 0.0])
-    Q3_pose =  ca.vertcat(q_3_aux)
-    
-    q_e_ln = Q3_pose - q_error
-
-    cost = q_e_ln.T@q_e_ln
     f_cost = Function('f_cost', [qd, q], [cost])
     return f_cost
 
