@@ -256,7 +256,7 @@ def quadrotorModel(L: list)-> AcadosModel:
     model.z = z
     model.p = p
     model.name = model_name
-    return model, f_system, constraint, f_error, error_quaternion, f_rotation_inverse, error_quaternion_li
+    return model, f_system, constraint, f_error, error_quaternion, f_rotation_inverse, error_quaternion_li, error_quaternion_z
 
 def conjugate_quaternion(q):
     # Compute the conjugate of a specified quaternion
@@ -368,6 +368,16 @@ def error_quaternion(qd, q):
     #q_e_ln = Q3_pose - q_error
 
     return ln_quaternion
+
+def error_quaternion_z(qd, q):
+    quaternion = q[0:4, 0]
+    quaternion_d = qd[0:4, 0]
+
+    dot_product = quaternion_d.T@quaternion
+    print(dot_product.shape)
+    
+    cost = (1 - ca.fabs(dot_product))
+    return cost
 
 def error_quaternion_li(qk, qd, weight):
     q_aux = ca.vertcat(

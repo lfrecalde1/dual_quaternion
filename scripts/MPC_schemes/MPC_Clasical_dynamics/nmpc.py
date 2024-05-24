@@ -21,7 +21,7 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
     ocp = AcadosOcp()
 
     # Model of the system
-    model, f_d, constraint, f_error, error_quaternion, rotation_inverse, error_quaternion_li = quadrotorModel(L)
+    model, f_d, constraint, f_error, error_quaternion, rotation_inverse, error_quaternion_li, error_quaternion_z = quadrotorModel(L)
 
     # Constructing the optimal control problem
     ocp.model = model
@@ -76,6 +76,7 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
     q = model.x[6:10]
     error_ori = error_quaternion(q_d, q)
     error_ori_li = error_quaternion_li(q, q_d, Qq)
+    error_ori_z = error_quaternion_z(q_d, q)
 
     # Angular velocities
     w = model.x[10:13]
@@ -87,9 +88,11 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
     #ocp.model.cost_expr_ext_cost = 1*(error_position.T @ Q @error_position) + 1*(error_nominal_input.T @ R @ error_nominal_input) + 10*(error_ori.T@error_ori)+1*(w.T@w) + 1*(vb.T@vb)
     #ocp.model.cost_expr_ext_cost_e = 1*(error_position.T @ Q @error_position)+ 10*(error_ori.T@error_ori)+1*(w.T@w) + 1*(vb.T@vb)
 
-    ocp.model.cost_expr_ext_cost = 1*(error_position.T @ Q @error_position) + 1*(error_nominal_input.T @ R @ error_nominal_input) + 1*(error_ori_li)
-    ocp.model.cost_expr_ext_cost_e = 1*(error_position.T @ Q @error_position)+ 1*(error_ori_li)
+    #ocp.model.cost_expr_ext_cost = 1*(error_position.T @ Q @error_position) + 1*(error_nominal_input.T @ R @ error_nominal_input) + 1*(error_ori_li)
+    #ocp.model.cost_expr_ext_cost_e = 1*(error_position.T @ Q @error_position)+ 1*(error_ori_li)
 
+    ocp.model.cost_expr_ext_cost = 1*(error_position.T @ Q @error_position) + 1*(error_nominal_input.T @ R @ error_nominal_input) + 10*(error_ori_z)
+    ocp.model.cost_expr_ext_cost_e = 1*(error_position.T @ Q @error_position)+ 10*(error_ori_z)
 
     # Auxiliary variable initialization
     ocp.parameter_values = np.zeros(nx + nu)
