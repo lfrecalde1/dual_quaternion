@@ -374,7 +374,6 @@ def error_quaternion_z(qd, q):
     quaternion_d = qd[0:4, 0]
 
     dot_product = quaternion_d.T@quaternion
-    print(dot_product.shape)
     
     cost = (1 - ca.fabs(dot_product))
     return cost

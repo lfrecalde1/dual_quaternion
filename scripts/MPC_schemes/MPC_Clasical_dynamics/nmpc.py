@@ -52,9 +52,9 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
     #Q[1, 1] = 8.0
     #Q[2, 2] = 6.0
 
-    Qq[0, 0] = 10.5
-    Qq[1, 1] = 10.5
-    Qq[2, 2] = 10.5
+    Qq[0, 0] = 5.5
+    Qq[1, 1] = 5.5
+    Qq[2, 2] = 5.5
 
     # Control effort using gain matrices
     R = MX.zeros(4, 4)
@@ -88,11 +88,14 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
     #ocp.model.cost_expr_ext_cost = 1*(error_position.T @ Q @error_position) + 1*(error_nominal_input.T @ R @ error_nominal_input) + 10*(error_ori.T@error_ori)+1*(w.T@w) + 1*(vb.T@vb)
     #ocp.model.cost_expr_ext_cost_e = 1*(error_position.T @ Q @error_position)+ 10*(error_ori.T@error_ori)+1*(w.T@w) + 1*(vb.T@vb)
 
-    #ocp.model.cost_expr_ext_cost = 1*(error_position.T @ Q @error_position) + 1*(error_nominal_input.T @ R @ error_nominal_input) + 1*(error_ori_li)
-    #ocp.model.cost_expr_ext_cost_e = 1*(error_position.T @ Q @error_position)+ 1*(error_ori_li)
+    #ocp.model.cost_expr_ext_cost = 1*(error_position.T @ Q @error_position) + 1*(error_nominal_input.T @ R @ error_nominal_input) + 10*(error_ori.T@error_ori)
+    #ocp.model.cost_expr_ext_cost_e = 1*(error_position.T @ Q @error_position)+ 10*(error_ori.T@error_ori)
+    
+    ocp.model.cost_expr_ext_cost = 1*(error_position.T @ Q @error_position) + 1*(error_nominal_input.T @ R @ error_nominal_input) + 1*(error_ori_li)
+    ocp.model.cost_expr_ext_cost_e = 1*(error_position.T @ Q @error_position)+ 1*(error_ori_li)
 
-    ocp.model.cost_expr_ext_cost = 1*(error_position.T @ Q @error_position) + 1*(error_nominal_input.T @ R @ error_nominal_input) + 10*(error_ori_z)
-    ocp.model.cost_expr_ext_cost_e = 1*(error_position.T @ Q @error_position)+ 10*(error_ori_z)
+    #ocp.model.cost_expr_ext_cost = 1*(error_position.T @ Q @error_position) + 1*(error_nominal_input.T @ R @ error_nominal_input) + 10*(error_ori_z)
+    #ocp.model.cost_expr_ext_cost_e = 1*(error_position.T @ Q @error_position)+ 10*(error_ori_z)
 
     # Auxiliary variable initialization
     ocp.parameter_values = np.zeros(nx + nu)

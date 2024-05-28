@@ -636,3 +636,25 @@ def noise(x, noise):
                             quat_noise_aux[0, 0], quat_noise_aux[1, 0], quat_noise_aux[2, 0], quat_noise_aux[3, 0],
                             values_twist_w[0], values_twist_w[1], values_twist_w[2]])
     return values_pose
+
+def error_quat_aux_casadi():
+    qd = ca.MX.sym('qd', 4, 1)
+    q = ca.MX.sym('q', 4, 1)
+    qd_conjugate = ca.vertcat(qd[0, 0], -qd[1, 0], -qd[2, 0], -qd[3, 0])
+    quat_d_data = qd_conjugate[0:4, 0]
+    quaternion = q[0:4, 0]
+
+    H_r_plus = ca.vertcat(ca.horzcat(quat_d_data[0, 0], -quat_d_data[1, 0], -quat_d_data[2, 0], -quat_d_data[3, 0]),
+                                ca.horzcat(quat_d_data[1, 0], quat_d_data[0, 0], -quat_d_data[3, 0], quat_d_data[2, 0]),
+                                ca.horzcat(quat_d_data[2, 0], quat_d_data[3, 0], quat_d_data[0, 0], -quat_d_data[1, 0]),
+                                ca.horzcat(quat_d_data[3, 0], -quat_d_data[2, 0], quat_d_data[1, 0], quat_d_data[0, 0]))
+
+
+
+    q_e_aux = H_r_plus @ quaternion
+    
+    q_error = q_e_aux
+    # Check shortest path
+
+    f_error_quat = Function('f_error_dual', [qd, q], [q_error])
+    return f_error_quat

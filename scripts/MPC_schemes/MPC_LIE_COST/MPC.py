@@ -8,6 +8,7 @@ from nav_msgs.msg import Odometry
 from functions import dualquat_from_pose_casadi
 from ode_acados import dualquat_trans_casadi, dualquat_quat_casadi, rotation_casadi, rotation_inverse_casadi, dual_velocity_casadi, dual_quat_casadi, velocities_from_twist_casadi
 from ode_acados import f_rk4_casadi_simple, noise, cost_quaternion_casadi, cost_translation_casadi, error_lie_norm
+from ode_acados import error_dual_aux_casadi
 from nmpc_acados import create_ocp_solver
 from acados_template import AcadosOcpSolver, AcadosSimSolver
 import scipy.io
@@ -26,6 +27,7 @@ f_rk4 = f_rk4_casadi_simple()
 cost_quaternion = cost_quaternion_casadi()
 cost_translation = cost_translation_casadi()
 error_lie_n = error_lie_norm()
+error_dual_f = error_dual_aux_casadi()
 
 Identification = scipy.io.loadmat('Separed_cost.mat') 
 #Identification = scipy.io.loadmat('Separed_cost_without_velocities.mat') 
@@ -243,9 +245,26 @@ def main(odom_pub_1, odom_pub_2, L, x0, initial):
     kkt_values = np.zeros((4, t.shape[0] - N_prediction), dtype=np.double)
     sqp_iteration = np.zeros((1, t.shape[0] - N_prediction), dtype=np.double)
 
+    error_dual_filter = np.zeros((8, t.shape[0] - N_prediction), dtype=np.double)
+
     # Simulation loop
     for k in range(0, t.shape[0] - N_prediction):
         tic = rospy.get_time()
+
+        # Check Desired Dual Quaternion in order to compute the shortest path between the desired dual quaternion and the real
+        for j in range(N_prediction):
+            # check shortest path
+            error_dual_no_filter = np.array(error_dual_f(X_d[0:8, k+j], X[0:8, k])).reshape((8, ))
+            if error_dual_no_filter[0] > 0.0:
+                X_d[0:8, k+j] = X_d[0:8, k+j]
+            else:
+                X_d[0:8, k+j] = -X_d[0:8, k+j]
+        error_dual_no_filter = np.array(error_dual_f(X_d[0:8, k+N_prediction], X[0:8, k])).reshape((8, ))
+        if error_dual_no_filter[0] > 0.0:
+            X_d[0:8, k+N_prediction] = X_d[0:8, k+N_prediction]
+        else:
+            X_d[0:8, k+N_prediction] = -X_d[0:8, k+N_prediction]
+
         white_noise = np.random.multivariate_normal(np.zeros(12),uav_white_noise_cov)
         #acados_ocp_solver.options_set("rti_phase", 1)
         #acados_ocp_solver.solve()
@@ -255,6 +274,7 @@ def main(odom_pub_1, odom_pub_2, L, x0, initial):
         translation_cost[:, k] = cost_translation(get_trans(X_d[0:8, k]), get_trans(X[0:8, k]))
         total_cost[:, k] = orientation_cost[:, k] + translation_cost[:, k]
         lie_cost[:, k] = np.array(error_lie_n(X_d[0:8, k], X[0:8, k])).reshape((1, ))
+        error_dual_filter[:, k] = np.array(error_dual_f(X_d[0:8, k], X[0:8, k])).reshape((8, ))
 
         # Check properties
         real = X[0:4, k]
@@ -264,7 +284,7 @@ def main(odom_pub_1, odom_pub_2, L, x0, initial):
         print("-----")
         print(np.linalg.norm(quat_check))
         print(np.dot(real, dual))
-
+        print(error_dual_filter[:, k])
         # Control Law Acados
         acados_ocp_solver.set(0, "lbx", X[:, k])
         acados_ocp_solver.set(0, "ubx", X[:, k])

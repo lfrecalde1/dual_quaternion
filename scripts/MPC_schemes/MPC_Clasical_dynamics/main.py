@@ -14,7 +14,7 @@ from nav_msgs.msg import Odometry
 from visualization_msgs.msg import Marker
 from functions import dualquat_from_pose_casadi
 from ode_acados import dualquat_trans_casadi, dualquat_quat_casadi, rotation_casadi, rotation_inverse_casadi, dual_velocity_casadi, dual_quat_casadi, velocities_from_twist_casadi
-from ode_acados import f_rk4_casadi_simple, noise, cost_quaternion_casadi, cost_translation_casadi
+from ode_acados import f_rk4_casadi_simple, noise, cost_quaternion_casadi, cost_translation_casadi, error_quat_aux_casadi
 from scipy.io import savemat
 from scipy.spatial.transform import Rotation as R
 
@@ -27,6 +27,7 @@ dual_twist = dual_velocity_casadi()
 f_rk4 = f_rk4_casadi_simple()
 cost_quaternion = cost_quaternion_casadi()
 cost_translation = cost_translation_casadi()
+error_dual_f = error_quat_aux_casadi()
 
 import os
 script_dir = os.path.dirname(__file__)
@@ -209,6 +210,7 @@ def main(ts: float, t_f: float, t_N: float, x_0: np.ndarray, L: list, odom_pub_1
     # KKT conditions
     kkt_values = np.zeros((4, t.shape[0] - N_prediction), dtype=np.double)
     sqp_iteration = np.zeros((1, t.shape[0] - N_prediction), dtype=np.double)
+    error_quat_no_filter = np.zeros((4, t.shape[0] - N_prediction), dtype=np.double)
 
     # Loop simulation
     for k in range(0, t.shape[0] - N_prediction):
@@ -221,6 +223,7 @@ def main(ts: float, t_f: float, t_N: float, x_0: np.ndarray, L: list, odom_pub_1
         orientation_cost[:, k] = cost_quaternion(xref[6:10, k], x[6:10, k])
         translation_cost[:, k] = cost_translation(xref[0:3, k], x[0:3, k])
         total_cost[:, k] = orientation_cost[:, k] + translation_cost[:, k]
+        error_quat_no_filter[:, k] = np.array(error_dual_f(xref[6:10, k], x[6:10, k])).reshape((4, ))
         # Control Law Acados
         acados_ocp_solver.set(0, "lbx", x[:, k])
         acados_ocp_solver.set(0, "ubx", x[:, k])
@@ -249,6 +252,7 @@ def main(ts: float, t_f: float, t_N: float, x_0: np.ndarray, L: list, odom_pub_1
         print(initial)
         kkt_values[:, k]  = acados_ocp_solver.get_stats('residuals')
         sqp_iteration[:, k] = acados_ocp_solver.get_stats('sqp_iter')
+        print(error_quat_no_filter[:, k])
         # compute gradient
         #gradient = acados_ocp_solver.print_statistics()
         #print(gradient)
@@ -366,7 +370,7 @@ if __name__ == '__main__':
         # Initial conditions of the system
         X_total = []
         X_total_aux = []
-        number_experiments = 30
+        number_experiments = 100
         max_position = 4
         min_position = -4
 
