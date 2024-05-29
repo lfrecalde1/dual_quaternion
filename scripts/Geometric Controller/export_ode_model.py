@@ -3,6 +3,174 @@ from acados_template import AcadosModel
 from casadi import Function, MX, vertcat, sin, cos
 import numpy as np
 import casadi as ca
+def quatTorot_c(quat):
+    # Function to transform a quaternion to a rotational matrix
+    # INPUT
+    # quat                                                       - unit quaternion
+    # OUTPUT                                     
+    # Q                                                          - rotational matrix
+
+    # Normalized quaternion
+    q = quat
+    #q = q/(q.T@q)
+
+
+    q0 = q[0]
+    q1 = q[1]
+    q2 = q[2]
+    q3 = q[3]
+
+    Q = ca.vertcat(
+        ca.horzcat(q0**2+q1**2-q2**2-q3**2, 2*(q1*q2-q0*q3), 2*(q1*q3+q0*q2)),
+        ca.horzcat(2*(q1*q2+q0*q3), q0**2+q2**2-q1**2-q3**2, 2*(q2*q3-q0*q1)),
+        ca.horzcat(2*(q1*q3-q0*q2), 2*(q2*q3+q0*q1), q0**2+q3**2-q1**2-q2**2))
+
+    return Q
+def rotation_matrix_error_c():
+    # Desired Quaternion
+    qd = ca.MX.sym('qd', 4, 1)
+
+    # Current quaternion
+    q = ca.MX.sym('q', 4, 1)
+
+    Rd = quatTorot_c(qd)
+    R = quatTorot_c(q)
+
+    error_matrix = Rd.T@R
+    f_error_matrix = Function('f_error_matrix', [qd, q], [error_matrix])
+
+    return f_error_matrix
+
+def Ad_c():
+    # Function that enables the rotation of a vector using quaternions
+
+    # Creation of the symbolic variables for the quaternion and the vector
+    quat_aux_1 = ca.MX.sym('quat_aux_1', 4, 1)
+    vector_aux_1 = ca.MX.sym('vector_aux_1', 3, 1)
+
+    # Defining the pure quaternion based on the vector information
+    vector = ca.vertcat(0.0, vector_aux_1)
+
+    # Compute conjugate of the quaternion
+    quat = quat_aux_1
+    quat_c = ca.vertcat(quat[0, 0], -quat[1, 0], -quat[2, 0], -quat[3, 0])
+
+    # v' = q x v x q*
+    # Rotation to the inertial frame
+
+    H_plus_q = ca.vertcat(ca.horzcat(quat[0, 0], -quat[1, 0], -quat[2, 0], -quat[3, 0]),
+                                ca.horzcat(quat[1, 0], quat[0, 0], -quat[3, 0], quat[2, 0]),
+                                ca.horzcat(quat[2, 0], quat[3, 0], quat[0, 0], -quat[1, 0]),
+                                ca.horzcat(quat[3, 0], -quat[2, 0], quat[1, 0], quat[0, 0]))
+
+    # Computing the first multiplication
+    aux_value = H_plus_q@vector
+
+    # Multiplication by the conjugate part
+    H_plus_aux = ca.vertcat(ca.horzcat(aux_value[0, 0], -aux_value[1, 0], -aux_value[2, 0], -aux_value[3, 0]),
+                                ca.horzcat(aux_value[1, 0], aux_value[0, 0], -aux_value[3, 0], aux_value[2, 0]),
+                                ca.horzcat(aux_value[2, 0], aux_value[3, 0], aux_value[0, 0], -aux_value[1, 0]),
+                                ca.horzcat(aux_value[3, 0], -aux_value[2, 0], aux_value[1, 0], aux_value[0, 0]))
+
+    # Computing the vector rotate respect the quaternion
+    vector_i = H_plus_aux@quat_c
+
+    # Create function
+    f_ad =  ca.Function('f_ad', [quat_aux_1, vector_aux_1], [vector_i[1:4, 0]])
+    return f_ad
+
+def Ad_quat(q, v):
+    # Function that enables the rotation of a vector using quaternions
+
+    # Creation of the symbolic variables for the quaternion and the vector
+    quat_aux_1 = q
+    vector_aux_1 = v
+
+    # Defining the pure quaternion based on the vector information
+    vector = ca.vertcat(0.0, vector_aux_1)
+
+    # Compute conjugate of the quaternion
+    quat = quat_aux_1
+    quat_c = ca.vertcat(quat[0, 0], -quat[1, 0], -quat[2, 0], -quat[3, 0])
+
+    # v' = q x v x q*
+    # Rotation to the inertial frame
+
+    H_plus_q = ca.vertcat(ca.horzcat(quat[0, 0], -quat[1, 0], -quat[2, 0], -quat[3, 0]),
+                                ca.horzcat(quat[1, 0], quat[0, 0], -quat[3, 0], quat[2, 0]),
+                                ca.horzcat(quat[2, 0], quat[3, 0], quat[0, 0], -quat[1, 0]),
+                                ca.horzcat(quat[3, 0], -quat[2, 0], quat[1, 0], quat[0, 0]))
+
+    # Computing the first multiplication
+    aux_value = H_plus_q@vector
+
+    # Multiplication by the conjugate part
+    H_plus_aux = ca.vertcat(ca.horzcat(aux_value[0, 0], -aux_value[1, 0], -aux_value[2, 0], -aux_value[3, 0]),
+                                ca.horzcat(aux_value[1, 0], aux_value[0, 0], -aux_value[3, 0], aux_value[2, 0]),
+                                ca.horzcat(aux_value[2, 0], aux_value[3, 0], aux_value[0, 0], -aux_value[1, 0]),
+                                ca.horzcat(aux_value[3, 0], -aux_value[2, 0], aux_value[1, 0], aux_value[0, 0]))
+
+    # Computing the vector rotate respect the quaternion
+    vector_i = H_plus_aux@quat_c
+
+    return vector_i[1:4, 0]
+
+def quaternion_error_c():
+    # Desired Quaternion
+    qd = ca.MX.sym('qd', 4, 1)
+
+    # Current quaternion
+    q = ca.MX.sym('q', 4, 1)
+
+    qd_conjugate = ca.vertcat(qd[0, 0], -qd[1, 0], -qd[2, 0], -qd[3, 0])
+    quat_d_data = qd_conjugate[0:4, 0]
+    quaternion = q[0:4, 0]
+
+    H_r_plus = ca.vertcat(ca.horzcat(quat_d_data[0, 0], -quat_d_data[1, 0], -quat_d_data[2, 0], -quat_d_data[3, 0]),
+                                ca.horzcat(quat_d_data[1, 0], quat_d_data[0, 0], -quat_d_data[3, 0], quat_d_data[2, 0]),
+                                ca.horzcat(quat_d_data[2, 0], quat_d_data[3, 0], quat_d_data[0, 0], -quat_d_data[1, 0]),
+                                ca.horzcat(quat_d_data[3, 0], -quat_d_data[2, 0], quat_d_data[1, 0], quat_d_data[0, 0]))
+
+    q_e_aux = H_r_plus @ quaternion
+    f_error_quat = Function('f_error_quat', [qd, q], [q_e_aux])
+    return f_error_quat
+
+def quaternion_conjugate_c():
+    # Desired Quaternion
+    qd = ca.MX.sym('qd', 4, 1)
+    qd_conjugate = ca.vertcat(qd[0, 0], -qd[1, 0], -qd[2, 0], -qd[3, 0])
+    f_conjugate_quat = Function('f_conjugate_quat', [qd], [qd_conjugate])
+    return f_conjugate_quat
+
+def quaternion_conjugate(qd):
+    # Desired Quaternion
+    qd_conjugate = ca.vertcat(qd[0, 0], -qd[1, 0], -qd[2, 0], -qd[3, 0])
+    return qd_conjugate
+
+def quaternion_error(qd, q):
+    qd_conjugate = ca.vertcat(qd[0, 0], -qd[1, 0], -qd[2, 0], -qd[3, 0])
+    quat_d_data = qd_conjugate[0:4, 0]
+    quaternion = q[0:4, 0]
+
+    H_r_plus = ca.vertcat(ca.horzcat(quat_d_data[0, 0], -quat_d_data[1, 0], -quat_d_data[2, 0], -quat_d_data[3, 0]),
+                                ca.horzcat(quat_d_data[1, 0], quat_d_data[0, 0], -quat_d_data[3, 0], quat_d_data[2, 0]),
+                                ca.horzcat(quat_d_data[2, 0], quat_d_data[3, 0], quat_d_data[0, 0], -quat_d_data[1, 0]),
+                                ca.horzcat(quat_d_data[3, 0], -quat_d_data[2, 0], quat_d_data[1, 0], quat_d_data[0, 0]))
+
+    q_e_aux = H_r_plus @ quaternion
+    return q_e_aux
+
+def ln_quaternion_c():
+    # Current quaternion
+    q = ca.MX.sym('q', 4, 1)
+
+    norm = ca.norm_2(q[1:4] + ca.np.finfo(np.float64).eps)
+    angle = ca.atan2(norm, q[0])
+
+    ln_quaternion = ca.vertcat((1/2)*angle*q[1, 0]/norm, (1/2)*angle*q[2, 0]/norm, (1/2)*angle*q[3, 0]/norm)
+
+    f_ln_quat = Function('f_ln_matrix', [q], [ln_quaternion])
+    return f_ln_quat
 
 def quatdot_c(quat, omega):
     # Quaternion evolution guaranteeing norm 1 (Improve this section)
@@ -92,7 +260,7 @@ def quadrotorModel(L: list)-> AcadosModel:
     qdot = quatdot_c(quat, omega)
     aux = J@omega
     aux_cross = ca.cross(omega, aux)
-    omega_dot = ca.inv(J)@(u[1:3] - aux_cross)
+    omega_dot = ca.inv(J)@(u - aux_cross)
 
     qw_d = MX.sym('qw_d')
     q1_d = MX.sym('q1_d')
@@ -136,7 +304,7 @@ def quadrotorModel(L: list)-> AcadosModel:
     model.z = z
     model.p = p
     model.name = model_name
-    return model, f_system, constraint, error_quaternion
+    return model, f_system, constraint, error_quaternion, Ad_quat, quaternion_conjugate, quaternion_error
 
 def error_quaternion(qd, q):
     qd_conjugate = ca.vertcat(qd[0, 0], -qd[1, 0], -qd[2, 0], -qd[3, 0])
@@ -152,17 +320,23 @@ def error_quaternion(qd, q):
 
     q_e_aux = H_r_plus @ quaternion
 
-    condition1 = q_e_aux[0, 0] > 0.0
+    #condition1 = q_e_aux[0, 0] > 0.0
 
-    # Define expressions for each condition
-    expr1 =  q_e_aux
-    expr2 = -q_e_aux
+    ### Define expressions for each condition
+    #expr1 =  q_e_aux
+    #expr2 = -q_e_aux
 
-    q_error = ca.if_else(condition1, expr1, expr2) 
+    #q_error = ca.if_else(condition1, expr1, expr2) 
+    q_error = q_e_aux
 
-    norm = ca.norm_2(q_error[1:4] + ca.np.finfo(np.float64).eps)
-    angle = ca.atan2(norm, q_error[0])
+    Q3_pose =  ca.DM.zeros(4, 1)
+    Q3_pose[0, 0] = 1.0
+    
+    q_e_ln = Q3_pose - q_error
 
-    ln_quaternion = ca.vertcat(0.0,  (1/2)*angle*q_error[1, 0]/norm, (1/2)*angle*q_error[2, 0]/norm, (1/2)*angle*q_error[3, 0]/norm)
+    #norm = ca.norm_2(q_error[1:4] + ca.np.finfo(np.float64).eps)
+    #angle = ca.atan2(norm, q_error[0])
 
-    return ln_quaternion
+    #ln_quaternion = ca.vertcat((1/2)*angle*q_error[1, 0]/norm, (1/2)*angle*q_error[2, 0]/norm, (1/2)*angle*q_error[3, 0]/norm)
+
+    return q_e_ln
