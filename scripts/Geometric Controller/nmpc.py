@@ -44,6 +44,12 @@ def create_ocp_solver(x0, N_horizon, t_horizon, tau_1_max, tau_1_min, tau_2_max,
     #Q[3, 3] = 2
     Q[1, 1] = 2
 
+    Q2 = MX.zeros(4, 4)
+    Q2[0, 0] = 2
+    Q2[2, 2] = 2
+    Q2[3, 3] = 2
+    Q2[1, 1] = 2
+
     J = MX.zeros(3, 3)
     J[0, 0] = L[0]
     J[1, 1] = L[1]
@@ -73,14 +79,19 @@ def create_ocp_solver(x0, N_horizon, t_horizon, tau_1_max, tau_1_min, tau_2_max,
     error_ln = ln(error_ori)
     error_ori_T = quaternion_error(q, q_d)
     aux_error = error_ori - error_ori_T
+    error_lie = ln(error_ori_T) - ln(error_ori)
 
 
     error_q_c = quaternion_conjugate(error_ori)
     error_dot = w - adjoint(error_q_c, w_d)
 
 
-    ocp.model.cost_expr_ext_cost = 1000*(error_ln.T @ Q @ error_ln) + 2*(error_dot.T @ error_dot) + (error_nominal_input.T @ R @ error_nominal_input)
-    ocp.model.cost_expr_ext_cost_e = 1000*(error_ln.T @ Q @error_ln)+ 2*(error_dot.T @ error_dot)
+    ocp.model.cost_expr_ext_cost = 1000*(error_ln.T @ Q @ error_ln) + 5*(error_dot.T @ error_dot) + (error_nominal_input.T @ R @ error_nominal_input)
+    ocp.model.cost_expr_ext_cost_e = 1000*(error_ln.T @ Q @error_ln)+ 5*(error_dot.T @ error_dot)
+
+    #ocp.model.cost_expr_ext_cost = 1000*(error_ln.T @ Q @ error_ln) + 2*(error_dot.T @ error_dot)+ (error_nominal_input.T @ R @ error_nominal_input)
+    #ocp.model.cost_expr_ext_cost_e =1000*(error_lie.T @ Q @error_lie)+ 10*(error_dot.T @ error_dot)
+
     #ocp.model.cost_expr_ext_cost = 1000*(aux_error.T @ Q @ aux_error) + 15*(error_dot.T @ error_dot) + (error_nominal_input.T @ R @ error_nominal_input)
     #ocp.model.cost_expr_ext_cost_e = 1000*(aux_error.T @ Q @ aux_error)+ 15*(error_dot.T @ error_dot)
 
@@ -124,7 +135,7 @@ def create_ocp_solver(x0, N_horizon, t_horizon, tau_1_max, tau_1_min, tau_2_max,
     ocp.solver_options.hessian_approx = "GAUSS_NEWTON"  
     ocp.solver_options.regularize_method = "CONVEXIFY"  
     ocp.solver_options.integrator_type = "IRK"
-    ocp.solver_options.nlp_solver_type = "SQP_RTI"
+    ocp.solver_options.nlp_solver_type = "SQP"
     ocp.solver_options.Tsim = ts
     ocp.solver_options.tf = t_horizon
 

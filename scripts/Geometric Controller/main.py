@@ -304,7 +304,7 @@ def main(ts: float, t_f: float, t_N: float, x_0: np.ndarray, L: list, odom_pub_1
         norm_orientation_2[:, k] = np.linalg.norm(error_r3_2)
 
         # Control Law
-        u[:, k] = control_law_S3(x_d[:, k], x[:, k], L)
+        u[:, k] = control_law_SO3(x_d[:, k], x[:, k], L)
         #u2[:, k] = control_law_S3(x_d[:, k], x2[:, k], L)
 
         # Control Law Acados
@@ -408,11 +408,11 @@ if __name__ == '__main__':
         for i_random in range(number_experiments):
             omega_0 = np.array([0.0, 0.0, 0.0], dtype=np.double)
             #angle_0, axis_0 = get_random_quaternion()
-            #quat_0 = np.array([ramdon_quaternions[i_random, 3], ramdon_quaternions[i_random, 0], ramdon_quaternions[i_random, 1], ramdon_quaternions[i_random, 2]])
+            quat_0 = np.array([ramdon_quaternions[i_random, 3], ramdon_quaternions[i_random, 0], ramdon_quaternions[i_random, 1], ramdon_quaternions[i_random, 2]])
             #quat_0 = np.array([1, 0.0, 0.0, 0.0])
             theta_0 = 0.99*np.pi
             n_0 = np.array([0.0, 0.0, 1.0])
-            quat_0 = np.hstack([np.cos(theta_0 / 2), np.sin(theta_0 / 2) * np.array(n_0)])
+            #quat_0 = np.hstack([np.cos(theta_0 / 2), np.sin(theta_0 / 2) * np.array(n_0)])
             x = np.hstack((quat_0, omega_0))
             X_total.append(x)
         
