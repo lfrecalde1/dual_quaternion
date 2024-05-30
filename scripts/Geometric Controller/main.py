@@ -304,7 +304,7 @@ def main(ts: float, t_f: float, t_N: float, x_0: np.ndarray, L: list, odom_pub_1
         norm_orientation_2[:, k] = np.linalg.norm(error_r3_2)
 
         # Control Law
-        u[:, k] = control_law_SO3(x_d[:, k], x[:, k], L)
+        u[:, k] = control_law_S3(x_d[:, k], x[:, k], L)
         #u2[:, k] = control_law_S3(x_d[:, k], x2[:, k], L)
 
         # Control Law Acados
@@ -368,13 +368,13 @@ def main(ts: float, t_f: float, t_N: float, x_0: np.ndarray, L: list, odom_pub_1
     plot_cost_orientation_rotational(fig11, ax11, norm_orientation_1, t, "Cost Total R "+ str(initial), folder_path)
     
     fig12, ax12  = fancy_plots_1()
-    plot_cost_orientation_quat(fig12, ax12, norm_orientation_2, t, "Cost Total Quat "+ str(initial), folder_path)
+    plot_cost_orientation_quat(fig12, ax12, norm_orientation_2, t, "Cost Total Quat Lie"+ str(initial), folder_path)
 
     fig13, ax13, ax23, ax33 = fancy_plots_3()
     plot_control_actions_angular(fig13, ax13, ax23, ax33, u, t, "Control Actions of the System R "+ str(initial), folder_path)
 
     fig14, ax14, ax24, ax34 = fancy_plots_3()
-    plot_control_actions_angular(fig14, ax14, ax24, ax34, u2, t, "Control Actions of the System Quat "+ str(initial), folder_path)
+    plot_control_actions_angular(fig14, ax14, ax24, ax34, u2, t, "Control Actions of the System Quat Lie"+ str(initial), folder_path)
 
 
 if __name__ == '__main__':

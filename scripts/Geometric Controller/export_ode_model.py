@@ -172,6 +172,15 @@ def ln_quaternion_c():
     f_ln_quat = Function('f_ln_matrix', [q], [ln_quaternion])
     return f_ln_quat
 
+def ln_quaternion(q):
+    # Current quaternion
+
+    norm = ca.norm_2(q[1:4] + ca.np.finfo(np.float64).eps)
+    angle = ca.atan2(norm, q[0])
+
+    ln_quaternion = ca.vertcat((1/2)*angle*q[1, 0]/norm, (1/2)*angle*q[2, 0]/norm, (1/2)*angle*q[3, 0]/norm)
+
+    return ln_quaternion
 def quatdot_c(quat, omega):
     # Quaternion evolution guaranteeing norm 1 (Improve this section)
     # INPUT
@@ -304,7 +313,7 @@ def quadrotorModel(L: list)-> AcadosModel:
     model.z = z
     model.p = p
     model.name = model_name
-    return model, f_system, constraint, error_quaternion, Ad_quat, quaternion_conjugate, quaternion_error
+    return model, f_system, constraint, error_quaternion, Ad_quat, quaternion_conjugate, quaternion_error, ln_quaternion
 
 def error_quaternion(qd, q):
     qd_conjugate = ca.vertcat(qd[0, 0], -qd[1, 0], -qd[2, 0], -qd[3, 0])

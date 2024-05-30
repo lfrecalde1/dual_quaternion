@@ -21,7 +21,7 @@ def create_ocp_solver(x0, N_horizon, t_horizon, tau_1_max, tau_1_min, tau_2_max,
     ocp = AcadosOcp()
 
     # Model of the system
-    model, f_d, constraint, error_quaternion, adjoint, quaternion_conjugate, quaternion_error = quadrotorModel(L)
+    model, f_d, constraint, error_quaternion, adjoint, quaternion_conjugate, quaternion_error, ln = quadrotorModel(L)
 
     # Constructing the optimal control problem
     ocp.model = model
@@ -38,10 +38,10 @@ def create_ocp_solver(x0, N_horizon, t_horizon, tau_1_max, tau_1_min, tau_2_max,
     ocp.dims.N = N_horizon
 
     # Gain matrices position error
-    Q = MX.zeros(4, 4)
+    Q = MX.zeros(3, 3)
     Q[0, 0] = 2
     Q[2, 2] = 2
-    Q[3, 3] = 2
+    #Q[3, 3] = 2
     Q[1, 1] = 2
 
     J = MX.zeros(3, 3)
@@ -70,6 +70,7 @@ def create_ocp_solver(x0, N_horizon, t_horizon, tau_1_max, tau_1_min, tau_2_max,
     w = model.x[4:7]
 
     error_ori = quaternion_error(q_d, q)
+    error_ln = ln(error_ori)
     error_ori_T = quaternion_error(q, q_d)
     aux_error = error_ori - error_ori_T
 
@@ -78,8 +79,10 @@ def create_ocp_solver(x0, N_horizon, t_horizon, tau_1_max, tau_1_min, tau_2_max,
     error_dot = w - adjoint(error_q_c, w_d)
 
 
-    ocp.model.cost_expr_ext_cost = 1000*(aux_error.T @ Q @ aux_error) + 10*(error_dot.T @ error_dot) + (error_nominal_input.T @ R @ error_nominal_input)
-    ocp.model.cost_expr_ext_cost_e = 1000*(error_ori.T @ Q @error_ori)+ 10*(error_dot.T @ error_dot)
+    ocp.model.cost_expr_ext_cost = 1000*(error_ln.T @ Q @ error_ln) + 2*(error_dot.T @ error_dot) + (error_nominal_input.T @ R @ error_nominal_input)
+    ocp.model.cost_expr_ext_cost_e = 1000*(error_ln.T @ Q @error_ln)+ 2*(error_dot.T @ error_dot)
+    #ocp.model.cost_expr_ext_cost = 1000*(aux_error.T @ Q @ aux_error) + 15*(error_dot.T @ error_dot) + (error_nominal_input.T @ R @ error_nominal_input)
+    #ocp.model.cost_expr_ext_cost_e = 1000*(aux_error.T @ Q @ aux_error)+ 15*(error_dot.T @ error_dot)
 
 
     # Auxiliary variable initialization
@@ -121,7 +124,7 @@ def create_ocp_solver(x0, N_horizon, t_horizon, tau_1_max, tau_1_min, tau_2_max,
     ocp.solver_options.hessian_approx = "GAUSS_NEWTON"  
     ocp.solver_options.regularize_method = "CONVEXIFY"  
     ocp.solver_options.integrator_type = "IRK"
-    ocp.solver_options.nlp_solver_type = "SQP"
+    ocp.solver_options.nlp_solver_type = "SQP_RTI"
     ocp.solver_options.Tsim = ts
     ocp.solver_options.tf = t_horizon
 
