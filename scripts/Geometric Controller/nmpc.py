@@ -21,7 +21,7 @@ def create_ocp_solver(x0, N_horizon, t_horizon, tau_1_max, tau_1_min, tau_2_max,
     ocp = AcadosOcp()
 
     # Model of the system
-    model, f_d, constraint, error_quaternion, adjoint, quaternion_conjugate, quaternion_error, ln = quadrotorModel(L)
+    model, f_d, constraint, adjoint, quaternion_conjugate, quaternion_error, ln = quadrotorModel(L)
 
     # Constructing the optimal control problem
     ocp.model = model
@@ -41,22 +41,7 @@ def create_ocp_solver(x0, N_horizon, t_horizon, tau_1_max, tau_1_min, tau_2_max,
     Q = MX.zeros(3, 3)
     Q[0, 0] = 2
     Q[2, 2] = 2
-    #Q[3, 3] = 2
     Q[1, 1] = 2
-
-    Q2 = MX.zeros(4, 4)
-    Q2[0, 0] = 2
-    Q2[2, 2] = 2
-    Q2[3, 3] = 2
-    Q2[1, 1] = 2
-
-    I = MX.zeros(4, 1)
-    I[0, 0] = 1
-
-    J = MX.zeros(3, 3)
-    J[0, 0] = L[0]
-    J[1, 1] = L[1]
-    J[2, 2] = L[2]
 
     # Control effort using gain matrices
     R = MX.zeros(3, 3)
@@ -80,10 +65,10 @@ def create_ocp_solver(x0, N_horizon, t_horizon, tau_1_max, tau_1_min, tau_2_max,
 
     error_ori = quaternion_error(q_d, q)
     error_ln = ln(error_ori)
-    error_ori_T = quaternion_error(q, q_d)
-    aux_error = error_ori - error_ori_T
-    error_lie = ln(error_ori_T) - ln(error_ori)
-    error_2 = (1/2)*(I - error_ori)
+    #error_ori_T = quaternion_error(q, q_d)
+    #aux_error = error_ori - error_ori_T
+    #error_lie = ln(error_ori_T) - ln(error_ori)
+    #error_2 = (1/2)*(I - error_ori)
 
 
     error_q_c = quaternion_conjugate(error_ori)
@@ -92,13 +77,6 @@ def create_ocp_solver(x0, N_horizon, t_horizon, tau_1_max, tau_1_min, tau_2_max,
 
     ocp.model.cost_expr_ext_cost = 1000*(error_ln.T @ Q @ error_ln) + 1*(error_dot.T @ error_dot) + 5*error_ln.T@error_dot + (error_nominal_input.T @ R @ error_nominal_input)
     ocp.model.cost_expr_ext_cost_e = 3000*(error_ln.T @ Q @error_ln)+ 5*(error_dot.T @ error_dot) + 5*error_ln.T@error_dot
-
-    #ocp.model.cost_expr_ext_cost = 1000*(error_ln.T @ Q @ error_ln) + 2*(error_dot.T @ error_dot)+ (error_nominal_input.T @ R @ error_nominal_input)
-    #ocp.model.cost_expr_ext_cost_e =1000*(error_lie.T @ Q @error_lie)+ 10*(error_dot.T @ error_dot)
-
-    #ocp.model.cost_expr_ext_cost = 1000*(aux_error.T @ Q @ aux_error) + 15*(error_dot.T @ error_dot) + (error_nominal_input.T @ R @ error_nominal_input)
-    #ocp.model.cost_expr_ext_cost_e = 1000*(aux_error.T @ Q @ aux_error)+ 15*(error_dot.T @ error_dot)
-
 
     # Auxiliary variable initialization
     ocp.parameter_values = np.zeros(nx + nu)

@@ -480,8 +480,14 @@ void quadrotor_acados_create_5_set_nlp_in(quadrotor_solver_capsule* capsule, con
     double* lbx0 = lubx0;
     double* ubx0 = lubx0 + NBX0;
     // change only the non-zero elements:
-    lbx0[0] = 1;
-    ubx0[0] = 1;
+    lbx0[0] = 0.6964464431835568;
+    ubx0[0] = 0.6964464431835568;
+    lbx0[1] = 0.4809708797976185;
+    ubx0[1] = 0.4809708797976185;
+    lbx0[2] = 0.08293056080135307;
+    ubx0[2] = 0.08293056080135307;
+    lbx0[3] = 0.5260721306521103;
+    ubx0[3] = 0.5260721306521103;
 
     ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, 0, "idxbx", idxbx0);
     ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, 0, "lbx", lbx0);
@@ -691,7 +697,10 @@ void quadrotor_acados_create_7_set_nlp_out(quadrotor_solver_capsule* capsule)
 
     // initialize with x0
     
-    x0[0] = 1;
+    x0[0] = 0.6964464431835568;
+    x0[1] = 0.4809708797976185;
+    x0[2] = 0.08293056080135307;
+    x0[3] = 0.5260721306521103;
 
 
     double* u0 = xu0 + NX;

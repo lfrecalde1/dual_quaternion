@@ -175,12 +175,17 @@ def ln_quaternion_c():
 def ln_quaternion(q):
     # Current quaternion
 
-    norm = ca.norm_2(q[1:4] + ca.np.finfo(np.float64).eps)
-    angle = ca.atan2(norm, q[0])
+    #norm = ca.norm_2(q[1:4] + ca.np.finfo(np.float64).eps)
+    #angle = ca.atan2(norm, q[0])
 
-    ln_quaternion = ca.vertcat((1/2)*angle*q[1, 0]/norm, (1/2)*angle*q[2, 0]/norm, (1/2)*angle*q[3, 0]/norm)
+    #ln_quaternion = ca.vertcat((1/2)*angle*q[1, 0]/norm, (1/2)*angle*q[2, 0]/norm, (1/2)*angle*q[3, 0]/norm)
 
-    return ln_quaternion
+    qv = q[1:4]
+    qw = q[0]
+
+    ln_taylor = 2 * (qv/qw)*(1 - (ca.norm_2(qv)/3*qw**2))
+    #return ln_quaternion
+    return ln_taylor
 def quatdot_c(quat, omega):
     # Quaternion evolution guaranteeing norm 1 (Improve this section)
     # INPUT
@@ -313,39 +318,4 @@ def quadrotorModel(L: list)-> AcadosModel:
     model.z = z
     model.p = p
     model.name = model_name
-    return model, f_system, constraint, error_quaternion, Ad_quat, quaternion_conjugate, quaternion_error, ln_quaternion
-
-def error_quaternion(qd, q):
-    qd_conjugate = ca.vertcat(qd[0, 0], -qd[1, 0], -qd[2, 0], -qd[3, 0])
-    quat_d_data = qd_conjugate[0:4, 0]
-    quaternion = q[0:4, 0]
-
-    H_r_plus = ca.vertcat(ca.horzcat(quat_d_data[0, 0], -quat_d_data[1, 0], -quat_d_data[2, 0], -quat_d_data[3, 0]),
-                                ca.horzcat(quat_d_data[1, 0], quat_d_data[0, 0], -quat_d_data[3, 0], quat_d_data[2, 0]),
-                                ca.horzcat(quat_d_data[2, 0], quat_d_data[3, 0], quat_d_data[0, 0], -quat_d_data[1, 0]),
-                                ca.horzcat(quat_d_data[3, 0], -quat_d_data[2, 0], quat_d_data[1, 0], quat_d_data[0, 0]))
-
-
-
-    q_e_aux = H_r_plus @ quaternion
-
-    #condition1 = q_e_aux[0, 0] > 0.0
-
-    ### Define expressions for each condition
-    #expr1 =  q_e_aux
-    #expr2 = -q_e_aux
-
-    #q_error = ca.if_else(condition1, expr1, expr2) 
-    q_error = q_e_aux
-
-    Q3_pose =  ca.DM.zeros(4, 1)
-    Q3_pose[0, 0] = 1.0
-    
-    q_e_ln = Q3_pose - q_error
-
-    #norm = ca.norm_2(q_error[1:4] + ca.np.finfo(np.float64).eps)
-    #angle = ca.atan2(norm, q_error[0])
-
-    #ln_quaternion = ca.vertcat((1/2)*angle*q_error[1, 0]/norm, (1/2)*angle*q_error[2, 0]/norm, (1/2)*angle*q_error[3, 0]/norm)
-
-    return q_e_ln
+    return model, f_system, constraint, Ad_quat, quaternion_conjugate, quaternion_error, ln_quaternion

@@ -143,7 +143,7 @@ void quadrotor_acados_create_1_set_plan(ocp_nlp_plan_t* nlp_solver_plan, const i
     ************************************************/
     nlp_solver_plan->nlp_solver = SQP;
 
-    nlp_solver_plan->ocp_qp_solver_plan.qp_solver = FULL_CONDENSING_HPIPM;
+    nlp_solver_plan->ocp_qp_solver_plan.qp_solver = PARTIAL_CONDENSING_HPIPM;
 
     nlp_solver_plan->nlp_cost[0] = EXTERNAL;
     for (int i = 1; i < N; i++)
@@ -486,20 +486,20 @@ void quadrotor_acados_create_5_set_nlp_in(quadrotor_solver_capsule* capsule, con
     double* lbx0 = lubx0;
     double* ubx0 = lubx0 + NBX0;
     // change only the non-zero elements:
-    lbx0[0] = 3.440419389966636;
-    ubx0[0] = 3.440419389966636;
-    lbx0[1] = -3.5720189186028364;
-    ubx0[1] = -3.5720189186028364;
-    lbx0[2] = -2.73555699425211;
-    ubx0[2] = -2.73555699425211;
-    lbx0[6] = -0.2036213534826989;
-    ubx0[6] = -0.2036213534826989;
-    lbx0[7] = 0.41060424936814266;
-    ubx0[7] = 0.41060424936814266;
-    lbx0[8] = -0.8747561776236683;
-    ubx0[8] = -0.8747561776236683;
-    lbx0[9] = 0.15730265260295817;
-    ubx0[9] = 0.15730265260295817;
+    lbx0[0] = -2.442351860854142;
+    ubx0[0] = -2.442351860854142;
+    lbx0[1] = 2.923701610675806;
+    ubx0[1] = 2.923701610675806;
+    lbx0[2] = 2.4573932630027766;
+    ubx0[2] = 2.4573932630027766;
+    lbx0[6] = -0.7685121734525403;
+    ubx0[6] = -0.7685121734525403;
+    lbx0[7] = -0.012470922690168832;
+    ubx0[7] = -0.012470922690168832;
+    lbx0[8] = 0.35215952098664594;
+    ubx0[8] = 0.35215952098664594;
+    lbx0[9] = 0.534057288238785;
+    ubx0[9] = 0.534057288238785;
 
     ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, 0, "idxbx", idxbx0);
     ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, 0, "lbx", lbx0);
@@ -678,6 +678,11 @@ void quadrotor_acados_create_6_set_opts(quadrotor_solver_capsule* capsule)
     ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "levenberg_marquardt", &levenberg_marquardt);
 
     /* options QP solver */
+    int qp_solver_cond_N;
+
+    const int qp_solver_cond_N_ori = 4;
+    qp_solver_cond_N = N < qp_solver_cond_N_ori ? N : qp_solver_cond_N_ori; // use the minimum value here
+    ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "qp_cond_N", &qp_solver_cond_N);
 
     int nlp_solver_ext_qp_res = 0;
     ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "ext_qp_res", &nlp_solver_ext_qp_res);
@@ -709,6 +714,12 @@ void quadrotor_acados_create_6_set_opts(quadrotor_solver_capsule* capsule)
 
 int print_level = 0;
     ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "print_level", &print_level);
+    int qp_solver_cond_ric_alg = 1;
+    ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "qp_cond_ric_alg", &qp_solver_cond_ric_alg);
+
+    int qp_solver_ric_alg = 1;
+    ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "qp_ric_alg", &qp_solver_ric_alg);
+
 
     int ext_cost_num_hess = 0;
     for (int i = 0; i < N; i++)
@@ -735,13 +746,13 @@ void quadrotor_acados_create_7_set_nlp_out(quadrotor_solver_capsule* capsule)
 
     // initialize with x0
     
-    x0[0] = 3.440419389966636;
-    x0[1] = -3.5720189186028364;
-    x0[2] = -2.73555699425211;
-    x0[6] = -0.2036213534826989;
-    x0[7] = 0.41060424936814266;
-    x0[8] = -0.8747561776236683;
-    x0[9] = 0.15730265260295817;
+    x0[0] = -2.442351860854142;
+    x0[1] = 2.923701610675806;
+    x0[2] = 2.4573932630027766;
+    x0[6] = -0.7685121734525403;
+    x0[7] = -0.012470922690168832;
+    x0[8] = 0.35215952098664594;
+    x0[9] = 0.534057288238785;
 
 
     double* u0 = xu0 + NX;
@@ -837,10 +848,22 @@ int quadrotor_acados_create_with_discretization(quadrotor_solver_capsule* capsul
  */
 int quadrotor_acados_update_qp_solver_cond_N(quadrotor_solver_capsule* capsule, int qp_solver_cond_N)
 {
-    printf("\nacados_update_qp_solver_cond_N() failed, since no partial condensing solver is used!\n\n");
-    // Todo: what is an adequate behavior here?
-    exit(1);
-    return -1;
+    // 1) destroy solver
+    ocp_nlp_solver_destroy(capsule->nlp_solver);
+
+    // 2) set new value for "qp_cond_N"
+    const int N = capsule->nlp_solver_plan->N;
+    if(qp_solver_cond_N > N)
+        printf("Warning: qp_solver_cond_N = %d > N = %d\n", qp_solver_cond_N, N);
+    ocp_nlp_solver_opts_set(capsule->nlp_config, capsule->nlp_opts, "qp_cond_N", &qp_solver_cond_N);
+
+    // 3) continue with the remaining steps from quadrotor_acados_create_with_discretization(...):
+    // -> 8) create solver
+    capsule->nlp_solver = ocp_nlp_solver_create(capsule->nlp_config, capsule->nlp_dims, capsule->nlp_opts);
+
+    // -> 9) do precomputations
+    int status = quadrotor_acados_create_9_precompute(capsule);
+    return status;
 }
 
 
@@ -874,6 +897,14 @@ int quadrotor_acados_reset(quadrotor_solver_capsule* capsule, int reset_qp_solve
             ocp_nlp_set(nlp_config, nlp_solver, i, "z_guess", buffer);
         
         }
+    }
+    // get qp_status: if NaN -> reset memory
+    int qp_status;
+    ocp_nlp_get(capsule->nlp_config, capsule->nlp_solver, "qp_status", &qp_status);
+    if (reset_qp_solver_mem || (qp_status == 3))
+    {
+        // printf("\nin reset qp_status %d -> resetting QP memory\n", qp_status);
+        ocp_nlp_solver_reset_qp_memory(nlp_solver, nlp_in, nlp_out);
     }
 
     free(buffer);

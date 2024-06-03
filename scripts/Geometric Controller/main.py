@@ -129,8 +129,8 @@ def control_law_SO3(x_d, x, L):
 
     aux = np.cross(w, J@w)
     aux = aux.reshape((3, 1))
-    #law = aux - (1/2) * J@Kp @ vee(error-error_T) - J@Kv @ error_d
-    law = aux - (1/2) * J@Kp @ vee(logm(error)) - J@Kv @ error_d
+    law = aux - (1/2) * J@Kp @ vee(error-error_T) - J@Kv @ error_d
+    #law = aux - (1/2) * J@Kp @ vee(logm(error)) - J@Kv @ error_d
     law = np.array(law).reshape((3, ))
     return law
 
@@ -222,8 +222,8 @@ def main(ts: float, t_f: float, t_N: float, x_0: np.ndarray, L: list, odom_pub_1
     # Defining Desired Orientation
     theta_d = 0.0
     n_d = np.array([0.0, 0.0, 1.0])
-    #q_d = np.hstack([np.cos(theta_d / 2), np.sin(theta_d / 2) * np.array(n_d)])
-    q_d = np.array([0.0157, 0.5627, 0.2839, -0.7762])
+    q_d = np.hstack([np.cos(theta_d / 2), np.sin(theta_d / 2) * np.array(n_d)])
+    #q_d = np.array([0.0157, 0.5627, 0.2839, -0.7762])
 
     x_d = np.zeros((7, t.shape[0] + 1), dtype=np.double)
     x_d2 = np.zeros((7, t.shape[0] + 1), dtype=np.double)
@@ -401,7 +401,7 @@ if __name__ == '__main__':
         Jyy = 3.0
         Jzz = 5.0
         L = [Jxx, Jyy, Jzz]
-        number_experiments = 1
+        number_experiments = 3
         ramdon_quaternions = get_random_quaternion_complete(number_experiments)
 
         # Empty Matrix for my inital States
@@ -409,9 +409,9 @@ if __name__ == '__main__':
         for i_random in range(number_experiments):
             omega_0 = np.array([0.0, 0.0, 0.0], dtype=np.double)
             #angle_0, axis_0 = get_random_quaternion()
-            #quat_0 = np.array([ramdon_quaternions[i_random, 3], ramdon_quaternions[i_random, 0], ramdon_quaternions[i_random, 1], ramdon_quaternions[i_random, 2]])
-            quat_0 = np.array([1, 0.0, 0.0, 0.0])
-            theta_0 = 0.95*np.pi
+            quat_0 = np.array([ramdon_quaternions[i_random, 3], ramdon_quaternions[i_random, 0], ramdon_quaternions[i_random, 1], ramdon_quaternions[i_random, 2]])
+            #quat_0 = np.array([1, 0.0, 0.0, 0.0])
+            theta_0 = 0.99*np.pi
             n_0 = np.array([0.0, 0.0, 1.0])
             #quat_0 = np.hstack([np.cos(theta_0 / 2), np.sin(theta_0 / 2) * np.array(n_0)])
             x = np.hstack((quat_0, omega_0))

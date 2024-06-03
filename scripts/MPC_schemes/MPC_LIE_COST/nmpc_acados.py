@@ -12,7 +12,7 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
     ocp = AcadosOcp()
 
     # Model of the system
-    model, get_trans, get_quat, constraint, error_manifold, error_lie_2, error_quaternion, error_lie_norm, error_manifold_norm = quadrotorModel(L)
+    model, get_trans, get_quat, constraint, error_lie_2, error_quaternion = quadrotorModel(L)
 
     # Constructing the optimal control problem
     ocp.model = model
@@ -44,9 +44,6 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
     dual = model.x[0:8]
 
     error_total_lie = error_lie_2(dual_d, dual)
-    #error_total_lie_norm = error_lie_norm(dual_d, dual)
-    #error_total_manifold = error_manifold(dual_d, dual)
-    #error_total_manifold_norm = error_manifold_norm(dual_d, dual)
 
     # Inputs
     nominal_input = ocp.p[14:18]
@@ -65,20 +62,6 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
     Q_l[5, 5] = 1.6
     Q_l[6, 6] = 1.6
     Q_l[7, 7] = 1.6
-
-    Q_t = DM.zeros(8, 8)
-    Q_t[0, 0] = 1
-    Q_t[1, 1] = 1
-    Q_t[2, 2] = 1
-    Q_t[3, 3] = 1
-    Q_t[4, 4] = 2
-    Q_t[5, 5] = 2
-    Q_t[6, 6] = 2
-    Q_t[7, 7] = 2
-
-    #ocp.model.cost_expr_ext_cost = 10*(error_total_lie.T@Q_l@error_total_lie) + 1*(error_nominal_input.T @ R @ error_nominal_input) +1*(w.T@w) + 1*(v.T@v)
-
-    #ocp.model.cost_expr_ext_cost_e =  10*(error_total_lie.T@Q_l@error_total_lie) +1*(w.T@w) + 1*(v.T@v)
 
     ocp.model.cost_expr_ext_cost = 10*(error_total_lie.T@Q_l@error_total_lie) + 1*(error_nominal_input.T @ R @ error_nominal_input)
 
@@ -118,18 +101,12 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
     ocp.constraints.idxsh = np.array(range(nsh))
 #
     # Set options
-    ocp.solver_options.qp_solver = "FULL_CONDENSING_HPIPM" 
+    ocp.solver_options.qp_solver = "PARTIAL_CONDENSING_HPIPM" 
     ocp.solver_options.qp_solver_cond_N = N_horizon // 4
     ocp.solver_options.hessian_approx = "GAUSS_NEWTON"  
     ocp.solver_options.regularize_method = "CONVEXIFY"  
     ocp.solver_options.integrator_type = "IRK"
     ocp.solver_options.nlp_solver_type = "SQP"
     ocp.solver_options.Tsim = ts
-    #ocp.solver_options.sim_method_num_stages = 4
-    #ocp.solver_options.sim_method_num_steps = 1 # Verify the meaning of this value
-    #ocp.solver_options.nlp_solver_max_iter = 200
-    #ocp.solver_options.tol = 1e-4
     ocp.solver_options.tf = t_horizon
-    #ocp.solver_options.levenberg_marquardt = 1e-5
-    #ocp.solver_options.line_search_use_sufficient_descent
     return ocp

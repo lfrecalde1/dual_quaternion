@@ -291,154 +291,6 @@ def velocities_from_twist_casadi(twist = w_1d, dualquat = dual_1d):
     f_velocity = Function('f_velocity', [w_1d, dual_1d], [velocity])
     return f_velocity
 
-def error_manifold(qd, q):
-    qd_conjugate = ca.vertcat(qd[0], -qd[1], -qd[2], -qd[3], qd[4], -qd[5], -qd[6], -qd[7])
-    q_conjugate = ca.vertcat(q[0], -q[1], -q[2], -q[3], q[4], -q[5], -q[6], -q[7])
-    quat_d_data = qd[0:4]
-    dual_d_data =  qd[4:8]
-
-    H_r_plus = ca.vertcat(ca.horzcat(quat_d_data[0], -quat_d_data[1], -quat_d_data[2], -quat_d_data[3]),
-                                ca.horzcat(quat_d_data[1], quat_d_data[0], -quat_d_data[3], quat_d_data[2]),
-                                ca.horzcat(quat_d_data[2], quat_d_data[3], quat_d_data[0], -quat_d_data[1]),
-                                ca.horzcat(quat_d_data[3], -quat_d_data[2], quat_d_data[1], quat_d_data[0]))
-
-    H_d_plus = ca.vertcat(ca.horzcat(dual_d_data[0], -dual_d_data[1], -dual_d_data[2], -dual_d_data[3]),
-                                ca.horzcat(dual_d_data[1], dual_d_data[0], -dual_d_data[3], dual_d_data[2]),
-                                ca.horzcat(dual_d_data[2], dual_d_data[3], dual_d_data[0], -dual_d_data[1]),
-                                ca.horzcat(dual_d_data[3], -dual_d_data[2], dual_d_data[1], dual_d_data[0]))
-    zeros = ca.DM.zeros(4, 4)
-    Hplus = ca.vertcat(ca.horzcat(H_r_plus, zeros),
-                        ca.horzcat(H_d_plus, H_r_plus))
-
-
-    q_e_aux = Hplus @ q_conjugate
-    
-    condition1 = q_e_aux[0, 0] > 0.0
-
-    # Define expressions for each condition
-    expr1 =  q_e_aux
-    expr2 = -q_e_aux
-
-    q_error = ca.if_else(condition1, expr1, expr2) 
-    # Check shortest path
-
-    Q3_pose =  ca.DM.zeros(8, 1)
-    Q3_pose[0, 0] = 1.0
-    
-    q_e_ln = Q3_pose - q_error
-    return q_e_ln
-
-def error_manifold_norm(qd, q):
-    qd_conjugate = ca.vertcat(qd[0], -qd[1], -qd[2], -qd[3], qd[4], -qd[5], -qd[6], -qd[7])
-    q_conjugate = ca.vertcat(q[0], -q[1], -q[2], -q[3], q[4], -q[5], -q[6], -q[7])
-    quat_d_data = qd[0:4]
-    dual_d_data =  qd[4:8]
-
-    H_r_plus = ca.vertcat(ca.horzcat(quat_d_data[0], -quat_d_data[1], -quat_d_data[2], -quat_d_data[3]),
-                                ca.horzcat(quat_d_data[1], quat_d_data[0], -quat_d_data[3], quat_d_data[2]),
-                                ca.horzcat(quat_d_data[2], quat_d_data[3], quat_d_data[0], -quat_d_data[1]),
-                                ca.horzcat(quat_d_data[3], -quat_d_data[2], quat_d_data[1], quat_d_data[0]))
-
-    H_d_plus = ca.vertcat(ca.horzcat(dual_d_data[0], -dual_d_data[1], -dual_d_data[2], -dual_d_data[3]),
-                                ca.horzcat(dual_d_data[1], dual_d_data[0], -dual_d_data[3], dual_d_data[2]),
-                                ca.horzcat(dual_d_data[2], dual_d_data[3], dual_d_data[0], -dual_d_data[1]),
-                                ca.horzcat(dual_d_data[3], -dual_d_data[2], dual_d_data[1], dual_d_data[0]))
-    zeros = ca.DM.zeros(4, 4)
-    Hplus = ca.vertcat(ca.horzcat(H_r_plus, zeros),
-                        ca.horzcat(H_d_plus, H_r_plus))
-
-
-    q_e_aux = Hplus @ q_conjugate
-    
-    condition1 = q_e_aux[0, 0] > 0.0
-
-    # Define expressions for each condition
-    expr1 =  q_e_aux
-    expr2 = -q_e_aux
-
-    q_error = ca.if_else(condition1, expr1, expr2) 
-    # Check shortest path
-
-    Q3_pose =  ca.DM.zeros(8, 1)
-    Q3_pose[0, 0] = 1.0
-    
-    q_e_ln = Q3_pose - q_error
-    q_real = q_e_ln[0:4]
-    q_dual = q_e_ln[4:8]
-
-    norm_q_real = ca.norm_2(q_real)
-    norm_q_dual = ca.norm_2(q_dual)
-
-    condition1_norm = norm_q_real[0, 0] > 0.0
-
-    # Define expressions for each condition
-    expr1_norm =  norm_q_real + ca.fabs(ca.dot(q_real[0:4, 0], q_dual[0:4, 0]))/(2*norm_q_real)
-    expr2_norm = norm_q_dual
-
-    norm = ca.if_else(condition1_norm, expr1_norm, expr2_norm) 
-    return norm
-
-def error_lie_norm():
-    qd = ca.MX.sym('qd', 8, 1)
-    q = ca.MX.sym('q', 8, 1)
-    qd_conjugate = ca.vertcat(qd[0], -qd[1], -qd[2], -qd[3], qd[4], -qd[5], -qd[6], -qd[7])
-    quat_d_data = qd_conjugate[0:4]
-    dual_d_data =  qd_conjugate[4:8]
-
-    H_r_plus = ca.vertcat(ca.horzcat(quat_d_data[0], -quat_d_data[1], -quat_d_data[2], -quat_d_data[3]),
-                                ca.horzcat(quat_d_data[1], quat_d_data[0], -quat_d_data[3], quat_d_data[2]),
-                                ca.horzcat(quat_d_data[2], quat_d_data[3], quat_d_data[0], -quat_d_data[1]),
-                                ca.horzcat(quat_d_data[3], -quat_d_data[2], quat_d_data[1], quat_d_data[0]))
-
-    H_d_plus = ca.vertcat(ca.horzcat(dual_d_data[0], -dual_d_data[1], -dual_d_data[2], -dual_d_data[3]),
-                                ca.horzcat(dual_d_data[1], dual_d_data[0], -dual_d_data[3], dual_d_data[2]),
-                                ca.horzcat(dual_d_data[2], dual_d_data[3], dual_d_data[0], -dual_d_data[1]),
-                                ca.horzcat(dual_d_data[3], -dual_d_data[2], dual_d_data[1], dual_d_data[0]))
-    zeros = ca.DM.zeros(4, 4)
-    Hplus = ca.vertcat(ca.horzcat(H_r_plus, zeros),
-                        ca.horzcat(H_d_plus, H_r_plus))
-
-    q_e_aux = Hplus @ q
-    
-    #condition1 = q_e_aux[0, 0] > 0.0
-
-    # Define expressions for each condition
-    #expr1 =  q_e_aux
-    #expr2 = -q_e_aux
-
-    #q_error = ca.if_else(condition1, expr1, expr2) 
-    q_error = q_e_aux
-    # Check shortest path
-
-    q_error_real = q_error[0:4, 0]
-    q_error_real_c = ca.vertcat(q_error_real[0, 0], -q_error_real[1, 0], -q_error_real[2, 0], -q_error_real[3, 0])
-    q_error_dual = q_error[4:8, 0]
-
-    ## Real Part
-    norm = ca.norm_2(q_error_real[1:4] + ca.np.finfo(np.float64).eps)
-    angle = ca.atan2(norm, q_error_real[0])
-
-    ## Dual Part
-    H_error_dual_plus = ca.vertcat(ca.horzcat(q_error_dual[0, 0], -q_error_dual[1, 0], -q_error_dual[2, 0], -q_error_dual[3, 0]),
-                                ca.horzcat(q_error_dual[1, 0], q_error_dual[0, 0], -q_error_dual[3, 0], q_error_dual[2, 0]),
-                                ca.horzcat(q_error_dual[2, 0], q_error_dual[3, 0], q_error_dual[0, 0], -q_error_dual[1, 0]),
-                                ca.horzcat(q_error_dual[3, 0], -q_error_dual[2, 0], q_error_dual[1, 0], q_error_dual[0, 0]))
-
-    trans_error = 2 * H_error_dual_plus@q_error_real_c
-    # Computing log map
-    ln_quaternion = ca.vertcat(0.0,  (1/2)*angle*q_error_real[1, 0]/norm, (1/2)*angle*q_error_real[2, 0]/norm, (1/2)*angle*q_error_real[3, 0]/norm)
-    ln_trans = ca.vertcat(0.0, (1/2)*trans_error[1, 0], (1/2)*trans_error[2, 0], (1/2)*trans_error[3, 0])
-
-    #norm_ln_quaternion = ca.norm_2(ln_quaternion+ ca.np.finfo(np.float64).eps)
-    #norm_ln_trans = ca.norm_2(ln_trans+ ca.np.finfo(np.float64).eps)
-
-    q_e_ln = ca.vertcat(ln_quaternion, ln_trans)
-    norm_ln_quaternion = ca.norm_2(ln_quaternion)
-    norm_ln_trans = ca.norm_2(ln_trans)
-    norm = ca.norm_2(q_e_ln)
-    f_norm = Function('f_norm', [qd, q], [norm])
-    return f_norm
-
 def error_lie(qd, q):
     qd_conjugate = ca.vertcat(qd[0], -qd[1], -qd[2], -qd[3], qd[4], -qd[5], -qd[6], -qd[7])
     quat_d_data = qd_conjugate[0:4]
@@ -625,36 +477,6 @@ def error_lie_2(qd, q):
     q_e_ln = ca.vertcat(ln_quaternion, ln_trans)
     return q_e_ln
 
-def error_quaternion(qd, q):
-    qd_conjugate = ca.vertcat(qd[0, 0], -qd[1, 0], -qd[2, 0], -qd[3, 0], qd[4, 0], -qd[5, 0], -qd[6, 0], -qd[7, 0])
-    quat_d_data = qd_conjugate[0:4, 0]
-    quaternion = q[0:4, 0]
-
-    H_r_plus = ca.vertcat(ca.horzcat(quat_d_data[0, 0], -quat_d_data[1, 0], -quat_d_data[2, 0], -quat_d_data[3, 0]),
-                                ca.horzcat(quat_d_data[1, 0], quat_d_data[0, 0], -quat_d_data[3, 0], quat_d_data[2, 0]),
-                                ca.horzcat(quat_d_data[2, 0], quat_d_data[3, 0], quat_d_data[0, 0], -quat_d_data[1, 0]),
-                                ca.horzcat(quat_d_data[3, 0], -quat_d_data[2, 0], quat_d_data[1, 0], quat_d_data[0, 0]))
-
-
-
-    q_e_aux = H_r_plus @ quaternion
-    
-    condition1 = q_e_aux[0, 0] > 0.0
-
-    # Define expressions for each condition
-    expr1 =  q_e_aux[:, 0]
-    expr2 = -q_e_aux[:, 0]
-
-    # Check shortest path
-    q_error = ca.if_else(condition1, expr1, expr2) 
-
-    # Sux variable in roder to get a norm
-    q_3_aux = ca.DM([1.0, 0.0, 0.0, 0.0])
-    Q3_pose =  ca.vertcat(q_3_aux)
-    
-    q_e_ln = Q3_pose - q_error
-
-    return q_e_ln
 def dual_aceleraction_casadi(dual, omega, u, L):
     # Split Control Actions
     force = u[0, 0]
@@ -788,7 +610,7 @@ def quadrotorModel(L: list)-> AcadosModel:
     model.z = z
     model.p = p
     model.name = model_name
-    return model, get_trans, get_quat, constraint, error_manifold, error_lie, error_quaternion, error_lie_norm, error_manifold_norm
+    return model, get_trans, get_quat, constraint, error_lie
 
 def noise(x, noise):
     # Get position and quaternion
