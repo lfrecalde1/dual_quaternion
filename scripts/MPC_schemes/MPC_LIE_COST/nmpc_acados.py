@@ -12,7 +12,7 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
     ocp = AcadosOcp()
 
     # Model of the system
-    model, get_trans, get_quat, constraint, error_lie_2, error_quaternion = quadrotorModel(L)
+    model, get_trans, get_quat, constraint, error_lie_2, dual_error, ln, Ad, conjugate = quadrotorModel(L)
 
     # Constructing the optimal control problem
     ocp.model = model
@@ -44,28 +44,34 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
     dual = model.x[0:8]
 
     error_total_lie = error_lie_2(dual_d, dual)
+    error = dual_error(dual_d, dual)
+    error_c = conjugate(error)
+    ln_error = ln(error)
 
     # Inputs
     nominal_input = ocp.p[14:18]
     error_nominal_input = nominal_input - model.u[0:4]
 
     # Angular velocities
-    w = model.x[8:11]
-    v = model.x[11:14]
+    w_dual = model.x[8:14]
+    w_d_dual = ocp.p[8:14]
+    error_dot = w_dual - Ad(error_c, w_d_dual)
 
     # Gain Matrix complete error
 
-    Q_l = DM.zeros(8, 8)
+    Q_l = DM.zeros(6, 6)
+    Q_l[0, 0] = 2
     Q_l[1, 1] = 2
     Q_l[2, 2] = 2
-    Q_l[3, 3] = 2
+    Q_l[3, 3] = 1.6
+    Q_l[4, 4] = 1.6
     Q_l[5, 5] = 1.6
-    Q_l[6, 6] = 1.6
-    Q_l[7, 7] = 1.6
 
-    ocp.model.cost_expr_ext_cost = 10*(error_total_lie.T@Q_l@error_total_lie) + 1*(error_nominal_input.T @ R @ error_nominal_input)
+    #ocp.model.cost_expr_ext_cost = 10*(ln_error.T@Q_l@ln_error) + 1*(error_nominal_input.T @ R @ error_nominal_input)
+    #ocp.model.cost_expr_ext_cost_e =  10*(ln_error.T@Q_l@ln_error) + 1*(error_dot.T@error_dot) + ln_error.T@error_dot
 
-    ocp.model.cost_expr_ext_cost_e =  10*(error_total_lie.T@Q_l@error_total_lie)
+    ocp.model.cost_expr_ext_cost = 10*(ln_error.T@Q_l@ln_error) + 1*(error_nominal_input.T @ R @ error_nominal_input)
+    ocp.model.cost_expr_ext_cost_e =  10*(ln_error.T@Q_l@ln_error)
 
 
     # Auxiliary variable initialization

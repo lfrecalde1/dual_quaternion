@@ -75,7 +75,7 @@ def create_ocp_solver(x0, N_horizon, t_horizon, tau_1_max, tau_1_min, tau_2_max,
     error_dot = w - adjoint(error_q_c, w_d)
 
 
-    ocp.model.cost_expr_ext_cost = 1000*(error_ln.T @ Q @ error_ln) + 1*(error_dot.T @ error_dot) + 5*error_ln.T@error_dot + (error_nominal_input.T @ R @ error_nominal_input)
+    ocp.model.cost_expr_ext_cost = 1000*(error_ln.T @ Q @ error_ln) + 5*(error_dot.T @ error_dot) + 5*error_ln.T@error_dot + (error_nominal_input.T @ R @ error_nominal_input)
     ocp.model.cost_expr_ext_cost_e = 3000*(error_ln.T @ Q @error_ln)+ 5*(error_dot.T @ error_dot) + 5*error_ln.T@error_dot
 
     # Auxiliary variable initialization

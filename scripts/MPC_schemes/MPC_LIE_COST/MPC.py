@@ -7,7 +7,7 @@ from dual_quaternion import plot_states_quaternion, plot_states_position, fancy_
 from nav_msgs.msg import Odometry
 from functions import dualquat_from_pose_casadi
 from ode_acados import dualquat_trans_casadi, dualquat_quat_casadi, rotation_casadi, rotation_inverse_casadi, dual_velocity_casadi, dual_quat_casadi, velocities_from_twist_casadi
-from ode_acados import f_rk4_casadi_simple, noise, cost_quaternion_casadi, cost_translation_casadi, error_lie_norm
+from ode_acados import f_rk4_casadi_simple, noise, cost_quaternion_casadi, cost_translation_casadi
 from ode_acados import error_dual_aux_casadi
 from nmpc_acados import create_ocp_solver
 from acados_template import AcadosOcpSolver, AcadosSimSolver
@@ -26,7 +26,6 @@ inverse_rot = rotation_inverse_casadi()
 f_rk4 = f_rk4_casadi_simple()
 cost_quaternion = cost_quaternion_casadi()
 cost_translation = cost_translation_casadi()
-error_lie_n = error_lie_norm()
 error_dual_f = error_dual_aux_casadi()
 
 Identification = scipy.io.loadmat('Separed_cost.mat') 
@@ -96,13 +95,13 @@ def main(odom_pub_1, odom_pub_2, L, x0, initial):
     quat_1_d_msg = Odometry()
     
     # Defining initial condition of the system and verify properties
+    tx1 = x0[0]
+    ty1 = x0[1]
+    tz1 = x0[2]
     qw1 = x0[3]
     qx1 = x0[4]
     qy1 = x0[5]
     qz1 = x0[6]
-    tx1 = x0[0]
-    ty1 = x0[1]
-    tz1 = x0[2]
 
     # Initial Dualquaternion
     dual_1 = dualquat_from_pose(qw1, qx1, qy1,  qz1, tx1, ty1, tz1)
@@ -161,8 +160,8 @@ def main(odom_pub_1, odom_pub_2, L, x0, initial):
         dual_twist_1_d = dual_twist(angular_linear_1_d, dual_1_d)
         dual_1_d = f_rk4(dual_1_d, dual_twist_1_d, sample_time)
         # Update Reference
-        X_d[0:8, k + 1] = np.array(dual_1_d).reshape((8, ))
         X_d[8:14, k] = np.array(dual_twist_1_d).reshape((6, ))
+        X_d[0:8, k + 1] = np.array(dual_1_d).reshape((8, ))
 
     # Desired Reference Inputs
     u_d = np.zeros((4, t.shape[0]), dtype=np.double)
@@ -266,15 +265,11 @@ def main(odom_pub_1, odom_pub_2, L, x0, initial):
             X_d[0:8, k+N_prediction] = -X_d[0:8, k+N_prediction]
 
         white_noise = np.random.multivariate_normal(np.zeros(12),uav_white_noise_cov)
-        #acados_ocp_solver.options_set("rti_phase", 1)
-        #acados_ocp_solver.solve()
 
         # Compute cost
         orientation_cost[:, k] = cost_quaternion(get_quat(X_d[0:8, k]), get_quat(X[0:8, k]))
         translation_cost[:, k] = cost_translation(get_trans(X_d[0:8, k]), get_trans(X[0:8, k]))
         total_cost[:, k] = orientation_cost[:, k] + translation_cost[:, k]
-        lie_cost[:, k] = np.array(error_lie_n(X_d[0:8, k], X[0:8, k])).reshape((1, ))
-        error_dual_filter[:, k] = np.array(error_dual_f(X_d[0:8, k], X[0:8, k])).reshape((8, ))
 
         # Check properties
         real = X[0:4, k]
@@ -336,7 +331,6 @@ def main(odom_pub_1, odom_pub_2, L, x0, initial):
         xcurrent = acados_integrator.get("x")
 
         # Update Data of the system
-        #X[:, k+1] = xcurrent
         X[:, k+1] = noise(xcurrent, white_noise)
 
         # Update Matrices of our system
@@ -371,32 +365,12 @@ def main(odom_pub_1, odom_pub_2, L, x0, initial):
 
     fig21, ax21, ax22, ax23 = fancy_plots_3()
     plot_states_position(fig21, ax21, ax22, ax23, Q1_trans_data[1:4, :], Q2_trans_data[1:4, :], t, "Position Results Based On LieAlgebra Cost "+ str(initial), folder_path)
-
-    #fig31, ax31, ax32, ax33 = fancy_plots_3()
-    #plot_angular_velocities(fig31, ax31, ax32, ax33, Q1_velocities_data[0:3, :], t, "Body Angular velocities Based On LieAlgebra Cost "+ str(initial), folder_path)
-
-    #fig41, ax41, ax42, ax43 = fancy_plots_3()
-    #plot_linear_velocities(fig41, ax41, ax42, ax43, Q1_velocities_data[3:6, :], t, "Inertial Linear velocities Based On LieAlgebra Cost "+ str(initial), folder_path)
-
     # Control Actions
     fig51, ax51, ax52, ax53, ax54 = fancy_plots_4()
     plot_control_actions(fig51, ax51, ax52, ax53, ax54, F, M, t, "Control Actions of the System Based On LieAlgebra Cost "+ str(initial), folder_path)
 
-    # Sampling time
-    #fig61, ax61  = fancy_plots_1()
-    #plot_time(fig61, ax61, t_sample, delta_t, t, "Computational Time Based On LieAlgebra Cost "+ str(initial), folder_path)
-
-    #fig71, ax71  = fancy_plots_1()
-    #plot_cost_orientation(fig71, ax71, orientation_cost, t, "Cost Orientation Based On LieAlgebra Cost "+ str(initial), folder_path)
-
-    #fig81, ax81  = fancy_plots_1()
-    #plot_cost_translation(fig81, ax81, translation_cost, t, "Cost Translation Based On LieAlgebra Cost "+ str(initial), folder_path)
-
-    #fig91, ax91  = fancy_plots_1()
-    #plot_cost_control(fig91, ax91, control_cost, t, "Cost Control Based On LieAlgebra Cost "+ str(initial), folder_path)
-
     fig101, ax101  = fancy_plots_1()
-    plot_cost_total(fig101, ax101, total_cost, t, "Cost Total Based On LieAlgebra Cost "+ str(initial), folder_path)
+    plot_cost_total(fig101, ax101, orientation_cost, t, "Cost Ori Based On LieAlgebra Cost "+ str(initial), folder_path)
 
     return X, X_d, F, M, orientation_cost, translation_cost, control_cost, t, N_prediction, kkt_values, sqp_iteration
 

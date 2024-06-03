@@ -172,6 +172,19 @@ def ln_quaternion_c():
     f_ln_quat = Function('f_ln_matrix', [q], [ln_quaternion])
     return f_ln_quat
 
+def ln_quaternion_cos_c():
+    # Current quaternion
+    q = ca.MX.sym('q', 4, 1)
+
+    qw = q[0, 0] + ca.np.finfo(np.float64).eps
+    angle = 2*ca.acos(qw)
+    denominator = ca.sqrt(1 - qw*qw)
+
+    ln_quaternion = ca.vertcat(angle*q[1, 0]/denominator, angle*q[2, 0]/denominator, angle*q[3, 0]/denominator)
+
+    f_ln_quat = Function('f_ln_matrix', [q], [ln_quaternion])
+    return f_ln_quat
+
 def ln_quaternion(q):
     # Current quaternion
 

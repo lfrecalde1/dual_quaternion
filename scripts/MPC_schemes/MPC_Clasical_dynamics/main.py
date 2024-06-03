@@ -216,8 +216,6 @@ def main(ts: float, t_f: float, t_N: float, x_0: np.ndarray, L: list, odom_pub_1
     for k in range(0, t.shape[0] - N_prediction):
         tic = rospy.get_time()
         white_noise = np.random.multivariate_normal(np.zeros(12),uav_white_noise_cov)
-        #acados_ocp_solver.options_set("rti_phase", 1)
-        #acados_ocp_solver.solve()
 
         # Compute cost
         orientation_cost[:, k] = cost_quaternion(xref[6:10, k], x[6:10, k])
@@ -254,8 +252,6 @@ def main(ts: float, t_f: float, t_N: float, x_0: np.ndarray, L: list, odom_pub_1
         sqp_iteration[:, k] = acados_ocp_solver.get_stats('sqp_iter')
         print(error_quat_no_filter[:, k])
         # compute gradient
-        #gradient = acados_ocp_solver.print_statistics()
-        #print(gradient)
 
         # Get the control Action
         aux_control = acados_ocp_solver.get(0, "u")
@@ -314,21 +310,8 @@ def main(ts: float, t_f: float, t_N: float, x_0: np.ndarray, L: list, odom_pub_1
     fig13, ax13, ax23, ax33, ax43 = fancy_plots_4()
     plot_control_actions(fig13, ax13, ax23, ax33, ax43, F, M, t, "Control Actions of the System "+ str(initial), folder_path)
 
-    # Sampling time
-    #fig14, ax14  = fancy_plots_1()
-    #plot_time(fig14, ax14, t_sample, delta_t, t, "Computational Time "+ str(initial), folder_path)
-
-    #fig15, ax15  = fancy_plots_1()
-    #plot_cost_orientation(fig15, ax15, orientation_cost, t, "Cost Orientation "+ str(initial), folder_path)
-
-    #fig16, ax16  = fancy_plots_1()
-    #plot_cost_translation(fig16, ax16, translation_cost, t, "Cost Translation "+ str(initial), folder_path)
-
-    #fig17, ax17  = fancy_plots_1()
-    #plot_cost_control(fig17, ax17, control_cost, t, "Cost Control "+ str(initial), folder_path)
-
     fig18, ax18  = fancy_plots_1()
-    plot_cost_total(fig18, ax18, total_cost, t, "Cost Total "+ str(initial), folder_path)
+    plot_cost_total(fig18, ax18, orientation_cost, t, "Cost Ori "+ str(initial), folder_path)
 
     return x, xref, F, M, orientation_cost, translation_cost, control_cost, t, N_prediction, kkt_values, sqp_iteration
 
@@ -370,7 +353,7 @@ if __name__ == '__main__':
         # Initial conditions of the system
         X_total = []
         X_total_aux = []
-        number_experiments = 30
+        number_experiments = 100
         max_position = 4
         min_position = -4
 
@@ -378,10 +361,20 @@ if __name__ == '__main__':
         ramdon_quaternions = get_random_quaternion_complete(number_experiments)
         ramdon_positions = get_random_position(min_position, max_position, number_experiments)
         for i_random in range(number_experiments):
+            # Fixed intial position
+            #pos_0 = np.array([0.0, 0.0, 0.0])
+
+            # Random Initial positions
             pos_0 = np.array([ramdon_positions[i_random, 0], ramdon_positions[i_random, 1], ramdon_positions[i_random, 2]])
             vel_0 = np.array([0.0, 0.0, 0.0], dtype=np.double)
             omega_0 = np.array([0.0, 0.0, 0.0], dtype=np.double)
-            #angle_0, axis_0 = get_random_quaternion()
+
+            # Fixed Initial Conditions
+            theta_0 = 0.99*np.pi
+            n_0 = np.array([0.0, 0.0, 1.0])
+            #quat_0 = np.hstack([np.cos(theta_0 / 2), np.sin(theta_0 / 2) * np.array(n_0)])
+
+            # Random initial conditions
             quat_0 = np.array([ramdon_quaternions[i_random, 3], ramdon_quaternions[i_random, 0], ramdon_quaternions[i_random, 1], ramdon_quaternions[i_random, 2]])
             x = np.hstack((pos_0, vel_0, quat_0, omega_0))
             x_aux = np.hstack((pos_0, quat_0, omega_0, vel_0))

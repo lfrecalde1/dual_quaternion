@@ -291,6 +291,52 @@ def velocities_from_twist_casadi(twist = w_1d, dualquat = dual_1d):
     f_velocity = Function('f_velocity', [w_1d, dual_1d], [velocity])
     return f_velocity
 
+def Ad(qd, v):
+    qd_conjugate = ca.vertcat(qd[0], -qd[1], -qd[2], -qd[3], qd[4], -qd[5], -qd[6], -qd[7])
+    quat_d_data = qd_conjugate[0:4]
+    dual_d_data =  qd_conjugate[4:8]
+
+    wb = v[0:3, 0]
+    vb = v[3:6, 0]
+
+    vector = ca.vertcat(0.0, wb, 0.0, vb)
+
+    H_r_plus = ca.vertcat(ca.horzcat(quat_d_data[0], -quat_d_data[1], -quat_d_data[2], -quat_d_data[3]),
+                                ca.horzcat(quat_d_data[1], quat_d_data[0], -quat_d_data[3], quat_d_data[2]),
+                                ca.horzcat(quat_d_data[2], quat_d_data[3], quat_d_data[0], -quat_d_data[1]),
+                                ca.horzcat(quat_d_data[3], -quat_d_data[2], quat_d_data[1], quat_d_data[0]))
+
+    H_d_plus = ca.vertcat(ca.horzcat(dual_d_data[0], -dual_d_data[1], -dual_d_data[2], -dual_d_data[3]),
+                                ca.horzcat(dual_d_data[1], dual_d_data[0], -dual_d_data[3], dual_d_data[2]),
+                                ca.horzcat(dual_d_data[2], dual_d_data[3], dual_d_data[0], -dual_d_data[1]),
+                                ca.horzcat(dual_d_data[3], -dual_d_data[2], dual_d_data[1], dual_d_data[0]))
+    zeros = ca.DM.zeros(4, 4)
+    Hplus = ca.vertcat(ca.horzcat(H_r_plus, zeros),
+                        ca.horzcat(H_d_plus, H_r_plus))
+
+    aux_dual = Hplus @ vector
+    quat_aux_data = aux_dual[0:4]
+    dual_aux_data = aux_dual[4:8]
+
+    H_r_aux_plus = ca.vertcat(ca.horzcat(quat_aux_data[0], -quat_aux_data[1], -quat_aux_data[2], -quat_aux_data[3]),
+                                ca.horzcat(quat_aux_data[1], quat_aux_data[0], -quat_aux_data[3], quat_aux_data[2]),
+                                ca.horzcat(quat_aux_data[2], quat_aux_data[3], quat_aux_data[0], -quat_aux_data[1]),
+                                ca.horzcat(quat_aux_data[3], -quat_aux_data[2], quat_aux_data[1], quat_aux_data[0]))
+
+    H_d_aux_plus = ca.vertcat(ca.horzcat(dual_aux_data[0], -dual_aux_data[1], -dual_aux_data[2], -dual_aux_data[3]),
+                                ca.horzcat(dual_aux_data[1], dual_aux_data[0], -dual_aux_data[3], dual_aux_data[2]),
+                                ca.horzcat(dual_aux_data[2], dual_aux_data[3], dual_aux_data[0], -dual_aux_data[1]),
+                                ca.horzcat(dual_aux_data[3], -dual_aux_data[2], dual_aux_data[1], dual_aux_data[0]))
+
+    Haux_plus = ca.vertcat(ca.horzcat(H_r_aux_plus, zeros),
+                        ca.horzcat(H_d_aux_plus, H_r_aux_plus))
+
+    
+    vector_b_dual = Haux_plus@qd
+    vector_b = ca.vertcat(vector_b_dual[1:4], vector_b_dual[5:8])
+    return vector_b
+
+
 def error_lie(qd, q):
     qd_conjugate = ca.vertcat(qd[0], -qd[1], -qd[2], -qd[3], qd[4], -qd[5], -qd[6], -qd[7])
     quat_d_data = qd_conjugate[0:4]
@@ -310,16 +356,8 @@ def error_lie(qd, q):
                         ca.horzcat(H_d_plus, H_r_plus))
 
     q_e_aux = Hplus @ q
-    
-    #condition1 = q_e_aux[0, 0] > 0.0
 
-    ## Define expressions for each condition
-    #expr1 =  q_e_aux
-    #expr2 = -q_e_aux
-
-    #q_error = ca.if_else(condition1, expr1, expr2) 
     q_error = q_e_aux
-    # Check shortest path
 
     q_error_real = q_error[0:4, 0]
     q_error_real_c = ca.vertcat(q_error_real[0, 0], -q_error_real[1, 0], -q_error_real[2, 0], -q_error_real[3, 0])
@@ -340,58 +378,60 @@ def error_lie(qd, q):
     ln_quaternion = ca.vertcat(0.0,  (1/2)*angle*q_error_real[1, 0]/norm, (1/2)*angle*q_error_real[2, 0]/norm, (1/2)*angle*q_error_real[3, 0]/norm)
     ln_trans = ca.vertcat(0.0, (1/2)*trans_error[1, 0], (1/2)*trans_error[2, 0], (1/2)*trans_error[3, 0])
 
-    #norm_ln_quaternion = ca.norm_2(ln_quaternion+ ca.np.finfo(np.float64).eps)
-    #norm_ln_trans = ca.norm_2(ln_trans+ ca.np.finfo(np.float64).eps)
-
     q_e_ln = ca.vertcat(ln_quaternion, ln_trans)
     return q_e_ln
 
-def error_lie_tan(qd, q):
-
-    q_d_real = qd[0:4, 0]
-    q_d_real_c = ca.vertcat(q_d_real[0, 0], -q_d_real[1, 0], -q_d_real[2, 0], -q_d_real[3, 0])
-    q_d_dual = qd[4:8, 0]
-
-    ## Real Part
-    norm_d = ca.norm_2(q_d_real[1:4] + ca.np.finfo(np.float64).eps)
-    angle_d = ca.atan2(norm_d, q_d_real[0])
-
-    ## Dual Part
-    H_d_dual_plus = ca.vertcat(ca.horzcat(q_d_dual[0, 0], -q_d_dual[1, 0], -q_d_dual[2, 0], -q_d_dual[3, 0]),
-                                ca.horzcat(q_d_dual[1, 0], q_d_dual[0, 0], -q_d_dual[3, 0], q_d_dual[2, 0]),
-                                ca.horzcat(q_d_dual[2, 0], q_d_dual[3, 0], q_d_dual[0, 0], -q_d_dual[1, 0]),
-                                ca.horzcat(q_d_dual[3, 0], -q_d_dual[2, 0], q_d_dual[1, 0], q_d_dual[0, 0]))
-
-    trans_d = 2 * H_d_dual_plus@q_d_real_c
-    # Computing log map
-    ln_quaternion_d = ca.vertcat(0.0,  (1/2)*angle_d*q_d_real[1, 0]/norm_d, (1/2)*angle_d*q_d_real[2, 0]/norm_d, (1/2)*angle_d*q_d_real[3, 0]/norm_d)
-    ln_trans_d = ca.vertcat(0.0, (1/2)*trans_d[1, 0], (1/2)*trans_d[2, 0], (1/2)*trans_d[3, 0])
-    q_d_ln = ca.vertcat(ln_quaternion_d, ln_trans_d)
-
-    # Real Dual quaternion
-    q_real = q[0:4, 0]
-    q_real_c = ca.vertcat(q_real[0, 0], -q_real[1, 0], -q_real[2, 0], -q_real[3, 0])
-    q_dual = q[4:8, 0]
+def ln_dual(q_error):
+    q_error_real = q_error[0:4, 0]
+    q_error_real_c = ca.vertcat(q_error_real[0, 0], -q_error_real[1, 0], -q_error_real[2, 0], -q_error_real[3, 0])
+    q_error_dual = q_error[4:8, 0]
 
     ## Real Part
-    norm = ca.norm_2(q_real[1:4] + ca.np.finfo(np.float64).eps)
-    angle = ca.atan2(norm, q_real[0])
+    norm = ca.norm_2(q_error_real[1:4] + ca.np.finfo(np.float64).eps)
+    angle = ca.atan2(norm, q_error_real[0])
 
     ## Dual Part
-    H_dual_plus = ca.vertcat(ca.horzcat(q_dual[0, 0], -q_dual[1, 0], -q_dual[2, 0], -q_dual[3, 0]),
-                                ca.horzcat(q_dual[1, 0], q_dual[0, 0], -q_dual[3, 0], q_dual[2, 0]),
-                                ca.horzcat(q_dual[2, 0], q_dual[3, 0], q_dual[0, 0], -q_dual[1, 0]),
-                                ca.horzcat(q_dual[3, 0], -q_dual[2, 0], q_dual[1, 0], q_dual[0, 0]))
+    H_error_dual_plus = ca.vertcat(ca.horzcat(q_error_dual[0, 0], -q_error_dual[1, 0], -q_error_dual[2, 0], -q_error_dual[3, 0]),
+                                ca.horzcat(q_error_dual[1, 0], q_error_dual[0, 0], -q_error_dual[3, 0], q_error_dual[2, 0]),
+                                ca.horzcat(q_error_dual[2, 0], q_error_dual[3, 0], q_error_dual[0, 0], -q_error_dual[1, 0]),
+                                ca.horzcat(q_error_dual[3, 0], -q_error_dual[2, 0], q_error_dual[1, 0], q_error_dual[0, 0]))
 
-    trans = 2 * H_dual_plus@q_real_c
+    trans_error = 2 * H_error_dual_plus@q_error_real_c
     # Computing log map
-    ln_quaternion = ca.vertcat(0.0,  (1/2)*angle*q_real[1, 0]/norm, (1/2)*angle*q_real[2, 0]/norm, (1/2)*angle*q_real[3, 0]/norm)
-    ln_trans = ca.vertcat(0.0, (1/2)*trans[1, 0], (1/2)*trans[2, 0], (1/2)*trans[3, 0])
-    q_ln = ca.vertcat(ln_quaternion, ln_trans)
+    ln_quaternion = ca.vertcat((1/2)*angle*q_error_real[1, 0]/norm, (1/2)*angle*q_error_real[2, 0]/norm, (1/2)*angle*q_error_real[3, 0]/norm)
+    ln_trans = ca.vertcat((1/2)*trans_error[1, 0], (1/2)*trans_error[2, 0], (1/2)*trans_error[3, 0])
 
-    qe_ln = q_ln - q_d_ln
+    q_e_ln = ca.vertcat(ln_quaternion, ln_trans)
 
-    return qe_ln
+    return q_e_ln
+
+def conjugate_dual(qd):
+    qd_conjugate = ca.vertcat(qd[0], -qd[1], -qd[2], -qd[3], qd[4], -qd[5], -qd[6], -qd[7])
+    return qd_conjugate
+
+def error_dual(qd, q):
+    qd_conjugate = ca.vertcat(qd[0], -qd[1], -qd[2], -qd[3], qd[4], -qd[5], -qd[6], -qd[7])
+    quat_d_data = qd_conjugate[0:4]
+    dual_d_data =  qd_conjugate[4:8]
+
+    H_r_plus = ca.vertcat(ca.horzcat(quat_d_data[0], -quat_d_data[1], -quat_d_data[2], -quat_d_data[3]),
+                                ca.horzcat(quat_d_data[1], quat_d_data[0], -quat_d_data[3], quat_d_data[2]),
+                                ca.horzcat(quat_d_data[2], quat_d_data[3], quat_d_data[0], -quat_d_data[1]),
+                                ca.horzcat(quat_d_data[3], -quat_d_data[2], quat_d_data[1], quat_d_data[0]))
+
+    H_d_plus = ca.vertcat(ca.horzcat(dual_d_data[0], -dual_d_data[1], -dual_d_data[2], -dual_d_data[3]),
+                                ca.horzcat(dual_d_data[1], dual_d_data[0], -dual_d_data[3], dual_d_data[2]),
+                                ca.horzcat(dual_d_data[2], dual_d_data[3], dual_d_data[0], -dual_d_data[1]),
+                                ca.horzcat(dual_d_data[3], -dual_d_data[2], dual_d_data[1], dual_d_data[0]))
+    zeros = ca.DM.zeros(4, 4)
+    Hplus = ca.vertcat(ca.horzcat(H_r_plus, zeros),
+                        ca.horzcat(H_d_plus, H_r_plus))
+
+    q_e_aux = Hplus @ q
+
+    q_error = q_e_aux
+
+    return q_error
 
 def error_dual_aux_casadi():
     qd = ca.MX.sym('qd', 8, 1)
@@ -416,66 +456,9 @@ def error_dual_aux_casadi():
     q_e_aux = Hplus @ q
     
     q_error = q_e_aux
-    # Check shortest path
 
     f_error_dual = Function('f_error_dual', [qd, q], [q_error])
     return f_error_dual
-
-def error_lie_2(qd, q):
-    q_conjugate = ca.vertcat(q[0], q[1], q[2], q[3], q[4], q[5], q[6], q[7])
-    quat_data = q_conjugate[0:4]
-    dual_data =  q_conjugate[4:8]
-
-    H_r_plus = ca.vertcat(ca.horzcat(quat_data[0], -quat_data[1], -quat_data[2], -quat_data[3]),
-                                ca.horzcat(quat_data[1], quat_data[0], -quat_data[3], quat_data[2]),
-                                ca.horzcat(quat_data[2], quat_data[3], quat_data[0], -quat_data[1]),
-                                ca.horzcat(quat_data[3], -quat_data[2], quat_data[1], quat_data[0]))
-
-    H_d_plus = ca.vertcat(ca.horzcat(dual_data[0], -dual_data[1], -dual_data[2], -dual_data[3]),
-                                ca.horzcat(dual_data[1], dual_data[0], -dual_data[3], dual_data[2]),
-                                ca.horzcat(dual_data[2], dual_data[3], dual_data[0], -dual_data[1]),
-                                ca.horzcat(dual_data[3], -dual_data[2], dual_data[1], dual_data[0]))
-    zeros = ca.DM.zeros(4, 4)
-    Hplus = ca.vertcat(ca.horzcat(H_r_plus, zeros),
-                        ca.horzcat(H_d_plus, H_r_plus))
-
-    q_d_conjugate = ca.vertcat(qd[0], -qd[1], -qd[2], -qd[3], qd[4], -qd[5], -qd[6], -qd[7])
-    q_e_aux = Hplus @ q_d_conjugate
-    
-    #condition1 = q_e_aux[0, 0] > 0.0
-
-    # Define expressions for each condition
-    #expr1 =  q_e_aux
-    #expr2 = -q_e_aux
-
-    #q_error = ca.if_else(condition1, expr1, expr2) 
-    q_error = q_e_aux
-    # Check shortest path
-
-    q_error_real = q_error[0:4, 0]
-    q_error_real_c = ca.vertcat(q_error_real[0, 0], -q_error_real[1, 0], -q_error_real[2, 0], -q_error_real[3, 0])
-    q_error_dual = q_error[4:8, 0]
-
-    ## Real Part
-    norm = ca.norm_2(q_error_real[1:4] + ca.np.finfo(np.float64).eps)
-    angle = ca.atan2(norm, q_error_real[0])
-
-    ## Dual Part
-    H_error_dual_plus = ca.vertcat(ca.horzcat(q_error_dual[0, 0], -q_error_dual[1, 0], -q_error_dual[2, 0], -q_error_dual[3, 0]),
-                                ca.horzcat(q_error_dual[1, 0], q_error_dual[0, 0], -q_error_dual[3, 0], q_error_dual[2, 0]),
-                                ca.horzcat(q_error_dual[2, 0], q_error_dual[3, 0], q_error_dual[0, 0], -q_error_dual[1, 0]),
-                                ca.horzcat(q_error_dual[3, 0], -q_error_dual[2, 0], q_error_dual[1, 0], q_error_dual[0, 0]))
-
-    trans_error = 2 * H_error_dual_plus@q_error_real_c
-    # Computing log map
-    ln_quaternion = ca.vertcat(0.0,  (1/2)*angle*q_error_real[1, 0]/norm, (1/2)*angle*q_error_real[2, 0]/norm, (1/2)*angle*q_error_real[3, 0]/norm)
-    ln_trans = ca.vertcat(0.0, (1/2)*trans_error[1, 0], (1/2)*trans_error[2, 0], (1/2)*trans_error[3, 0])
-
-    #norm_ln_quaternion = ca.norm_2(ln_quaternion+ ca.np.finfo(np.float64).eps)
-    #norm_ln_trans = ca.norm_2(ln_trans+ ca.np.finfo(np.float64).eps)
-
-    q_e_ln = ca.vertcat(ln_quaternion, ln_trans)
-    return q_e_ln
 
 def dual_aceleraction_casadi(dual, omega, u, L):
     # Split Control Actions
@@ -610,7 +593,7 @@ def quadrotorModel(L: list)-> AcadosModel:
     model.z = z
     model.p = p
     model.name = model_name
-    return model, get_trans, get_quat, constraint, error_lie
+    return model, get_trans, get_quat, constraint, error_lie, error_dual, ln_dual, Ad, conjugate_dual
 
 def noise(x, noise):
     # Get position and quaternion
@@ -678,23 +661,16 @@ def cost_quaternion_casadi():
 
     q_e_aux = H_r_plus @ quaternion
     
-
-    # Check shortest path
-    #condition1 = q_e_aux[0, 0] > 0.0
-
-    ## Define expressions for each condition
-    #expr1 =  q_e_aux
-    #expr2 = -q_e_aux
-
     #q_error = ca.if_else(condition1, expr1, expr2) 
     q_error = q_e_aux
 
-    norm = ca.norm_2(q_error[1:4] + ca.np.finfo(np.float64).eps)
-    angle = ca.atan2(norm, q_error[0])
+    qw = q_error[0, 0] + ca.np.finfo(np.float64).eps
+    angle = 2*ca.acos(qw)
+    denominator = ca.sqrt(1 - qw*qw)
 
-    ln_quaternion = ca.vertcat(0.0,  (1/2)*angle*q_error[1, 0]/norm, (1/2)*angle*q_error[2, 0]/norm, (1/2)*angle*q_error[3, 0]/norm)
+    ln_quaternion = ca.vertcat(angle*q_error[1, 0]/denominator, angle*q_error[2, 0]/denominator, angle*q_error[3, 0]/denominator)
 
-    cost = ln_quaternion.T@ln_quaternion
+    cost = ca.norm_2(ln_quaternion)
 
     # Sux variable in roder to get a norm
     f_cost = Function('f_cost', [qd, q], [cost])

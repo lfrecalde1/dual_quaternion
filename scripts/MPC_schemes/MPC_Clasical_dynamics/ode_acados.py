@@ -432,13 +432,13 @@ def cost_quaternion_casadi():
 
     q_error = ca.if_else(condition1, expr1, expr2) 
     
+    qw = q_error[0, 0] + ca.np.finfo(np.float64).eps
+    angle = 2*ca.acos(qw)
+    denominator = ca.sqrt(1 - qw*qw)
 
-    norm = ca.norm_2(q_error[1:4] + ca.np.finfo(np.float64).eps)
-    angle = ca.atan2(norm, q_error[0])
+    ln_quaternion = ca.vertcat(angle*q_error[1, 0]/denominator, angle*q_error[2, 0]/denominator, angle*q_error[3, 0]/denominator)
 
-    ln_quaternion = ca.vertcat(0.0,  (1/2)*angle*q_error[1, 0]/norm, (1/2)*angle*q_error[2, 0]/norm, (1/2)*angle*q_error[3, 0]/norm)
-
-    cost = ln_quaternion.T@ln_quaternion
+    cost = ca.norm_2(ln_quaternion)
 
     # Sux variable in roder to get a norm
     f_cost = Function('f_cost', [qd, q], [cost])

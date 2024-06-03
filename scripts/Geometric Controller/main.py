@@ -6,13 +6,14 @@ from nav_msgs.msg import Odometry
 from scipy.spatial.transform import Rotation as R
 from nmpc import create_ocp_solver
 from acados_template import AcadosOcpSolver, AcadosSimSolver
-from export_ode_model import quatTorot_c, rotation_matrix_error_c, quaternion_error_c, ln_quaternion_c, quaternion_conjugate_c, Ad_c
+from export_ode_model import quatTorot_c, rotation_matrix_error_c, quaternion_error_c, ln_quaternion_c, quaternion_conjugate_c, Ad_c, ln_quaternion_cos_c
 from scipy.linalg import logm
 from fancy_plots import plot_cost_orientation_rotational, fancy_plots_1, plot_cost_orientation_quat, fancy_plots_3, plot_control_actions_angular
 
 rotation_matrix_error = rotation_matrix_error_c()
 quaternion_error = quaternion_error_c()
 ln_quaternion = ln_quaternion_c()
+ln_quaternion_cos = ln_quaternion_cos_c()
 quaternion_conjugate = quaternion_conjugate_c()
 adjoint = Ad_c()
 
@@ -92,6 +93,14 @@ def compute_error_r3(x_d, x):
     r3[2, 0] = so3[1, 0]
     return r3
 
+def compute_error_r3_quat(x_d, x):
+    error_q = quaternion_error(x_d, x)
+    ln_qe = ln_quaternion_cos(error_q)
+    r3 = np.zeros((3, 1), dtype=np.double)
+    r3[0, 0] = ln_qe[0, 0]
+    r3[1, 0] = ln_qe[1, 0]
+    r3[2, 0] = ln_qe[2, 0]
+    return r3
 def control_law_SO3(x_d, x, L):
     # Gain matrices
     Kp = np.zeros((3, 3), dtype=np.double)
@@ -299,7 +308,7 @@ def main(ts: float, t_f: float, t_N: float, x_0: np.ndarray, L: list, odom_pub_1
         else:
             x_d2[0:4, k+N_prediction] = -x_d2[0:4, k+N_prediction]
         # Compute error matrix mode
-        error_r3_1  = compute_error_r3(x_d[0:4, k], x[0:4, k])
+        error_r3_1  = compute_error_r3_quat(x_d[0:4, k], x[0:4, k])
         error_r3_2  = compute_error_r3(x_d[0:4, k], x2[0:4, k])
         norm_orientation_1[:, k] = np.linalg.norm(error_r3_1)
         norm_orientation_2[:, k] = np.linalg.norm(error_r3_2)
@@ -401,7 +410,7 @@ if __name__ == '__main__':
         Jyy = 3.0
         Jzz = 5.0
         L = [Jxx, Jyy, Jzz]
-        number_experiments = 3
+        number_experiments = 1
         ramdon_quaternions = get_random_quaternion_complete(number_experiments)
 
         # Empty Matrix for my inital States
@@ -409,11 +418,11 @@ if __name__ == '__main__':
         for i_random in range(number_experiments):
             omega_0 = np.array([0.0, 0.0, 0.0], dtype=np.double)
             #angle_0, axis_0 = get_random_quaternion()
-            quat_0 = np.array([ramdon_quaternions[i_random, 3], ramdon_quaternions[i_random, 0], ramdon_quaternions[i_random, 1], ramdon_quaternions[i_random, 2]])
+            #quat_0 = np.array([ramdon_quaternions[i_random, 3], ramdon_quaternions[i_random, 0], ramdon_quaternions[i_random, 1], ramdon_quaternions[i_random, 2]])
             #quat_0 = np.array([1, 0.0, 0.0, 0.0])
             theta_0 = 0.99*np.pi
             n_0 = np.array([0.0, 0.0, 1.0])
-            #quat_0 = np.hstack([np.cos(theta_0 / 2), np.sin(theta_0 / 2) * np.array(n_0)])
+            quat_0 = np.hstack([np.cos(theta_0 / 2), np.sin(theta_0 / 2) * np.array(n_0)])
             x = np.hstack((quat_0, omega_0))
             X_total.append(x)
         
