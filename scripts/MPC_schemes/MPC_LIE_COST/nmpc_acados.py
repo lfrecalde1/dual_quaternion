@@ -67,8 +67,8 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
     Q_l[4, 4] = 1.6
     Q_l[5, 5] = 1.6
 
-    #ocp.model.cost_expr_ext_cost = 10*(ln_error.T@Q_l@ln_error) + 1*(error_nominal_input.T @ R @ error_nominal_input)
-    #ocp.model.cost_expr_ext_cost_e =  10*(ln_error.T@Q_l@ln_error) + 1*(error_dot.T@error_dot) + ln_error.T@error_dot
+    #ocp.model.cost_expr_ext_cost = 10*(ln_error.T@Q_l@ln_error) + 1*(error_nominal_input.T @ R @ error_nominal_input) + 1*(error_dot.T@error_dot) + 1*(ln_error.T@error_dot)
+    #ocp.model.cost_expr_ext_cost_e =  10*(ln_error.T@Q_l@ln_error) + 1*(error_dot.T@error_dot) + 1*(ln_error.T@error_dot)
 
     ocp.model.cost_expr_ext_cost = 10*(ln_error.T@Q_l@ln_error) + 1*(error_nominal_input.T @ R @ error_nominal_input)
     ocp.model.cost_expr_ext_cost_e =  10*(ln_error.T@Q_l@ln_error)

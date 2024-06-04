@@ -52,9 +52,9 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
     #Q[1, 1] = 8.0
     #Q[2, 2] = 6.0
 
-    Qq[0, 0] = 5.5
-    Qq[1, 1] = 5.5
-    Qq[2, 2] = 5.5
+    Qq[0, 0] = 7.5
+    Qq[1, 1] = 7.5
+    Qq[2, 2] = 7.5
 
     # Control effort using gain matrices
     R = MX.zeros(4, 4)
@@ -81,7 +81,11 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
     # Angular velocities
     w = model.x[10:13]
     vi = model.x[3:6]
-    vb = rotation_inverse(q, vi)
+    vb = vi
+
+    #ocp.model.cost_expr_ext_cost = 1*(error_position.T @ Q @error_position) + 1*(error_nominal_input.T @ R @ error_nominal_input) + 1*(error_ori_li) + w.T@w + vb.T@vb
+    #ocp.model.cost_expr_ext_cost_e = 1*(error_position.T @ Q @error_position)+ 1*(error_ori_li) + w.T@w + vb.T@vb
+
 
     #ocp.model.cost_expr_ext_cost = 1*(error_position.T @ Q @error_position) + 1*(error_nominal_input.T @ R @ error_nominal_input) + 1*(error_ori_li)
     #ocp.model.cost_expr_ext_cost_e = 1*(error_position.T @ Q @error_position)+ 1*(error_ori_li) + w.T@w + vb.T@vb
