@@ -785,7 +785,10 @@ def compute_reference(t, ts, mul, L):
         R_d = np.array([[Xb[0, k], Yb[0, k], Zb[0, k]], [Xb[1, k], Yb[1, k], Zb[1, k]], [Xb[2, k], Yb[2, k], Zb[2, k]]])
         r_d = R.from_matrix(R_d)
         quad_d_aux = r_d.as_quat()
-        q[:, k] = np.array([quad_d_aux[3], quad_d_aux[0], quad_d_aux[1], quad_d_aux[2]])
+        if quad_d_aux[3]>=0:
+            q[:, k] = np.array([quad_d_aux[3], quad_d_aux[0], quad_d_aux[1], quad_d_aux[2]])
+        else:
+            q[:, k] = np.array([-quad_d_aux[3], -quad_d_aux[0], -quad_d_aux[1], -quad_d_aux[2]])
 
         # Compute nominal force of the in the body frame
         f[:, k] = np.dot(Zb[:, k], m*hd_pp[:, k] + m*g*Zw[:, 0])

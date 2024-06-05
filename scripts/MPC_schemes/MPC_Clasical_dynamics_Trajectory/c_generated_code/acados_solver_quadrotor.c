@@ -312,6 +312,11 @@ void quadrotor_acados_create_3_create_and_set_functions(quadrotor_solver_capsule
         MAP_CASADI_FNC(nl_constr_h_fun[i], quadrotor_constr_h_fun);
     }
     
+    capsule->nl_constr_h_fun_jac_hess = (external_function_param_casadi *) malloc(sizeof(external_function_param_casadi)*N);
+    for (int i = 0; i < N; i++) {
+        MAP_CASADI_FNC(nl_constr_h_fun_jac_hess[i], quadrotor_constr_h_fun_jac_uxt_zt_hess);
+    }
+    
 
 
 
@@ -329,6 +334,10 @@ void quadrotor_acados_create_3_create_and_set_functions(quadrotor_solver_capsule
     capsule->impl_dae_jac_x_xdot_u_z = (external_function_param_casadi *) malloc(sizeof(external_function_param_casadi)*N);
     for (int i = 0; i < N; i++) {
         MAP_CASADI_FNC(impl_dae_jac_x_xdot_u_z[i], quadrotor_impl_dae_jac_x_xdot_u_z);
+    }
+    capsule->impl_dae_hess = (external_function_param_casadi *) malloc(sizeof(external_function_param_casadi)*N);
+    for (int i = 0; i < N; i++) {
+        MAP_CASADI_FNC(impl_dae_hess[i], quadrotor_impl_dae_hess);
     }
 
     // external cost
@@ -424,6 +433,7 @@ void quadrotor_acados_create_5_set_nlp_in(quadrotor_solver_capsule* capsule, con
                                    "impl_dae_fun_jac_x_xdot_z", &capsule->impl_dae_fun_jac_x_xdot_z[i]);
         ocp_nlp_dynamics_model_set(nlp_config, nlp_dims, nlp_in, i,
                                    "impl_dae_jac_x_xdot_u", &capsule->impl_dae_jac_x_xdot_u_z[i]);
+        ocp_nlp_dynamics_model_set(nlp_config, nlp_dims, nlp_in, i, "impl_dae_hess", &capsule->impl_dae_hess[i]);
     
     }
 
@@ -486,20 +496,20 @@ void quadrotor_acados_create_5_set_nlp_in(quadrotor_solver_capsule* capsule, con
     double* lbx0 = lubx0;
     double* ubx0 = lubx0 + NBX0;
     // change only the non-zero elements:
-    lbx0[0] = -3.3615423702944947;
-    ubx0[0] = -3.3615423702944947;
-    lbx0[1] = -2.2557221558212017;
-    ubx0[1] = -2.2557221558212017;
-    lbx0[2] = 0.4326714934743423;
-    ubx0[2] = 0.4326714934743423;
-    lbx0[6] = 0.5808211369935029;
-    ubx0[6] = 0.5808211369935029;
-    lbx0[7] = 0.15368829708446594;
-    ubx0[7] = 0.15368829708446594;
-    lbx0[8] = -0.08300538833763148;
-    ubx0[8] = -0.08300538833763148;
-    lbx0[9] = -0.7950703237247448;
-    ubx0[9] = -0.7950703237247448;
+    lbx0[0] = 2.6554429283370062;
+    ubx0[0] = 2.6554429283370062;
+    lbx0[1] = 0.1412977506218196;
+    ubx0[1] = 0.1412977506218196;
+    lbx0[2] = -2.97567228844052;
+    ubx0[2] = -2.97567228844052;
+    lbx0[6] = 0.7601315185250551;
+    ubx0[6] = 0.7601315185250551;
+    lbx0[7] = 0.3888384224090394;
+    ubx0[7] = 0.3888384224090394;
+    lbx0[8] = -0.4463669613716308;
+    ubx0[8] = -0.4463669613716308;
+    lbx0[9] = -0.267882981167338;
+    ubx0[9] = -0.267882981167338;
 
     ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, 0, "idxbx", idxbx0);
     ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, 0, "lbx", lbx0);
@@ -601,6 +611,9 @@ void quadrotor_acados_create_5_set_nlp_in(quadrotor_solver_capsule* capsule, con
         ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, i, "nl_constr_h_fun",
                                       &capsule->nl_constr_h_fun[i]);
         
+        ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, i,
+                                      "nl_constr_h_fun_jac_hess", &capsule->nl_constr_h_fun_jac_hess[i]);
+        
         ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, i, "lh", lh);
         ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, i, "uh", uh);
     }
@@ -641,6 +654,17 @@ void quadrotor_acados_create_6_set_opts(quadrotor_solver_capsule* capsule)
     ************************************************/
 
 
+    int nlp_solver_exact_hessian = 1;
+    ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "exact_hess", &nlp_solver_exact_hessian);
+
+    int exact_hess_dyn = 1;
+    ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "exact_hess_dyn", &exact_hess_dyn);
+
+    int exact_hess_cost = 1;
+    ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "exact_hess_cost", &exact_hess_cost);
+
+    int exact_hess_constr = 1;
+    ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "exact_hess_constr", &exact_hess_constr);
     ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "globalization", "fixed_step");int full_step_dual = 0;
     ocp_nlp_solver_opts_set(nlp_config, capsule->nlp_opts, "full_step_dual", &full_step_dual);
 
@@ -746,13 +770,13 @@ void quadrotor_acados_create_7_set_nlp_out(quadrotor_solver_capsule* capsule)
 
     // initialize with x0
     
-    x0[0] = -3.3615423702944947;
-    x0[1] = -2.2557221558212017;
-    x0[2] = 0.4326714934743423;
-    x0[6] = 0.5808211369935029;
-    x0[7] = 0.15368829708446594;
-    x0[8] = -0.08300538833763148;
-    x0[9] = -0.7950703237247448;
+    x0[0] = 2.6554429283370062;
+    x0[1] = 0.1412977506218196;
+    x0[2] = -2.97567228844052;
+    x0[6] = 0.7601315185250551;
+    x0[7] = 0.3888384224090394;
+    x0[8] = -0.4463669613716308;
+    x0[9] = -0.267882981167338;
 
 
     double* u0 = xu0 + NX;
@@ -931,12 +955,14 @@ int quadrotor_acados_update_params(quadrotor_solver_capsule* capsule, int stage,
         capsule->impl_dae_fun[stage].set_param(capsule->impl_dae_fun+stage, p);
         capsule->impl_dae_fun_jac_x_xdot_z[stage].set_param(capsule->impl_dae_fun_jac_x_xdot_z+stage, p);
         capsule->impl_dae_jac_x_xdot_u_z[stage].set_param(capsule->impl_dae_jac_x_xdot_u_z+stage, p);
+        capsule->impl_dae_hess[stage].set_param(capsule->impl_dae_hess+stage, p);
     
 
         // constraints
     
         capsule->nl_constr_h_fun_jac[stage].set_param(capsule->nl_constr_h_fun_jac+stage, p);
         capsule->nl_constr_h_fun[stage].set_param(capsule->nl_constr_h_fun+stage, p);
+        capsule->nl_constr_h_fun_jac_hess[stage].set_param(capsule->nl_constr_h_fun_jac_hess+stage, p);
 
         // cost
         if (stage == 0)
@@ -995,12 +1021,14 @@ int quadrotor_acados_update_params_sparse(quadrotor_solver_capsule * capsule, in
         capsule->impl_dae_fun[stage].set_param_sparse(capsule->impl_dae_fun+stage, n_update, idx, p);
         capsule->impl_dae_fun_jac_x_xdot_z[stage].set_param_sparse(capsule->impl_dae_fun_jac_x_xdot_z+stage, n_update, idx, p);
         capsule->impl_dae_jac_x_xdot_u_z[stage].set_param_sparse(capsule->impl_dae_jac_x_xdot_u_z+stage, n_update, idx, p);
+        capsule->impl_dae_hess[stage].set_param_sparse(capsule->impl_dae_hess+stage, n_update, idx, p);
     
 
         // constraints
     
         capsule->nl_constr_h_fun_jac[stage].set_param_sparse(capsule->nl_constr_h_fun_jac+stage, n_update, idx, p);
         capsule->nl_constr_h_fun[stage].set_param_sparse(capsule->nl_constr_h_fun+stage, n_update, idx, p);
+        capsule->nl_constr_h_fun_jac_hess[stage].set_param_sparse(capsule->nl_constr_h_fun_jac_hess+stage, n_update, idx, p);
 
         // cost
         if (stage == 0)
@@ -1064,10 +1092,12 @@ int quadrotor_acados_free(quadrotor_solver_capsule* capsule)
         external_function_param_casadi_free(&capsule->impl_dae_fun[i]);
         external_function_param_casadi_free(&capsule->impl_dae_fun_jac_x_xdot_z[i]);
         external_function_param_casadi_free(&capsule->impl_dae_jac_x_xdot_u_z[i]);
+        external_function_param_casadi_free(&capsule->impl_dae_hess[i]);
     }
     free(capsule->impl_dae_fun);
     free(capsule->impl_dae_fun_jac_x_xdot_z);
     free(capsule->impl_dae_jac_x_xdot_u_z);
+    free(capsule->impl_dae_hess);
 
     // cost
     external_function_param_casadi_free(&capsule->ext_cost_0_fun);
@@ -1092,8 +1122,13 @@ int quadrotor_acados_free(quadrotor_solver_capsule* capsule)
         external_function_param_casadi_free(&capsule->nl_constr_h_fun_jac[i]);
         external_function_param_casadi_free(&capsule->nl_constr_h_fun[i]);
     }
+    for (int i = 0; i < N; i++)
+    {
+        external_function_param_casadi_free(&capsule->nl_constr_h_fun_jac_hess[i]);
+    }
     free(capsule->nl_constr_h_fun_jac);
     free(capsule->nl_constr_h_fun);
+    free(capsule->nl_constr_h_fun_jac_hess);
 
     return 0;
 }

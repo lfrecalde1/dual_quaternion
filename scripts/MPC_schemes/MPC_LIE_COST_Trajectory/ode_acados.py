@@ -119,6 +119,38 @@ def rotation_casadi():
     f_rot =  ca.Function('f_rot', [quat_aux_1, vector_aux_1], [vector_i[1:4, 0]])
     return f_rot
 
+def rotation(quat_aux_1, vector_aux_1):
+    # Function that enables the rotation of a vector using quaternions
+
+    # Defining the pure quaternion based on the vector information
+    vector = ca.vertcat(0.0, vector_aux_1)
+
+    # Compute conjugate of the quaternion
+    quat = quat_aux_1
+    quat_c = ca.vertcat(quat[0, 0], -quat[1, 0], -quat[2, 0], -quat[3, 0])
+
+    # v' = q x v x q*
+    # Rotation to the inertial frame
+
+    H_plus_q = ca.vertcat(ca.horzcat(quat[0, 0], -quat[1, 0], -quat[2, 0], -quat[3, 0]),
+                                ca.horzcat(quat[1, 0], quat[0, 0], -quat[3, 0], quat[2, 0]),
+                                ca.horzcat(quat[2, 0], quat[3, 0], quat[0, 0], -quat[1, 0]),
+                                ca.horzcat(quat[3, 0], -quat[2, 0], quat[1, 0], quat[0, 0]))
+
+    # Computing the first multiplication
+    aux_value = H_plus_q@vector
+
+    # Multiplication by the conjugate part
+    H_plus_aux = ca.vertcat(ca.horzcat(aux_value[0, 0], -aux_value[1, 0], -aux_value[2, 0], -aux_value[3, 0]),
+                                ca.horzcat(aux_value[1, 0], aux_value[0, 0], -aux_value[3, 0], aux_value[2, 0]),
+                                ca.horzcat(aux_value[2, 0], aux_value[3, 0], aux_value[0, 0], -aux_value[1, 0]),
+                                ca.horzcat(aux_value[3, 0], -aux_value[2, 0], aux_value[1, 0], aux_value[0, 0]))
+
+    # Computing the vector rotate respect the quaternion
+    vector_i = H_plus_aux@quat_c
+
+    return vector_i[1:4, 0]
+
 
 def rotation_inverse_casadi():
     # Creation of the symbolic variables for the quaternion and the vector
@@ -461,6 +493,61 @@ def error_dual_aux_casadi():
     f_error_dual = Function('f_error_dual', [qd, q], [q_error])
     return f_error_dual
 
+def dual_aceleraction_drag_casadi(dual, omega, u, L):
+    # Split Control Actions
+    force = u[0, 0]
+    torques = u[1:4, 0]
+
+    # System Matrices
+    J = ca.DM.zeros(3, 3)
+    J[0, 0] = L[1]
+    J[1, 1] = L[2]
+    J[2, 2] = L[3]
+    J_1 = ca.inv(J)
+
+
+    e3 = ca.DM.zeros(3, 1)
+
+    e3[2, 0] = 1.0
+
+
+    g = L[4]
+    m = L[0]
+    dx = L[5]
+    dy = L[6]
+    dz = L[7]
+    kh = L[8]
+
+    
+    D = ca.DM.zeros(3, 3)
+    D[0, 0] = dx
+    D[1, 1] = dy
+    D[2, 2] = dz
+
+
+    # Compute linear and angular velocity from twist velocity
+    w = omega[0:3, 0]
+    v = omega[3:6, 0]
+    p = get_trans(dual)
+    q = get_quat(dual)
+    p = p[1:4, 0]
+
+    aux = v[0] + v[1]
+
+    # Compute unforced part
+    a = ca.cross(-J_1@w, J@w)
+    F_r = a
+    F_d = ca.cross(v, w) - g*(f_rotation_inverse(q, e3)) + kh*(aux*aux)@e3 - D@v
+
+    # Compute forced part
+    U_r = J_1@torques
+    U_d = (force/m)@e3
+
+    T_r = F_r + U_r
+    T_d = F_d + U_d
+    T = ca.vertcat(T_r, T_d)
+
+    return T
 def dual_aceleraction_casadi(dual, omega, u, L):
     # Split Control Actions
     force = u[0, 0]
@@ -476,6 +563,12 @@ def dual_aceleraction_casadi(dual, omega, u, L):
     e3[2, 0] = 1.0
     g = L[4]
     m = L[0]
+
+    dx = L[5]
+    dy = L[6]
+    dz = L[7]
+    kh = L[8]
+
 
     # Compute linear and angular velocity from twist velocity
     w = omega[0:3, 0]
@@ -594,7 +687,7 @@ def quadrotorModel(L: list)-> AcadosModel:
     model.z = z
     model.p = p
     model.name = model_name
-    return model, get_trans, get_quat, constraint, error_lie, error_dual, ln_dual, Ad, conjugate_dual
+    return model, get_trans, get_quat, constraint, error_lie, error_dual, ln_dual, Ad, conjugate_dual, rotation
 
 def noise(x, noise):
     # Get position and quaternion
@@ -813,11 +906,17 @@ def compute_reference(t, ts, mul, L):
         r_d = R.from_matrix(R_d)
         quad_d_aux = r_d.as_quat()
         q[:, k] = np.array([quad_d_aux[3], quad_d_aux[0], quad_d_aux[1], quad_d_aux[2]])
-
+        if k > 0:
+            aux_dot = np.dot(q[:, k], q[:, k-1])
+            if aux_dot < 0:
+                q[:, k] = -q[:, k]
+            else:
+                q[:, k] = q[:, k]
+        else:
+            None
         # Compute nominal force of the in the body frame
         f[:, k] = np.dot(Zb[:, k], m*hd_pp[:, k] + m*g*Zw[:, 0])
 
-        
         # Compute angular velocities
         # Elements of the vecto b
         b1 = m*np.dot(Xb[:, k], hd_ppp[:, k])

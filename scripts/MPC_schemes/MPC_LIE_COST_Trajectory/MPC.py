@@ -141,10 +141,12 @@ def main(odom_pub_1, odom_pub_2, L, x0, initial):
     taux_3_min = -0.1
 
     # Differential Flatness
-    hd, hd_d, qd, w_d, f_d, M_d = compute_reference(t, sample_time, 15, L)
+    hd, hd_d, qd, w_d, f_d, M_d = compute_reference(t, sample_time, 20, L)
+    qd_filter = np.zeros((4, t.shape[0]+1), dtype=np.double)
 
     # Initial condition for the desired states
     X_d = np.zeros((14, t.shape[0]+1), dtype=np.double)
+
     for k in range(0, t.shape[0]):
         qw1_d = qd[0, k]
         qx1_d = qd[1, k]
@@ -168,7 +170,7 @@ def main(odom_pub_1, odom_pub_2, L, x0, initial):
         angular_linear_1_d = np.array([wx_d, wy_d, wz_d, hxd_d, hyd_d, hzd_d]) # Angular Body linear Inertial
         dual_twist_1_d = dual_twist(angular_linear_1_d, dual_1_d)
         # Update Reference
-        X_d[8:14, k] = np.array(dual_twist_1_d).reshape((6, ))
+        X_d[8:14, k] = angular_linear_1_d
         X_d[0:8, k] = np.array(dual_1_d).reshape((8, ))
 
     # Desired Reference Inputs
@@ -255,23 +257,28 @@ def main(odom_pub_1, odom_pub_2, L, x0, initial):
 
     error_dual_filter = np.zeros((8, t.shape[0] - N_prediction), dtype=np.double)
 
+    error_dual_no_filter = np.array(error_dual_f(X_d[0:8, 0], X[0:8, 0])).reshape((8, ))
+    if error_dual_no_filter[0] > 0.0:
+        X_d[0:8, :] = X_d[0:8, :]
+    else:
+        X_d[0:8, :] = -X_d[0:8, :]
     # Simulation loop
     for k in range(0, t.shape[0] - N_prediction):
         tic = rospy.get_time()
 
         # Check Desired Dual Quaternion in order to compute the shortest path between the desired dual quaternion and the real
-        for j in range(N_prediction):
-            # check shortest path
-            error_dual_no_filter = np.array(error_dual_f(X_d[0:8, k+j], X[0:8, k])).reshape((8, ))
-            if error_dual_no_filter[0] > 0.0:
-                X_d[0:8, k+j] = X_d[0:8, k+j]
-            else:
-                X_d[0:8, k+j] = -X_d[0:8, k+j]
-        error_dual_no_filter = np.array(error_dual_f(X_d[0:8, k+N_prediction], X[0:8, k])).reshape((8, ))
-        if error_dual_no_filter[0] > 0.0:
-            X_d[0:8, k+N_prediction] = X_d[0:8, k+N_prediction]
-        else:
-            X_d[0:8, k+N_prediction] = -X_d[0:8, k+N_prediction]
+        #for j in range(N_prediction):
+        #    # check shortest path
+        #    error_dual_no_filter = np.array(error_dual_f(X_d[0:8, k+j], X[0:8, k])).reshape((8, ))
+        #    if error_dual_no_filter[0] > 0.0:
+        #        X_d[0:8, k+j] = X_d[0:8, k+j]
+        #    else:
+        #        X_d[0:8, k+j] = -X_d[0:8, k+j]
+        #error_dual_no_filter = np.array(error_dual_f(X_d[0:8, k+N_prediction], X[0:8, k])).reshape((8, ))
+        #if error_dual_no_filter[0] > 0.0:
+        #    X_d[0:8, k+N_prediction] = X_d[0:8, k+N_prediction]
+        #else:
+        #    X_d[0:8, k+N_prediction] = -X_d[0:8, k+N_prediction]
 
         white_noise = np.random.multivariate_normal(np.zeros(12),uav_white_noise_cov)
 
@@ -381,6 +388,8 @@ def main(odom_pub_1, odom_pub_2, L, x0, initial):
     fig101, ax101  = fancy_plots_1()
     plot_cost_total(fig101, ax101, orientation_cost, t, "Cost Ori Based On LieAlgebra Cost "+ str(initial), folder_path)
 
+    fig61, ax61, ax62, ax63, ax64 = fancy_plots_4()
+    plot_states_quaternion(fig61, ax61, ax62, ax63, ax64, qd[0:4, :], qd[0:4, :], t, "Quaternion Differential Flatness On LieAlgebra Cost "+ str(initial), folder_path)
     return X, X_d, F, M, orientation_cost, translation_cost, control_cost, t, N_prediction, kkt_values, sqp_iteration
 
 if __name__ == '__main__':
@@ -397,8 +406,12 @@ if __name__ == '__main__':
         Jxx = 2.64e-3
         Jyy = 2.64e-3
         Jzz = 4.96e-3
+        dx = 0.26
+        dy = 0.28
+        dz = 0.42
+        kh = 0.01
         g = 9.8
-        L = [m, Jxx, Jyy, Jzz, g]
+        L = [m, Jxx, Jyy, Jzz, g, dx, dy, dz, kh]
 
         # empty matrices
         Data_States = []

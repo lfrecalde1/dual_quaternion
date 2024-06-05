@@ -12,7 +12,7 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
     ocp = AcadosOcp()
 
     # Model of the system
-    model, get_trans, get_quat, constraint, error_lie_2, dual_error, ln, Ad, conjugate = quadrotorModel(L)
+    model, get_trans, get_quat, constraint, error_lie_2, dual_error, ln, Ad, conjugate, rotation = quadrotorModel(L)
 
     # Constructing the optimal control problem
     ocp.model = model
@@ -53,9 +53,14 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
     error_nominal_input = nominal_input - model.u[0:4]
 
     # Angular velocities
-    w_dual = model.x[8:14]
-    w_d_dual = ocp.p[8:14]
-    error_dot = w_dual - Ad(error_c, w_d_dual)
+    w_b = model.x[8:11]
+    v_b = model.x[11:14]
+    v_i = rotation(model.x[0:4], v_b)
+
+    w_b_d = ocp.p[8:11]
+    v_i_d = ocp.p[11:14]
+    error_w = w_b - w_b_d
+    error_v = v_i - v_i_d
 
     # Gain Matrix complete error
 
@@ -67,11 +72,12 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
     Q_l[4, 4] = 1.6
     Q_l[5, 5] = 1.6
 
-    #ocp.model.cost_expr_ext_cost = 10*(ln_error.T@Q_l@ln_error) + 1*(error_nominal_input.T @ R @ error_nominal_input) + 1*(error_dot.T@error_dot) + 1*(ln_error.T@error_dot)
-    #ocp.model.cost_expr_ext_cost_e =  10*(ln_error.T@Q_l@ln_error) + 1*(error_dot.T@error_dot) + 1*(ln_error.T@error_dot)
+    ocp.model.cost_expr_ext_cost = 11*(ln_error.T@Q_l@ln_error) + 1*(error_nominal_input.T @ R @ error_nominal_input)  + 0.2*(error_w.T@error_w) + 0.2*(error_v.T@error_v)
+    ocp.model.cost_expr_ext_cost_e =  11*(ln_error.T@Q_l@ln_error) + 0.2*(error_w.T@error_w) + 0.2*(error_v.T@error_v)
 
-    ocp.model.cost_expr_ext_cost = 10*(ln_error.T@Q_l@ln_error) + 1*(error_nominal_input.T @ R @ error_nominal_input)
-    ocp.model.cost_expr_ext_cost_e =  10*(ln_error.T@Q_l@ln_error)
+
+    #ocp.model.cost_expr_ext_cost = 10*(ln_error.T@Q_l@ln_error) + 1*(error_nominal_input.T @ R @ error_nominal_input)
+    #ocp.model.cost_expr_ext_cost_e =  10*(ln_error.T@Q_l@ln_error)
 
 
     # Auxiliary variable initialization
@@ -109,7 +115,7 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
     # Set options
     ocp.solver_options.qp_solver = "PARTIAL_CONDENSING_HPIPM" 
     ocp.solver_options.qp_solver_cond_N = N_horizon // 4
-    ocp.solver_options.hessian_approx = "GAUSS_NEWTON"  
+    ocp.solver_options.hessian_approx = "EXACT"  
     ocp.solver_options.regularize_method = "CONVEXIFY"  
     ocp.solver_options.integrator_type = "IRK"
     ocp.solver_options.nlp_solver_type = "SQP"

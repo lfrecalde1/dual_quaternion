@@ -52,7 +52,7 @@ def quatTorot_c(quat):
 
     # Normalized quaternion
     q = quat
-    q = q/(q.T@q)
+    #q = q/(q.T@q)
 
     # Create empty variable
     #q_hat = ca.MX.zeros(3, 3)

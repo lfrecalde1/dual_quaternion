@@ -72,7 +72,7 @@ def main(ts: float, t_f: float, t_N: float, x_0: np.ndarray, L: list, odom_pub_1
     x[:, 0] = x_0
 
     # Reference States
-    hd, hd_d, qd, w_d, f_d, M_d = compute_reference(t, ts, 15, L)
+    hd, hd_d, qd, w_d, f_d, M_d = compute_reference(t, ts, 20, L)
     u_planning = np.zeros((4, t.shape[0]), dtype=np.double)
     u_planning[0, :] = f_d[0, :]
     u_planning[1:4, :] = M_d[0:3, :]
@@ -111,13 +111,13 @@ def main(ts: float, t_f: float, t_N: float, x_0: np.ndarray, L: list, odom_pub_1
 
 
     # No Cython
-    acados_ocp_solver = AcadosOcpSolver(ocp, json_file="acados_ocp_" + ocp.model.name + ".json", build= True, generate= True)
-    #acados_ocp_solver = AcadosOcpSolver(ocp, json_file="acados_ocp_" + ocp.model.name + ".json", build= False, generate= False)
+    #acados_ocp_solver = AcadosOcpSolver(ocp, json_file="acados_ocp_" + ocp.model.name + ".json", build= True, generate= True)
+    acados_ocp_solver = AcadosOcpSolver(ocp, json_file="acados_ocp_" + ocp.model.name + ".json", build= False, generate= False)
 
     
     # Integration using Acados
-    acados_integrator = AcadosSimSolver(ocp, json_file="acados_sim_" + ocp.model.name + ".json", build= True, generate= True)
-    #acados_integrator = AcadosSimSolver(ocp, json_file="acados_sim_" + ocp.model.name + ".json", build= False, generate= False)
+    #acados_integrator = AcadosSimSolver(ocp, json_file="acados_sim_" + ocp.model.name + ".json", build= True, generate= True)
+    acados_integrator = AcadosSimSolver(ocp, json_file="acados_sim_" + ocp.model.name + ".json", build= False, generate= False)
     # Auxiliary variables and control
     nx = ocp.model.x.size()[0]
     nu = ocp.model.u.size()[0]
@@ -336,7 +336,7 @@ if __name__ == '__main__':
         # Initial conditions of the system
         X_total = []
         X_total_aux = []
-        number_experiments = 10
+        number_experiments = 30
         max_position = 4
         min_position = -4
 
