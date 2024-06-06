@@ -28,10 +28,10 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
 
     # Control effort using gain matrices
     R = DM.zeros(4, 4)
-    R[0, 0] = 20/F_max
-    R[1, 1] = 60/tau_1_max
-    R[2, 2] = 60/tau_2_max
-    R[3, 3] = 60/tau_3_max
+    R[0, 0] = 1/F_max
+    R[1, 1] = 1/tau_1_max
+    R[2, 2] = 1/tau_2_max
+    R[3, 3] = 1/tau_3_max
 
     # Definition of the cost functions (EXTERNAL)
     ocp.cost.cost_type = "EXTERNAL"
@@ -50,7 +50,8 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
 
     # Inputs
     nominal_input = ocp.p[14:18]
-    error_nominal_input = nominal_input - model.u[0:4]
+    error_nominal_input = model.u[0:4]
+    #error_nominal_input = nominal_input - model.u[0:4]
 
     # Angular velocities
     w_b = model.x[8:11]
@@ -72,8 +73,8 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
     Q_l[4, 4] = 1.6
     Q_l[5, 5] = 1.6
 
-    ocp.model.cost_expr_ext_cost = 11*(ln_error.T@Q_l@ln_error) + 1*(error_nominal_input.T @ R @ error_nominal_input)  + 0.2*(error_w.T@error_w) + 0.2*(error_v.T@error_v)
-    ocp.model.cost_expr_ext_cost_e =  11*(ln_error.T@Q_l@ln_error) + 0.2*(error_w.T@error_w) + 0.2*(error_v.T@error_v)
+    ocp.model.cost_expr_ext_cost = 10*(ln_error.T@Q_l@ln_error) + 1*(error_nominal_input.T @ R @ error_nominal_input)  + 0.2*(error_w.T@error_w) + 0.2*(error_v.T@error_v)
+    ocp.model.cost_expr_ext_cost_e =  10*(ln_error.T@Q_l@ln_error) + 0.2*(error_w.T@error_w) + 0.2*(error_v.T@error_v)
 
 
     #ocp.model.cost_expr_ext_cost = 10*(ln_error.T@Q_l@ln_error) + 1*(error_nominal_input.T @ R @ error_nominal_input)

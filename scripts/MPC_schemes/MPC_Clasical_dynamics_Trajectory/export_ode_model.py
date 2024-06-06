@@ -108,6 +108,168 @@ def quatdot_c(quat, omega):
     q_dot = (1/2)*(H_r_plus@omega_quat) + K_quat*quat_error*quat
     return q_dot
 
+def quadrotorModelDrag(L: list)-> AcadosModel:
+    # Dynamics of the quadrotor based on unit quaternions
+    # INPUT
+    # L                                                          - system parameters(mass, Inertias and gravity)
+    # OUTPUT                           
+    # model                                                      - Acados model
+    model_name = 'quadrotor'
+    constraint = ca.types.SimpleNamespace()
+    # Split system parameters
+    m = L[0]
+    Jxx = L[1]
+    Jyy = L[2]
+    Jzz = L[3]
+    gravity = L[4]
+    dx = L[5]
+    dy = L[6]
+    dz = L[7]
+    kh = L[8]
+
+    
+    # States of the system
+    x = MX.sym('x')
+    y = MX.sym('y')
+    z = MX.sym('z')
+
+    vx = MX.sym('vx')
+    vy = MX.sym('vy')
+    vz = MX.sym('vz')
+
+    qw = MX.sym('qw')
+    q1 = MX.sym('q1')
+    q2 = MX.sym('q2')
+    q3 = MX.sym('q3')
+
+    wx = MX.sym('wx')
+    wy = MX.sym('wy')
+    wz = MX.sym('wz')
+
+    X = vertcat(x, y, z, vx, vy, vz, qw, q1, q2, q3, wx, wy, wz)
+
+    # Auxiliary variables implicit function
+    x_dot = MX.sym('x_dot')
+    y_dot = MX.sym('y_dot')
+    z_dot = MX.sym('z_dot')
+
+    vx_dot = MX.sym('vx_dot')
+    vy_dot = MX.sym('vy_dot')
+    vz_dot = MX.sym('vz_dot')
+
+    qw_dot = MX.sym('qw_dot')
+    q1_dot = MX.sym('q1_dot')
+    q2_dot = MX.sym('q2_dot')
+    q3_dot = MX.sym('q3_dot')
+
+    wx_dot = MX.sym('wx_dot')
+    wy_dot = MX.sym('wy_dot')
+    wz_dot = MX.sym('wz_dot')
+
+    X_dot = vertcat(x_dot, y_dot, z_dot, vx_dot, vy_dot, vz_dot, qw_dot, q1_dot, q2_dot, q3_dot, wx_dot, wy_dot, wz_dot)
+
+    # Control actions
+    F_ref = MX.sym('F_ref')
+    tau_1_ref = MX.sym('tau_1_ref')
+    tau_2_ref = MX.sym('tau_2_ref')
+    tau_3_ref = MX.sym('tau_3_ref')
+
+    u = vertcat(F_ref, tau_1_ref, tau_2_ref, tau_3_ref)
+
+    # Inertial Matrix
+    J = MX.zeros(3, 3)
+    J[0, 0] = Jxx
+    J[1, 1] = Jyy
+    J[2, 2] = Jzz
+
+    D = ca.DM.zeros(3, 3)
+    D[0, 0] = dx
+    D[1, 1] = dy
+    D[2, 2] = dz
+
+    #Auxiliar variable
+    e3 = MX.zeros(3, 1)
+    e3[2, 0] = 1.0
+    g = gravity*e3
+
+    # Split values
+    vel = X[3:6, 0]
+    quat = X[6:10, 0]
+    omega = X[10:13, 0]
+    R = quatTorot_c(quat)
+
+    X_b = R[:, 0]
+    Y_b = R[:, 1]
+
+    aux_drag = X_b.T@vel + Y_b.T@vel
+
+    # Rate of change of the system
+    acc = ((u[0]*(R@e3))/m) - g + kh*(aux_drag*aux_drag)*(R@e3) - R@(D@R.T@vel)
+
+    qdot = quatdot_c(quat, omega)
+    aux = J@omega
+    aux_cross = ca.cross(omega, aux)
+    omega_dot = ca.inv(J)@(u[1:4] - aux_cross)
+
+    # Desired Trajectory
+    x_d = MX.sym('x_d')
+    y_d = MX.sym('y_d')
+    z_d = MX.sym('z_d')
+
+    vx_d = MX.sym('vx_d')
+    vy_d = MX.sym('vy_d')
+    vz_d = MX.sym('vz_d')
+
+    qw_d = MX.sym('qw_d')
+    q1_d = MX.sym('q1_d')
+    q2_d = MX.sym('q2_d')
+    q3_d = MX.sym('q3_d')
+
+    wx_d = MX.sym('wx_d')
+    wy_d = MX.sym('wy_d')
+    wz_d = MX.sym('wz_d')
+
+    F_d = MX.sym('F_d')
+    T1_d = MX.sym('T1_d')
+    T2_d = MX.sym('T2_d')
+    T3_d = MX.sym('T3_d')
+
+
+    X_d = vertcat(x_d, y_d, z_d, vx_d, vy_d, vz_d, qw_d, q1_d, q2_d, q3_d, wx_d, wy_d, wz_d, F_d, T1_d, T2_d, T3_d)
+    p = X_d
+
+    # Explicit and implicit functions
+    f_expl = vertcat(vel, acc, qdot, omega_dot)
+    f_system = Function('system',[X, u], [f_expl])
+    f_impl = X_dot - f_expl
+
+    # Constraints quaternions
+    norm_q = ca.norm_2(X[6:10, 0])
+    constraint.norm = Function("norm", [X], [norm_q])
+    constraint.expr = vertcat(norm_q)
+    constraint.min = 1.0
+    constraint.max = 1.0
+
+    # Compute short path to the desired quaternion
+    q_error = ca.MX.sym('q_error', 4, 1)
+
+    # Define the function
+    f_error = ca.Function('f_error', [q_error], [ca.if_else(q_error[0] >= 0, q_error, -q_error)])
+
+    # Algebraic variables
+    z = []
+
+    # Dynamics
+    model = AcadosModel()
+    model.f_impl_expr = f_impl
+    model.f_expl_expr = f_expl
+    model.x = X
+    model.xdot = X_dot
+    model.u = u
+    model.z = z
+    model.p = p
+    model.name = model_name
+    return model, f_system, constraint, f_error, error_quaternion, f_rotation_inverse, error_quaternion_li, error_quaternion_z
 def quadrotorModel(L: list)-> AcadosModel:
     # Dynamics of the quadrotor based on unit quaternions
     # INPUT
@@ -122,7 +284,12 @@ def quadrotorModel(L: list)-> AcadosModel:
     Jyy = L[2]
     Jzz = L[3]
     gravity = L[4]
+    dx = L[5]
+    dy = L[6]
+    dz = L[7]
+    kh = L[8]
 
+    
     # States of the system
     x = MX.sym('x')
     y = MX.sym('y')
@@ -178,6 +345,11 @@ def quadrotorModel(L: list)-> AcadosModel:
     J[0, 0] = Jxx
     J[1, 1] = Jyy
     J[2, 2] = Jzz
+
+    D = ca.DM.zeros(3, 3)
+    D[0, 0] = dx
+    D[1, 1] = dy
+    D[2, 2] = dz
 
     #Auxiliar variable
     e3 = MX.zeros(3, 1)

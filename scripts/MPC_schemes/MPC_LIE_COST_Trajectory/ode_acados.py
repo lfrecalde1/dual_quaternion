@@ -505,11 +505,8 @@ def dual_aceleraction_drag_casadi(dual, omega, u, L):
     J[2, 2] = L[3]
     J_1 = ca.inv(J)
 
-
     e3 = ca.DM.zeros(3, 1)
-
     e3[2, 0] = 1.0
-
 
     g = L[4]
     m = L[0]
@@ -518,7 +515,6 @@ def dual_aceleraction_drag_casadi(dual, omega, u, L):
     dz = L[7]
     kh = L[8]
 
-    
     D = ca.DM.zeros(3, 3)
     D[0, 0] = dx
     D[1, 1] = dy
@@ -789,33 +785,33 @@ def ref_trajectory_agresive(t, ts, mul):
         # theta                                            - desired orientation
         # theta_p                                          - desired angular velocity
         t = t
-        Q = 1
+        Q = mul
 
         # Compute desired reference x y z
         xd = 4 * np.sin(mul * 0.04* t)
         yd = 4 * np.sin(mul * 0.08 * t)
-        zd = 1 * np.sin(Q*t) + 1
+        zd = 1 * np.sin(0.05*Q*t) + 1
 
         # Compute velocities
         # Compute velocities
         xd_p = 4 * mul * 0.04 * np.cos(mul * 0.04 * t)
         yd_p = 4 * mul * 0.08 * np.cos(mul * 0.08 * t)
-        zd_p = 1 * Q * np.cos(Q * t)
+        zd_p = 0.05 * Q * np.cos(0.05*Q * t)
 
         # Compute acceleration
         xd_pp = -4 * mul * mul * 0.04 * 0.04 * np.sin(mul * 0.04 * t)
         yd_pp = -4 * mul * mul * 0.08 * 0.08 * np.sin(mul * 0.08 * t);  
-        zd_pp = -1 * Q * Q *  np.sin(Q * t)
+        zd_pp = -0.05 * 0.05 * Q * Q *  np.sin(0.05*Q * t)
 
         # Compute jerk
         xd_ppp = -4 * mul * mul * mul * 0.04 * 0.04 * 0.04 * np.cos(mul * 0.04 * t)
         yd_ppp = -4 * mul * mul * mul * 0.08 * 0.08 * 0.08 * np.cos(mul * 0.08 * t);  
-        zd_ppp = -1 * Q * Q * Q * np.cos(Q * t)
+        zd_ppp = -0.05 * 0.05 * 0.05* Q * Q * Q * np.cos(0.05*Q * t)
 
         # Compute snap
         xd_pppp = 4 * mul * mul * mul * mul * 0.04 * 0.04 * 0.04 * 0.04 * np.sin(mul * 0.04 * t)
         yd_pppp = 4 * mul * mul * mul * mul * 0.08 * 0.08 * 0.08 * 0.08 * np.sin(mul * 0.08 * t);  
-        zd_pppp = 1 * Q * Q * Q * Q * np.sin(Q * t)
+        zd_pppp = 0.05 * 0.05 * 0.05 * 0.05 * Q * Q * Q * Q * np.sin(0.05*Q * t)
 
         # Compute angular displacement
         theta = np.arctan2(yd_p, xd_p)
@@ -917,6 +913,7 @@ def compute_reference(t, ts, mul, L):
         # Compute nominal force of the in the body frame
         f[:, k] = np.dot(Zb[:, k], m*hd_pp[:, k] + m*g*Zw[:, 0])
 
+        
         # Compute angular velocities
         # Elements of the vecto b
         b1 = m*np.dot(Xb[:, k], hd_ppp[:, k])

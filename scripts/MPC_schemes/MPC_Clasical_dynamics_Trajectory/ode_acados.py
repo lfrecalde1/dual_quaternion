@@ -669,33 +669,33 @@ def ref_trajectory_agresive(t, ts, mul):
         # theta                                            - desired orientation
         # theta_p                                          - desired angular velocity
         t = t
-        Q = 1
+        Q = mul
 
         # Compute desired reference x y z
         xd = 4 * np.sin(mul * 0.04* t)
         yd = 4 * np.sin(mul * 0.08 * t)
-        zd = 1 * np.sin(Q*t) + 1
+        zd = 1 * np.sin(0.05*Q*t) + 1
 
         # Compute velocities
         # Compute velocities
         xd_p = 4 * mul * 0.04 * np.cos(mul * 0.04 * t)
         yd_p = 4 * mul * 0.08 * np.cos(mul * 0.08 * t)
-        zd_p = 1 * Q * np.cos(Q * t)
+        zd_p = 0.05 * Q * np.cos(0.05*Q * t)
 
         # Compute acceleration
         xd_pp = -4 * mul * mul * 0.04 * 0.04 * np.sin(mul * 0.04 * t)
         yd_pp = -4 * mul * mul * 0.08 * 0.08 * np.sin(mul * 0.08 * t);  
-        zd_pp = -1 * Q * Q *  np.sin(Q * t)
+        zd_pp = -0.05 * 0.05 * Q * Q *  np.sin(0.05*Q * t)
 
         # Compute jerk
         xd_ppp = -4 * mul * mul * mul * 0.04 * 0.04 * 0.04 * np.cos(mul * 0.04 * t)
         yd_ppp = -4 * mul * mul * mul * 0.08 * 0.08 * 0.08 * np.cos(mul * 0.08 * t);  
-        zd_ppp = -1 * Q * Q * Q * np.cos(Q * t)
+        zd_ppp = -0.05 * 0.05 * 0.05* Q * Q * Q * np.cos(0.05*Q * t)
 
         # Compute snap
         xd_pppp = 4 * mul * mul * mul * mul * 0.04 * 0.04 * 0.04 * 0.04 * np.sin(mul * 0.04 * t)
         yd_pppp = 4 * mul * mul * mul * mul * 0.08 * 0.08 * 0.08 * 0.08 * np.sin(mul * 0.08 * t);  
-        zd_pppp = 1 * Q * Q * Q * Q * np.sin(Q * t)
+        zd_pppp = 0.05 * 0.05 * 0.05 * 0.05 * Q * Q * Q * Q * np.sin(0.05*Q * t)
 
         # Compute angular displacement
         theta = np.arctan2(yd_p, xd_p)
@@ -785,11 +785,15 @@ def compute_reference(t, ts, mul, L):
         R_d = np.array([[Xb[0, k], Yb[0, k], Zb[0, k]], [Xb[1, k], Yb[1, k], Zb[1, k]], [Xb[2, k], Yb[2, k], Zb[2, k]]])
         r_d = R.from_matrix(R_d)
         quad_d_aux = r_d.as_quat()
-        if quad_d_aux[3]>=0:
-            q[:, k] = np.array([quad_d_aux[3], quad_d_aux[0], quad_d_aux[1], quad_d_aux[2]])
+        q[:, k] = np.array([quad_d_aux[3], quad_d_aux[0], quad_d_aux[1], quad_d_aux[2]])
+        if k > 0:
+            aux_dot = np.dot(q[:, k], q[:, k-1])
+            if aux_dot < 0:
+                q[:, k] = -q[:, k]
+            else:
+                q[:, k] = q[:, k]
         else:
-            q[:, k] = np.array([-quad_d_aux[3], -quad_d_aux[0], -quad_d_aux[1], -quad_d_aux[2]])
-
+            None
         # Compute nominal force of the in the body frame
         f[:, k] = np.dot(Zb[:, k], m*hd_pp[:, k] + m*g*Zw[:, 0])
 

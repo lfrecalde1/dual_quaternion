@@ -98,8 +98,8 @@ static int casadi_f0(const casadi_real** arg, casadi_real** res, casadi_int* iw,
   casadi_real *rr, *ss, *tt;
   const casadi_real *cs;
   casadi_real w0, w1, *w2=w+10, w3, *w4=w+17, *w5=w+20, *w6=w+28, w7, w8, w9, w10, *w11=w+50, w12, w13, *w14=w+56, *w15=w+60, *w16=w+64, *w17=w+68, *w18=w+84, *w19=w+100, *w20=w+132, *w21=w+164, *w22=w+180, *w23=w+212, *w24=w+276, w25, w26, w27, w28, w29, w30, w31, w32, *w33=w+348, *w34=w+362, *w35=w+370, w36, w37, w38, w39, w40, w41, w42, w43, *w44=w+381, w45, *w46=w+386, *w47=w+392, *w48=w+398, *w49=w+434, w50, *w51=w+438, *w52=w+442, w53, *w54=w+447, *w55=w+463, *w56=w+466, w57, w58, w59, w60, w61, w62, *w63=w+488, w64, w65, w66, w67, w68;
-  /* #0: @0 = 11 */
-  w0 = 11.;
+  /* #0: @0 = 10 */
+  w0 = 10.;
   /* #1: @1 = 0 */
   w1 = 0.;
   /* #2: @2 = zeros(1x6) */
@@ -853,8 +853,8 @@ static int casadi_f0(const casadi_real** arg, casadi_real** res, casadi_int* iw,
   for (i=0, rr=w21, cs=w18; i<4; ++i) for (j=0; j<4; ++j) rr[i+j*4] = *cs++;
   /* #306: @11 = zeros(4x1) */
   casadi_clear(w11, 4);
-  /* #307: @57 = 11 */
-  w57 = 11.;
+  /* #307: @57 = 10 */
+  w57 = 10.;
   /* #308: @2 = @2' */
   /* #309: @2 = (@57*@2) */
   for (i=0, rr=w2, cs=w2; i<6; ++i) (*rr++)  = (w57*(*cs++));

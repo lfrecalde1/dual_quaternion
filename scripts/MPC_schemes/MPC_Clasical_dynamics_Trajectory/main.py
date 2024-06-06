@@ -2,18 +2,17 @@ import numpy as np
 import time
 import matplotlib.pyplot as plt
 from fancy_plots import fancy_plots_3, fancy_plots_4, fancy_plots_1
-from fancy_plots import plot_states_position, plot_states_quaternion, plot_control_actions, plot_states_euler, plot_time, plot_cost_orientation, plot_cost_translation, plot_cost_control, plot_cost_total
-from system_functions import f_d, axisToquaternion, f_d_casadi, ref_trajectory, compute_desired_quaternion, get_euler_angles
-from system_functions import send_odom_msg, set_odom_msg, init_marker, set_marker, send_marker_msg, ref_trajectory_agresive
+from fancy_plots import plot_states_position, plot_states_quaternion, plot_control_actions, plot_cost_total, plot_control_actions_reference, plot_states_velocity_reference, plot_states_angular_reference
+from system_functions import get_euler_angles
+from system_functions import send_odom_msg, set_odom_msg, init_marker, set_marker, send_marker_msg
 from system_functions import init_marker_ref, set_marker_ref
-from export_ode_model import quadrotorModel
 from acados_template import AcadosOcpSolver, AcadosSimSolver
-from nmpc import create_ocp_solver
+from nmpc import create_ocp_solver, create_simulation_solver
 import rospy
 from nav_msgs.msg import Odometry
 from visualization_msgs.msg import Marker
 from functions import dualquat_from_pose_casadi
-from ode_acados import dualquat_trans_casadi, dualquat_quat_casadi, rotation_casadi, rotation_inverse_casadi, dual_velocity_casadi, dual_quat_casadi, velocities_from_twist_casadi
+from ode_acados import dualquat_trans_casadi, dualquat_quat_casadi, dual_velocity_casadi
 from ode_acados import f_rk4_casadi_simple, noise, cost_quaternion_casadi, cost_translation_casadi, error_quat_aux_casadi
 from ode_acados import compute_reference
 from scipy.io import savemat
@@ -72,7 +71,7 @@ def main(ts: float, t_f: float, t_N: float, x_0: np.ndarray, L: list, odom_pub_1
     x[:, 0] = x_0
 
     # Reference States
-    hd, hd_d, qd, w_d, f_d, M_d = compute_reference(t, ts, 20, L)
+    hd, hd_d, qd, w_d, f_d, M_d = compute_reference(t, ts, 1.8*(initial+1), L)
     u_planning = np.zeros((4, t.shape[0]), dtype=np.double)
     u_planning[0, :] = f_d[0, :]
     u_planning[1:4, :] = M_d[0:3, :]
@@ -98,7 +97,7 @@ def main(ts: float, t_f: float, t_N: float, x_0: np.ndarray, L: list, odom_pub_1
 
     # Constraints on control actions
     F_max = L[0]*L[4] + 20
-    F_min = 0
+    F_min = L[0]*L[4] - 5
     tau_1_max = 0.1
     tau_1_min = -0.1
     tau_2_max = 0.1
@@ -108,14 +107,18 @@ def main(ts: float, t_f: float, t_N: float, x_0: np.ndarray, L: list, odom_pub_1
 
     # Optimization problem
     ocp = create_ocp_solver(x[:, 0], N_prediction, t_N, F_max, F_min, tau_1_max, tau_1_min, tau_2_max, tau_2_min, tau_3_max, taux_3_min, L, ts)
+    ocp_simulation = create_simulation_solver(x[:, 0], N_prediction, t_N, F_max, F_min, tau_1_max, tau_1_min, tau_2_max, tau_2_min, tau_3_max, taux_3_min, L, ts)
 
 
     # No Cython
     #acados_ocp_solver = AcadosOcpSolver(ocp, json_file="acados_ocp_" + ocp.model.name + ".json", build= True, generate= True)
     acados_ocp_solver = AcadosOcpSolver(ocp, json_file="acados_ocp_" + ocp.model.name + ".json", build= False, generate= False)
 
-    
-    # Integration using Acados
+    # Integration Drag Model
+    #acados_integrator = AcadosSimSolver(ocp_simulation, json_file="acados_sim_" + ocp.model.name + ".json", build= True, generate= True)
+    #acados_integrator = AcadosSimSolver(ocp_simulation, json_file="acados_sim_" + ocp.model.name + ".json", build= False, generate= False)
+
+    # Integration Without Drag
     #acados_integrator = AcadosSimSolver(ocp, json_file="acados_sim_" + ocp.model.name + ".json", build= True, generate= True)
     acados_integrator = AcadosSimSolver(ocp, json_file="acados_sim_" + ocp.model.name + ".json", build= False, generate= False)
     # Auxiliary variables and control
@@ -285,16 +288,22 @@ def main(ts: float, t_f: float, t_N: float, x_0: np.ndarray, L: list, odom_pub_1
     fig12, ax12, ax22, ax32, ax42 = fancy_plots_4()
     plot_states_quaternion(fig12, ax12, ax22, ax32, ax42, x[6:10, :], xref[6:10, :], t, "Quaternions of the System "+ str(initial), folder_path)
 
-    # Control Actions
-    fig13, ax13, ax23, ax33, ax43 = fancy_plots_4()
-    plot_control_actions(fig13, ax13, ax23, ax33, ax43, F, M, t, "Control Actions of the System "+ str(initial), folder_path)
+    # Linear Velocities Inertial frame
+    fig13, ax13, ax23, ax33 = fancy_plots_3()
+    plot_states_velocity_reference(fig13, ax13, ax23, ax33, x[3:6, :], hd_d[0:3, :], t, "Linear Velocity of the System and Reference "+ str(initial), folder_path)
 
+    # Angular Velocities Body Frame
+    fig14, ax14, ax24, ax34 = fancy_plots_3()
+    plot_states_angular_reference(fig14, ax14, ax24, ax34, x[10:13, :], w_d[0:3, :], t, "Angular Velocity of the System and Reference "+ str(initial), folder_path)
+
+    # Control Actions Opti and Flatness
+    fig15, ax15, ax25, ax35, ax45 = fancy_plots_4()
+    plot_control_actions_reference(fig15, ax15, ax25, ax35, ax45, F, M, f_d, M_d, t, "Control Actions of the System and Reference "+ str(initial), folder_path)
+
+    # Cost Funtion
     fig18, ax18  = fancy_plots_1()
     plot_cost_total(fig18, ax18, orientation_cost, t, "Cost Ori "+ str(initial), folder_path)
 
-    # Control Actions Flatness
-    fig14, ax14, ax24, ax34, ax44 = fancy_plots_4()
-    plot_control_actions(fig14, ax14, ax24, ax34, ax44, f_d, M_d, t, "Control Actions of the System Flatness "+ str(initial), folder_path)
 
     return x, xref, F, M, orientation_cost, translation_cost, control_cost, t, N_prediction, kkt_values, sqp_iteration
 
@@ -331,7 +340,11 @@ if __name__ == '__main__':
         Jyy = 2.64e-3
         Jzz = 4.96e-3
         g = 9.8
-        L = [m, Jxx, Jyy, Jzz, g]
+        dx = 0.4
+        dy = 0.4
+        dz = 0.8
+        kh = 0.05
+        L = [m, Jxx, Jyy, Jzz, g, dx, dy, dz, kh]
 
         # Initial conditions of the system
         X_total = []
@@ -353,8 +366,8 @@ if __name__ == '__main__':
             omega_0 = np.array([0.0, 0.0, 0.0], dtype=np.double)
 
             # Fixed Initial Conditions
-            theta_0 = 0.99*np.pi
-            n_0 = np.array([0.0, 0.0, 1.0])
+            #theta_0 = 0.99*np.pi
+            #n_0 = np.array([0.0, 0.0, 1.0])
             #quat_0 = np.hstack([np.cos(theta_0 / 2), np.sin(theta_0 / 2) * np.array(n_0)])
 
             # Random initial conditions

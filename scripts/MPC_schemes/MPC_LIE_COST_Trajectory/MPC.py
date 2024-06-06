@@ -3,7 +3,7 @@ import rospy
 import numpy as np
 import matplotlib.pyplot as plt
 import casadi as ca
-from dual_quaternion import plot_states_quaternion, plot_states_position, fancy_plots_4, plot_angular_velocities, plot_linear_velocities, fancy_plots_3, plot_control_actions, fancy_plots_1, plot_time, plot_cost_orientation, plot_cost_translation, plot_cost_control, plot_cost_total
+from dual_quaternion import plot_states_quaternion, plot_states_position, fancy_plots_4, fancy_plots_3, fancy_plots_1, plot_cost_total, plot_states_angular_reference, plot_states_velocity_reference, plot_control_actions_reference
 from nav_msgs.msg import Odometry
 from functions import dualquat_from_pose_casadi
 from ode_acados import dualquat_trans_casadi, dualquat_quat_casadi, rotation_casadi, rotation_inverse_casadi, dual_velocity_casadi, dual_quat_casadi, velocities_from_twist_casadi
@@ -107,7 +107,7 @@ def main(odom_pub_1, odom_pub_2, L, x0, initial):
     dual_1 = dualquat_from_pose(qw1, qx1, qy1,  qz1, tx1, ty1, tz1)
     angular_linear_1 = np.array([x0[7], x0[8], x0[9], x0[10], x0[11], x0[12]]) # Angular Body linear Inertial
     dual_twist_1 = dual_twist(angular_linear_1, dual_1)
-    velocities  = dual_twist_1
+    velocities  = angular_linear_1
 
     # Empty Matrices that are used to plot the results
     Q1_trans_data = np.zeros((4, t.shape[0] + 1 - N_prediction), dtype=np.double)
@@ -132,7 +132,7 @@ def main(odom_pub_1, odom_pub_2, L, x0, initial):
 
     # Constraints on control actions
     F_max = L[0]*L[4] + 20
-    F_min = 0
+    F_min = L[0]*L[4] - 5
     tau_1_max = 0.1
     tau_1_min = -0.1
     tau_2_max = 0.1
@@ -141,7 +141,7 @@ def main(odom_pub_1, odom_pub_2, L, x0, initial):
     taux_3_min = -0.1
 
     # Differential Flatness
-    hd, hd_d, qd, w_d, f_d, M_d = compute_reference(t, sample_time, 20, L)
+    hd, hd_d, qd, w_d, f_d, M_d = compute_reference(t, sample_time, 1.8*(initial+1), L)
     qd_filter = np.zeros((4, t.shape[0]+1), dtype=np.double)
 
     # Initial condition for the desired states
@@ -266,20 +266,6 @@ def main(odom_pub_1, odom_pub_2, L, x0, initial):
     for k in range(0, t.shape[0] - N_prediction):
         tic = rospy.get_time()
 
-        # Check Desired Dual Quaternion in order to compute the shortest path between the desired dual quaternion and the real
-        #for j in range(N_prediction):
-        #    # check shortest path
-        #    error_dual_no_filter = np.array(error_dual_f(X_d[0:8, k+j], X[0:8, k])).reshape((8, ))
-        #    if error_dual_no_filter[0] > 0.0:
-        #        X_d[0:8, k+j] = X_d[0:8, k+j]
-        #    else:
-        #        X_d[0:8, k+j] = -X_d[0:8, k+j]
-        #error_dual_no_filter = np.array(error_dual_f(X_d[0:8, k+N_prediction], X[0:8, k])).reshape((8, ))
-        #if error_dual_no_filter[0] > 0.0:
-        #    X_d[0:8, k+N_prediction] = X_d[0:8, k+N_prediction]
-        #else:
-        #    X_d[0:8, k+N_prediction] = -X_d[0:8, k+N_prediction]
-
         white_noise = np.random.multivariate_normal(np.zeros(12),uav_white_noise_cov)
 
         # Compute cost
@@ -353,7 +339,8 @@ def main(odom_pub_1, odom_pub_2, L, x0, initial):
         Q1_trans_data[:, k + 1] = np.array(get_trans(X[0:8, k+1])).reshape((4, ))
         Q1_quat_data[:, k + 1] = np.array(get_quat(X[0:8, k+1])).reshape((4, ))
         # Compute body angular velocity and inertial linear velocity
-        velocities  = X[8:14, k +1]
+        dual_1 = dualquat_from_pose(Q1_quat_data[0, k+1], Q1_quat_data[1, k+1], Q1_quat_data[2, k+1],  Q1_quat_data[3, k+1], Q1_trans_data[1, k+1], Q1_trans_data[2, k+1], Q1_trans_data[3, k+1])
+        velocities = velocity_from_twist(X[8:14, k+1], X[0:8, k+1])
         # Save body angular and inertial linear velocitu
         Q1_velocities_data[:, k + 1] = np.array(velocities).reshape((6, ))
 
@@ -376,20 +363,29 @@ def main(odom_pub_1, odom_pub_2, L, x0, initial):
     control_cost = control_cost/1
     total_cost = total_cost/np.max(total_cost)
 
+    # PLot States of the system such as translation
     fig11, ax11, ax12, ax13, ax14 = fancy_plots_4()
     plot_states_quaternion(fig11, ax11, ax12, ax13, ax14, Q1_quat_data[0:4, :], Q2_quat_data[0:4, :], t, "Quaternion Results Based On LieAlgebra Cost "+ str(initial), folder_path)
 
+    # Plot Orientation of the system
     fig21, ax21, ax22, ax23 = fancy_plots_3()
     plot_states_position(fig21, ax21, ax22, ax23, Q1_trans_data[1:4, :], Q2_trans_data[1:4, :], t, "Position Results Based On LieAlgebra Cost "+ str(initial), folder_path)
-    # Control Actions
+
+    # Linear Velocities Inertial frame
+    fig31, ax31, ax32, ax33 = fancy_plots_3()
+    plot_states_velocity_reference(fig31, ax31, ax32, ax33, Q1_velocities_data[3:6, :], hd_d[0:3, :], t, "Linear Velocity of the System Based on LieAlgebra and Reference "+ str(initial), folder_path)
+
+    # Angular Velocities Body Frame
+    fig41, ax41, ax42, ax43 = fancy_plots_3()
+    plot_states_angular_reference(fig41, ax41, ax42, ax43, Q1_velocities_data[0:3, :], w_d[0:3, :], t, "Angular Velocity of the System Based on LieAlgebra and Reference "+ str(initial), folder_path)
+
+    # Control Actions Opti and Flatness
     fig51, ax51, ax52, ax53, ax54 = fancy_plots_4()
-    plot_control_actions(fig51, ax51, ax52, ax53, ax54, F, M, t, "Control Actions of the System Based On LieAlgebra Cost "+ str(initial), folder_path)
+    plot_control_actions_reference(fig51, ax51, ax52, ax53, ax54, F, M, f_d, M_d, t, "Control Actions of the System Based on Lie Algebra and Reference "+ str(initial), folder_path)
 
     fig101, ax101  = fancy_plots_1()
     plot_cost_total(fig101, ax101, orientation_cost, t, "Cost Ori Based On LieAlgebra Cost "+ str(initial), folder_path)
 
-    fig61, ax61, ax62, ax63, ax64 = fancy_plots_4()
-    plot_states_quaternion(fig61, ax61, ax62, ax63, ax64, qd[0:4, :], qd[0:4, :], t, "Quaternion Differential Flatness On LieAlgebra Cost "+ str(initial), folder_path)
     return X, X_d, F, M, orientation_cost, translation_cost, control_cost, t, N_prediction, kkt_values, sqp_iteration
 
 if __name__ == '__main__':
@@ -406,10 +402,10 @@ if __name__ == '__main__':
         Jxx = 2.64e-3
         Jyy = 2.64e-3
         Jzz = 4.96e-3
-        dx = 0.26
-        dy = 0.28
-        dz = 0.42
-        kh = 0.01
+        dx = 0.4
+        dy = 0.4
+        dz = 0.8
+        kh = 0.05
         g = 9.8
         L = [m, Jxx, Jyy, Jzz, g, dx, dy, dz, kh]
 
