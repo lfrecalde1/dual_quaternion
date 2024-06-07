@@ -69,8 +69,8 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
 
     # Position error
     error_position = ocp.p[0:3] - model.x[0:3]
-    #error_nominal_input = ocp.p[13:17] - model.u[0:4]
-    error_nominal_input = model.u[0:4]
+    error_nominal_input = ocp.p[13:17] - model.u[0:4]
+    #error_nominal_input = model.u[0:4]
 
     # Quaternion error
     q_d = ocp.p[6:10]
@@ -215,15 +215,15 @@ def create_simulation_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, 
     vi = model.x[3:6] - ocp.p[3:6]
     vb = vi
 
-    ocp.model.cost_expr_ext_cost = 1*(error_position.T @ Q @error_position) + 1*(error_nominal_input.T @ R @ error_nominal_input) + 1*(error_ori_li) + 0.2*(w.T@w) + 0.2*(vb.T@vb)
-    ocp.model.cost_expr_ext_cost_e = 1*(error_position.T @ Q @error_position)+ 1*(error_ori_li) + 0.2*(w.T@w) + 0.2*(vb.T@vb)
+    #ocp.model.cost_expr_ext_cost = 1*(error_position.T @ Q @error_position) + 1*(error_nominal_input.T @ R @ error_nominal_input) + 1*(error_ori_li) + 0.2*(w.T@w) + 0.2*(vb.T@vb)
+    #ocp.model.cost_expr_ext_cost_e = 1*(error_position.T @ Q @error_position)+ 1*(error_ori_li) + 0.2*(w.T@w) + 0.2*(vb.T@vb)
 
 
     #ocp.model.cost_expr_ext_cost = 1*(error_position.T @ Q @error_position) + 1*(error_nominal_input.T @ R @ error_nominal_input) + 1*(error_ori_li)
     #ocp.model.cost_expr_ext_cost_e = 1*(error_position.T @ Q @error_position)+ 1*(error_ori_li) + w.T@w + vb.T@vb
 
-    #ocp.model.cost_expr_ext_cost = 1*(error_position.T @ Q @error_position) + 1*(error_nominal_input.T @ R @ error_nominal_input) + 1*(error_ori_li)
-    #ocp.model.cost_expr_ext_cost_e = 1*(error_position.T @ Q @error_position)+ 1*(error_ori_li)
+    ocp.model.cost_expr_ext_cost = 1*(error_position.T @ Q @error_position) + 1*(error_nominal_input.T @ R @ error_nominal_input) + 1*(error_ori_li)
+    ocp.model.cost_expr_ext_cost_e = 1*(error_position.T @ Q @error_position)+ 1*(error_ori_li)
 
     # Auxiliary variable initialization
     ocp.parameter_values = np.zeros(nx + nu)
@@ -259,9 +259,9 @@ def create_simulation_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, 
     ocp.constraints.idxsh = np.array(range(nsh))
 
     # Set options
-    ocp.solver_options.qp_solver = "PARTIAL_CONDENSING_HPIPM" 
+    ocp.solver_options.qp_solver = "FULL_CONDENSING_HPIPM" 
     ocp.solver_options.qp_solver_cond_N = N_horizon // 4
-    ocp.solver_options.hessian_approx = "EXACT"  
+    ocp.solver_options.hessian_approx = "GAUSS_NEWTON"  
     ocp.solver_options.regularize_method = "CONVEXIFY"  
     ocp.solver_options.integrator_type = "IRK"
     ocp.solver_options.nlp_solver_type = "SQP"

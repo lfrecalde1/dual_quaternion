@@ -107,7 +107,7 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
     ocp.constraints.idxsh = np.array(range(nsh))
 #
     # Set options
-    ocp.solver_options.qp_solver = "PARTIAL_CONDENSING_HPIPM" 
+    ocp.solver_options.qp_solver = "FULL_CONDENSING_HPIPM" 
     ocp.solver_options.qp_solver_cond_N = N_horizon // 4
     ocp.solver_options.hessian_approx = "GAUSS_NEWTON"  
     ocp.solver_options.regularize_method = "CONVEXIFY"  

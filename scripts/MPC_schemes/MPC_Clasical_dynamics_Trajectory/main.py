@@ -71,10 +71,10 @@ def main(ts: float, t_f: float, t_N: float, x_0: np.ndarray, L: list, odom_pub_1
     x[:, 0] = x_0
 
     # Reference States
-    hd, hd_d, qd, w_d, f_d, M_d = compute_reference(t, ts, 1.8*(initial+1), L)
+    hd, hd_d, qd, w_d, f_d, M_d = compute_reference(t, ts, 1.0*(initial+1), L)
     u_planning = np.zeros((4, t.shape[0]), dtype=np.double)
-    u_planning[0, :] = f_d[0, :]
-    u_planning[1:4, :] = M_d[0:3, :]
+    u_planning[0, :] = L[0] * L[4]
+    #u_planning[1:4, :] = M_d[0:3, :]
 
     # Euler angles of the system
     euler = np.zeros((3, t.shape[0] + 1 - N_prediction), dtype=np.double)
@@ -107,16 +107,17 @@ def main(ts: float, t_f: float, t_N: float, x_0: np.ndarray, L: list, odom_pub_1
 
     # Optimization problem
     ocp = create_ocp_solver(x[:, 0], N_prediction, t_N, F_max, F_min, tau_1_max, tau_1_min, tau_2_max, tau_2_min, tau_3_max, taux_3_min, L, ts)
-    ocp_simulation = create_simulation_solver(x[:, 0], N_prediction, t_N, F_max, F_min, tau_1_max, tau_1_min, tau_2_max, tau_2_min, tau_3_max, taux_3_min, L, ts)
 
 
     # No Cython
     #acados_ocp_solver = AcadosOcpSolver(ocp, json_file="acados_ocp_" + ocp.model.name + ".json", build= True, generate= True)
     acados_ocp_solver = AcadosOcpSolver(ocp, json_file="acados_ocp_" + ocp.model.name + ".json", build= False, generate= False)
 
+    #ocp_simulation = create_simulation_solver(x[:, 0], N_prediction, t_N, F_max, F_min, tau_1_max, tau_1_min, tau_2_max, tau_2_min, tau_3_max, taux_3_min, L, ts)
+
     # Integration Drag Model
-    #acados_integrator = AcadosSimSolver(ocp_simulation, json_file="acados_sim_" + ocp.model.name + ".json", build= True, generate= True)
-    #acados_integrator = AcadosSimSolver(ocp_simulation, json_file="acados_sim_" + ocp.model.name + ".json", build= False, generate= False)
+    #acados_integrator = AcadosSimSolver(ocp_simulation, json_file="acados_simulation_" + ocp_simulation.model.name + ".json", build= True, generate= True)
+    #acados_integrator = AcadosSimSolver(ocp_simulation, json_file="acados_simumlation_" + ocp_simulation.model.name + ".json", build= False, generate= False)
 
     # Integration Without Drag
     #acados_integrator = AcadosSimSolver(ocp, json_file="acados_sim_" + ocp.model.name + ".json", build= True, generate= True)
@@ -257,8 +258,9 @@ def main(ts: float, t_f: float, t_N: float, x_0: np.ndarray, L: list, odom_pub_1
         xcurrent = acados_integrator.get("x")
 
         # System evolution
-        x[:, k+1] = noise(xcurrent, white_noise)
-        euler[:, k+1] = get_euler_angles(x[6:10, k+1])
+        x[:, k+1] = xcurrent
+        #x[:, k+1] = noise(xcurrent, white_noise)
+        #euler[:, k+1] = get_euler_angles(x[6:10, k+1])
 
         # Send msg to Ros
         quat_1_msg = set_odom_msg(quat_1_msg, x[:, k+1])
@@ -349,7 +351,7 @@ if __name__ == '__main__':
         # Initial conditions of the system
         X_total = []
         X_total_aux = []
-        number_experiments = 30
+        number_experiments = 70
         max_position = 4
         min_position = -4
 

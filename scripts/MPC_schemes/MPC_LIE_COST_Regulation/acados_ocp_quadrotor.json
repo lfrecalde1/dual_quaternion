@@ -1,7 +1,7 @@
 {
     "acados_include_path": "/home/fer/acados/include",
     "acados_lib_path": "/home/fer/acados/lib",
-    "code_export_directory": "/home/fer/dual_ws/src/dual_quaternion/scripts/MPC_schemes/MPC_LIE_COST/c_generated_code",
+    "code_export_directory": "/home/fer/dual_ws/src/dual_quaternion/scripts/MPC_schemes/MPC_LIE_COST_Regulation/c_generated_code",
     "constraints": {
         "C": [],
         "C_e": [],
@@ -61,7 +61,7 @@
         "idxsphi": [],
         "idxsphi_e": [],
         "lbu": [
-            0.0,
+            4.800000000000001,
             -0.1,
             -0.1,
             -0.1
@@ -333,7 +333,7 @@
         "nlp_solver_tol_stat": 1e-06,
         "nlp_solver_type": "SQP",
         "print_level": 0,
-        "qp_solver": "PARTIAL_CONDENSING_HPIPM",
+        "qp_solver": "FULL_CONDENSING_HPIPM",
         "qp_solver_cond_N": 4,
         "qp_solver_cond_ric_alg": 1,
         "qp_solver_iter_max": 50,

@@ -52,9 +52,9 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
     #Q[1, 1] = 8.0
     #Q[2, 2] = 6.0
 
-    Qq[0, 0] = 7.5
-    Qq[1, 1] = 7.5
-    Qq[2, 2] = 7.5
+    Qq[0, 0] = 6.5
+    Qq[1, 1] = 6.5
+    Qq[2, 2] = 6.5
 
     # Control effort using gain matrices
     R = MX.zeros(4, 4)
@@ -127,7 +127,7 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
     ocp.constraints.idxsh = np.array(range(nsh))
 
     # Set options
-    ocp.solver_options.qp_solver = "PARTIAL_CONDENSING_HPIPM" 
+    ocp.solver_options.qp_solver = "FULL_CONDENSING_HPIPM" 
     ocp.solver_options.qp_solver_cond_N = N_horizon // 4
     ocp.solver_options.hessian_approx = "GAUSS_NEWTON"  
     ocp.solver_options.regularize_method = "CONVEXIFY"  

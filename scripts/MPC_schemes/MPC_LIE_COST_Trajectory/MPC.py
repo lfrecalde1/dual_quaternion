@@ -10,6 +10,7 @@ from ode_acados import dualquat_trans_casadi, dualquat_quat_casadi, rotation_cas
 from ode_acados import f_rk4_casadi_simple, noise, cost_quaternion_casadi, cost_translation_casadi
 from ode_acados import error_dual_aux_casadi, compute_reference
 from nmpc_acados import create_ocp_solver
+from nmpc import create_simulation_solver
 from acados_template import AcadosOcpSolver, AcadosSimSolver
 import scipy.io
 from scipy.io import savemat
@@ -116,7 +117,7 @@ def main(odom_pub_1, odom_pub_2, L, x0, initial):
 
     # Vector of the generalized states
     X = np.zeros((14, t.shape[0] + 1 - N_prediction), dtype=np.double)
-    #X_aux = np.zeros((8, t.shape[0] + 1 - N_prediction), dtype=np.double)
+    X_aux = np.zeros((13, t.shape[0] + 1 - N_prediction), dtype=np.double)
 
     # Control Actions 
     u = np.zeros((4, t.shape[0] - N_prediction), dtype=np.double)
@@ -128,7 +129,8 @@ def main(odom_pub_1, odom_pub_2, L, x0, initial):
     Q1_quat_data[:, 0] = np.array(get_quat(dual_1)).reshape((4, ))
     Q1_velocities_data[:, 0] = np.array(velocities).reshape((6, ))
     X[:, 0] = np.array(ca.vertcat(dual_1, dual_twist_1)).reshape((14, ))
-    #X_aux[:, 0] = np.array(ca.vertcat(get_trans(dual_1), get_quat(dual_1))).reshape((8, ))
+    X_aux[:, 0] = np.array(ca.vertcat(Q1_trans_data[1:4, 0], Q1_velocities_data[3:6, 0], Q1_quat_data[0:4, 0], Q1_velocities_data[0:3, 0])).reshape((13, ))
+    print(X_aux[:, 0].shape)
 
     # Constraints on control actions
     F_max = L[0]*L[4] + 20
@@ -141,7 +143,7 @@ def main(odom_pub_1, odom_pub_2, L, x0, initial):
     taux_3_min = -0.1
 
     # Differential Flatness
-    hd, hd_d, qd, w_d, f_d, M_d = compute_reference(t, sample_time, 1.8*(initial+1), L)
+    hd, hd_d, qd, w_d, f_d, M_d = compute_reference(t, sample_time, 1.0*(initial+1), L)
     qd_filter = np.zeros((4, t.shape[0]+1), dtype=np.double)
 
     # Initial condition for the desired states
@@ -175,8 +177,8 @@ def main(odom_pub_1, odom_pub_2, L, x0, initial):
 
     # Desired Reference Inputs
     u_d = np.zeros((4, t.shape[0]), dtype=np.double)
-    u_d[0, :] = f_d[0, :]
-    u_d[1:4, :] = M_d[0:3, :]
+    u_d[0, :] = L[0] * L[4]
+    #u_d[1:4, :] = M_d[0:3, :]
 
     # Empty vectors for the desired Dualquaernion
     Q2_trans_data = np.zeros((4, t.shape[0] + 1 - N_prediction), dtype=np.double)
@@ -194,11 +196,18 @@ def main(odom_pub_1, odom_pub_2, L, x0, initial):
 
     # Optimization problem
     ocp = create_ocp_solver(X[:, 0], N_prediction, t_N, F_max, F_min, tau_1_max, tau_1_min, tau_2_max, tau_2_min, tau_3_max, taux_3_min, L, sample_time)
+
+    # No Cython
     #acados_ocp_solver = AcadosOcpSolver(ocp, json_file="acados_ocp_" + ocp.model.name + ".json", build= True, generate= True)
     acados_ocp_solver = AcadosOcpSolver(ocp, json_file="acados_ocp_" + ocp.model.name + ".json", build= False, generate= False)
 
-    
-    # Integration using Acados
+    #ocp_simulation = create_simulation_solver(X_aux[:, 0], N_prediction, t_N, F_max, F_min, tau_1_max, tau_1_min, tau_2_max, tau_2_min, tau_3_max, taux_3_min, L, sample_time)
+
+    # Integration Drag Model
+    #acados_integrator = AcadosSimSolver(ocp_simulation, json_file="acados_sim_simulation_" + ocp_simulation.model.name + ".json", build= True, generate= True)
+    #acados_integrator = AcadosSimSolver(ocp_simulation, json_file="acados_sim_simulation_" + ocp_simulation.model.name + ".json", build= False, generate= False)
+
+    # Integration Without Drag
     #acados_integrator = AcadosSimSolver(ocp, json_file="acados_sim_" + ocp.model.name + ".json", build= True, generate= True)
     acados_integrator = AcadosSimSolver(ocp, json_file="acados_sim_" + ocp.model.name + ".json", build= False, generate= False)
 
@@ -255,7 +264,6 @@ def main(odom_pub_1, odom_pub_2, L, x0, initial):
     kkt_values = np.zeros((4, t.shape[0] - N_prediction), dtype=np.double)
     sqp_iteration = np.zeros((1, t.shape[0] - N_prediction), dtype=np.double)
 
-    error_dual_filter = np.zeros((8, t.shape[0] - N_prediction), dtype=np.double)
 
     error_dual_no_filter = np.array(error_dual_f(X_d[0:8, 0], X[0:8, 0])).reshape((8, ))
     if error_dual_no_filter[0] > 0.0:
@@ -265,6 +273,9 @@ def main(odom_pub_1, odom_pub_2, L, x0, initial):
     # Simulation loop
     for k in range(0, t.shape[0] - N_prediction):
         tic = rospy.get_time()
+        # Update from dualquaternion space to quaternion trasnlation
+        #X_aux[:, k] = np.array(ca.vertcat(Q1_trans_data[1:4, k], Q1_velocities_data[3:6, k], Q1_quat_data[0:4, k], Q1_velocities_data[0:3, k])).reshape((13, ))
+        #print(X_aux[:, k].shape)
 
         white_noise = np.random.multivariate_normal(np.zeros(12),uav_white_noise_cov)
 
@@ -281,7 +292,6 @@ def main(odom_pub_1, odom_pub_2, L, x0, initial):
         print("-----")
         print(np.linalg.norm(quat_check))
         print(np.dot(real, dual))
-        print(error_dual_filter[:, k])
         # Control Law Acados
         acados_ocp_solver.set(0, "lbx", X[:, k])
         acados_ocp_solver.set(0, "ubx", X[:, k])
@@ -332,15 +342,42 @@ def main(odom_pub_1, odom_pub_2, L, x0, initial):
         status_integral = acados_integrator.solve()
         xcurrent = acados_integrator.get("x")
 
+        # Mapping to dual quaternion system
+        #tx1 = xcurrent_quaternion[0]
+        #ty1 = xcurrent_quaternion[1]
+        #tz1 = xcurrent_quaternion[2]
+#
+        #vx = xcurrent_quaternion[3]
+        #vy = xcurrent_quaternion[4]
+        #vz = xcurrent_quaternion[5]
+#
+        #qw1 = xcurrent_quaternion[6]
+        #qx1 = xcurrent_quaternion[7]
+        #qy1 = xcurrent_quaternion[8]
+        #qz1 = xcurrent_quaternion[9]
+#
+        #wx = xcurrent_quaternion[10]
+        #wy = xcurrent_quaternion[11]
+        #wz = xcurrent_quaternion[12]
+#
+        ## Initial Dualquaternion
+        #dual_1 = dualquat_from_pose(qw1, qx1, qy1,  qz1, tx1, ty1, tz1)
+        #angular_linear_1 = np.array([wx, wy, wz, vx, vy, vz]) # Angular Body linear Inertial
+        #dual_twist_1 = dual_twist(angular_linear_1, dual_1)
+#
+        #xcurrent = np.array(ca.vertcat(dual_1, dual_twist_1)).reshape((14, ))
+#
         # Update Data of the system
-        X[:, k+1] = noise(xcurrent, white_noise)
+        X[:, k+1] = xcurrent
+        #X[:, k+1] = noise(xcurrent, white_noise)
 
         # Update Matrices of our system
         Q1_trans_data[:, k + 1] = np.array(get_trans(X[0:8, k+1])).reshape((4, ))
         Q1_quat_data[:, k + 1] = np.array(get_quat(X[0:8, k+1])).reshape((4, ))
+
         # Compute body angular velocity and inertial linear velocity
-        dual_1 = dualquat_from_pose(Q1_quat_data[0, k+1], Q1_quat_data[1, k+1], Q1_quat_data[2, k+1],  Q1_quat_data[3, k+1], Q1_trans_data[1, k+1], Q1_trans_data[2, k+1], Q1_trans_data[3, k+1])
         velocities = velocity_from_twist(X[8:14, k+1], X[0:8, k+1])
+
         # Save body angular and inertial linear velocitu
         Q1_velocities_data[:, k + 1] = np.array(velocities).reshape((6, ))
 

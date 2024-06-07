@@ -119,7 +119,7 @@ def main(ts: float, t_f: float, t_N: float, x_0: np.ndarray, L: list, odom_pub_1
 
     # Constraints on control actions
     F_max = L[0]*L[4] + 20
-    F_min = 0
+    F_min = L[0]*L[4] - 5
     tau_1_max = 0.1
     tau_1_min = -0.1
     tau_2_max = 0.1
@@ -275,7 +275,8 @@ def main(ts: float, t_f: float, t_N: float, x_0: np.ndarray, L: list, odom_pub_1
         xcurrent = acados_integrator.get("x")
 
         # System evolution
-        x[:, k+1] = noise(xcurrent, white_noise)
+        #x[:, k+1] = noise(xcurrent, white_noise)
+        x[:, k+1] = xcurrent
         euler[:, k+1] = get_euler_angles(x[6:10, k+1])
 
         # Send msg to Ros
@@ -353,7 +354,7 @@ if __name__ == '__main__':
         # Initial conditions of the system
         X_total = []
         X_total_aux = []
-        number_experiments = 150
+        number_experiments = 100
         max_position = 4
         min_position = -4
 
@@ -370,8 +371,8 @@ if __name__ == '__main__':
             omega_0 = np.array([0.0, 0.0, 0.0], dtype=np.double)
 
             # Fixed Initial Conditions
-            theta_0 = 0.99*np.pi
-            n_0 = np.array([0.0, 0.0, 1.0])
+            #theta_0 = 0.99*np.pi
+            #n_0 = np.array([0.0, 0.0, 1.0])
             #quat_0 = np.hstack([np.cos(theta_0 / 2), np.sin(theta_0 / 2) * np.array(n_0)])
 
             # Random initial conditions

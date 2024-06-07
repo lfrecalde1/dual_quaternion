@@ -1,5 +1,6 @@
 from acados_template import AcadosOcp, AcadosOcpSolver, AcadosSimSolver
 from ode_acados import quadrotorModel
+from export_ode_model import quadrotorModelDrag
 from casadi import Function, MX, vertcat, sin, cos, fabs, DM
 import casadi as ca
 
@@ -50,8 +51,8 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
 
     # Inputs
     nominal_input = ocp.p[14:18]
-    error_nominal_input = model.u[0:4]
-    #error_nominal_input = nominal_input - model.u[0:4]
+    #error_nominal_input = model.u[0:4]
+    error_nominal_input = nominal_input - model.u[0:4]
 
     # Angular velocities
     w_b = model.x[8:11]
@@ -73,12 +74,12 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
     Q_l[4, 4] = 1.6
     Q_l[5, 5] = 1.6
 
-    ocp.model.cost_expr_ext_cost = 10*(ln_error.T@Q_l@ln_error) + 1*(error_nominal_input.T @ R @ error_nominal_input)  + 0.2*(error_w.T@error_w) + 0.2*(error_v.T@error_v)
-    ocp.model.cost_expr_ext_cost_e =  10*(ln_error.T@Q_l@ln_error) + 0.2*(error_w.T@error_w) + 0.2*(error_v.T@error_v)
+    #ocp.model.cost_expr_ext_cost = 10*(ln_error.T@Q_l@ln_error) + 1*(error_nominal_input.T @ R @ error_nominal_input)  + 0.2*(error_w.T@error_w) + 0.2*(error_v.T@error_v)
+    #ocp.model.cost_expr_ext_cost_e =  10*(ln_error.T@Q_l@ln_error) + 0.2*(error_w.T@error_w) + 0.2*(error_v.T@error_v)
 
 
-    #ocp.model.cost_expr_ext_cost = 10*(ln_error.T@Q_l@ln_error) + 1*(error_nominal_input.T @ R @ error_nominal_input)
-    #ocp.model.cost_expr_ext_cost_e =  10*(ln_error.T@Q_l@ln_error)
+    ocp.model.cost_expr_ext_cost = 15*(ln_error.T@Q_l@ln_error) + 1*(error_nominal_input.T @ R @ error_nominal_input)
+    ocp.model.cost_expr_ext_cost_e =  15*(ln_error.T@Q_l@ln_error)
 
 
     # Auxiliary variable initialization
@@ -114,9 +115,9 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
     ocp.constraints.idxsh = np.array(range(nsh))
 #
     # Set options
-    ocp.solver_options.qp_solver = "PARTIAL_CONDENSING_HPIPM" 
+    ocp.solver_options.qp_solver = "FULL_CONDENSING_HPIPM" 
     ocp.solver_options.qp_solver_cond_N = N_horizon // 4
-    ocp.solver_options.hessian_approx = "EXACT"  
+    ocp.solver_options.hessian_approx = "GAUSS_NEWTON"  
     ocp.solver_options.regularize_method = "CONVEXIFY"  
     ocp.solver_options.integrator_type = "IRK"
     ocp.solver_options.nlp_solver_type = "SQP"

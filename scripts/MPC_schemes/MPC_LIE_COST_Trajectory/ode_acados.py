@@ -594,7 +594,7 @@ def quadrotorModel(L: list)-> AcadosModel:
     # L                                                          - system parameters(mass, Inertias and gravity)
     # OUTPUT                           
     # model                                                      - Acados model
-    model_name = 'quadrotor'
+    model_name = 'quadrotor_ocp'
     constraint = ca.types.SimpleNamespace()
     # Defining Desired Frame
     qw_1d = ca.MX.sym('qw_1d', 1, 1)
