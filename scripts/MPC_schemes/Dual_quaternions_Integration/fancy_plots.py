@@ -903,13 +903,12 @@ def plot_dual_real_reference(fig11, ax11, ax21, ax31, ax41, F, M, F_ref, M_ref, 
         ax41.grid(color='#949494', linestyle='-.', linewidth=0.5)
         ax41.set_xlabel(r"$\textrm{Time}[s]$", labelpad=5)
 
-        plt.show
 
-        #pdf_file_path = os.path.join(path, name + ".pdf")
-        #png_file_path = os.path.join(path, name + ".png")
+        pdf_file_path = os.path.join(path, name + ".pdf")
+        png_file_path = os.path.join(path, name + ".png")
 
-        #fig11.savefig(pdf_file_path)
-        #fig11.savefig(png_file_path)
+        fig11.savefig(pdf_file_path)
+        fig11.savefig(png_file_path)
         return None
 
 def plot_dual_dual_reference(fig11, ax11, ax21, ax31, ax41, F, M, F_ref, M_ref, t, name, path):
@@ -986,11 +985,10 @@ def plot_dual_dual_reference(fig11, ax11, ax21, ax31, ax41, F, M, F_ref, M_ref, 
         ax41.grid(color='#949494', linestyle='-.', linewidth=0.5)
         ax41.set_xlabel(r"$\textrm{Time}[s]$", labelpad=5)
 
-        plt.show
 
-        #pdf_file_path = os.path.join(path, name + ".pdf")
-        #png_file_path = os.path.join(path, name + ".png")
+        pdf_file_path = os.path.join(path, name + ".pdf")
+        png_file_path = os.path.join(path, name + ".png")
 
-        #fig11.savefig(pdf_file_path)
-        #fig11.savefig(png_file_path)
+        fig11.savefig(pdf_file_path)
+        fig11.savefig(png_file_path)
         return None

@@ -79,6 +79,29 @@ Q1d = DualQuaternion(q_real= Quaternion(q = q_1d), q_dual = Quaternion(q = d_1d)
 # Creating the Desired dualquaternion twist
 W1d = DualQuaternion(q_real= Quaternion(q = Wd), q_dual= Quaternion(q= Vd))
 
+def quat_multi_casadi():
+    # Function that enables the rotation of a vector using quaternions
+
+    # Creation of the symbolic variables for the quaternion and the vector
+    quat_aux_1 = ca.MX.sym('quat_aux_1', 4, 1)
+    vector_aux_1 = ca.MX.sym('vector_aux_1', 4, 1)
+
+    # Defining the pure quaternion based on the vector information
+    vector = vector_aux_1
+
+    # Compute conjugate of the quaternion
+    quat = quat_aux_1
+
+    H_plus_q = ca.vertcat(ca.horzcat(quat[0, 0], -quat[1, 0], -quat[2, 0], -quat[3, 0]),
+                                ca.horzcat(quat[1, 0], quat[0, 0], -quat[3, 0], quat[2, 0]),
+                                ca.horzcat(quat[2, 0], quat[3, 0], quat[0, 0], -quat[1, 0]),
+                                ca.horzcat(quat[3, 0], -quat[2, 0], quat[1, 0], quat[0, 0]))
+
+    # Computing the first multiplication
+    aux_value = H_plus_q@vector
+
+    f_multi =  ca.Function('f_multi', [quat_aux_1, vector_aux_1], [aux_value])
+    return f_multi
 # Quaternion rotation
 def rotation_casadi():
     # Function that enables the rotation of a vector using quaternions
@@ -278,6 +301,18 @@ def velocities_from_twist_casadi(twist = w_1d, dualquat = dual_1d):
     f_velocity = Function('f_velocity', [w_1d, dual_1d], [velocity])
     return f_velocity
 
+def f_rk4_casadi_simple(quat= dual_1d, omega=w_1d, t_s=ts):
+    # Function that computes 
+    k1 = quatdot_simple(quat, omega)
+    k2 = quatdot_simple(quat + (1/2)*k1*t_s, omega)
+    k3 = quatdot_simple(quat + (1/2)*k2*t_s, omega)
+    k4 = quatdot_simple(quat + (1)*k3*t_s, omega)
+    # Compute forward Euler method
+    quat = quat + (1/6)*t_s*(k1 + 2*k2 + 2*k3 + k4)
+    #quat = quat + (k1)*ts
+    f_rk4 = Function('f_rk4', [dual_1d, w_1d, ts], [quat])
+    return f_rk4
+
 def quadrotorModel(L: list)-> AcadosModel:
     # Dynamics of the quadrotor based on unit quaternions
     # INPUT
@@ -297,12 +332,19 @@ def quadrotorModel(L: list)-> AcadosModel:
     dy_1d = ca.MX.sym("dy_1d", 1, 1)
     dz_1d = ca.MX.sym("dz_1d", 1, 1)
     
+    # Defining the desired Velocity using symbolics
+    vx_1d = ca.MX.sym("vx_1d", 1, 1)
+    vy_1d = ca.MX.sym("vy_1d", 1, 1)
+    vz_1d = ca.MX.sym("vz_1d", 1, 1)
+
+    wx_1d = ca.MX.sym("wx_1d", 1, 1)
+    wy_1d = ca.MX.sym("wy_1d", 1, 1)
+    wz_1d = ca.MX.sym("wz_1d", 1, 1)
 
     X = ca.vertcat(qw_1d, qx_1d, qy_1d, qz_1d, dw_1d, dx_1d, dy_1d, dz_1d)
 
     # Split States of the system
-    twist_1 = X[8:14, 0]
-    u = twist_1
+    twist_1 = ca.vertcat(wx_1d, wy_1d, wz_1d, vx_1d, vy_1d, vz_1d)
     dualquat_1 = X[0:8, 0]
 
     # Auxiliary variables implicit function
@@ -316,18 +358,11 @@ def quadrotorModel(L: list)-> AcadosModel:
     dy_1dot = ca.MX.sym("dy_1dot", 1, 1)
     dz_1dot = ca.MX.sym("dz_1dot", 1, 1)
 
-    vx_1dot = ca.MX.sym("vx_1dot", 1, 1)
-    vy_1dot = ca.MX.sym("vy_1dot", 1, 1)
-    vz_1dot = ca.MX.sym("vz_1dot", 1, 1)
-
-    wx_1dot = ca.MX.sym("wx_1dot", 1, 1)
-    wy_1dot = ca.MX.sym("wy_1dot", 1, 1)
-    wz_1dot = ca.MX.sym("wz_1dot", 1, 1)
-
     X_dot = ca.vertcat(qw_1dot, qx_1dot, qy_1dot, qz_1dot, dw_1dot, dx_1dot, dy_1dot, dz_1dot)
 
-
+    # Dualquaternion dot
     dualdot = quatdot_simple(dualquat_1, twist_1)
+
 
     norm_q = ca.norm_2(get_quat(X[0:8]))
     dot_real_dual = 2* ca.dot(X[0:4], X[4:8])
@@ -351,7 +386,7 @@ def quadrotorModel(L: list)-> AcadosModel:
     model.f_expl_expr = f_expl
     model.x = X
     model.xdot = X_dot
-    model.u = u
+    model.u = u=twist_1
     model.z = z
     model.p = p
     model.name = model_name
