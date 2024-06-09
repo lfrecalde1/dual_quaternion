@@ -67,7 +67,7 @@ def main(odom_pub_1, odom_pub_2, L, x0, initial):
     m = L[0]
     g = L[4]
     # Sample Time Defintion
-    sample_time = 0.03
+    sample_time = 0.01
     t_f = 10
 
     # Time defintion aux variable
@@ -244,23 +244,28 @@ def main(odom_pub_1, odom_pub_2, L, x0, initial):
     kkt_values = np.zeros((4, t.shape[0] - N_prediction), dtype=np.double)
     sqp_iteration = np.zeros((1, t.shape[0] - N_prediction), dtype=np.double)
 
+    error_dual_no_filter = np.array(error_dual_f(X_d[0:8, 0], X[0:8, 0])).reshape((8, ))
+    if error_dual_no_filter[0] > 0.0:
+        X_d[0:8, :] = X_d[0:8, :]
+    else:
+        X_d[0:8, :] = -X_d[0:8, :]
     # Simulation loop
     for k in range(0, t.shape[0] - N_prediction):
         tic = rospy.get_time()
          # Check Desired Dual Quaternion in order to compute the shortest path between the desired dual quaternion and the real
-        for j in range(N_prediction):
-            # check shortest path
-            error_dual_no_filter = np.array(error_dual_f(X_d[0:8, k+j], X[0:8, k])).reshape((8, ))
-            if error_dual_no_filter[0] > 0.0:
-                X_d[0:8, k+j] = X_d[0:8, k+j]
-            else:
-                X_d[0:8, k+j] = -X_d[0:8, k+j]
-        error_dual_no_filter = np.array(error_dual_f(X_d[0:8, k+N_prediction], X[0:8, k])).reshape((8, ))
-        if error_dual_no_filter[0] > 0.0:
-            X_d[0:8, k+N_prediction] = X_d[0:8, k+N_prediction]
-        else:
-            X_d[0:8, k+N_prediction] = -X_d[0:8, k+N_prediction]
-
+        #for j in range(N_prediction):
+        #    # check shortest path
+        #    error_dual_no_filter = np.array(error_dual_f(X_d[0:8, k+j], X[0:8, k])).reshape((8, ))
+        #    if error_dual_no_filter[0] > 0.0:
+        #        X_d[0:8, k+j] = X_d[0:8, k+j]
+        #    else:
+        #        X_d[0:8, k+j] = -X_d[0:8, k+j]
+        #error_dual_no_filter = np.array(error_dual_f(X_d[0:8, k+N_prediction], X[0:8, k])).reshape((8, ))
+        #if error_dual_no_filter[0] > 0.0:
+        #    X_d[0:8, k+N_prediction] = X_d[0:8, k+N_prediction]
+        #else:
+        #    X_d[0:8, k+N_prediction] = -X_d[0:8, k+N_prediction]
+#
         white_noise = np.random.multivariate_normal(np.zeros(12),uav_white_noise_cov)
 
         # Compute cost
@@ -304,7 +309,7 @@ def main(odom_pub_1, odom_pub_2, L, x0, initial):
         print(initial)
         kkt_values[:, k]  = acados_ocp_solver.get_stats('residuals')
         sqp_iteration[:, k] = acados_ocp_solver.get_stats('sqp_iter')
-        #acados_ocp_solver.print_statistics()
+        acados_ocp_solver.print_statistics()
 
         # Get the control Action
         aux_control = acados_ocp_solver.get(0, "u")

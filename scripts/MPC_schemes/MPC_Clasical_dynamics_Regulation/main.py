@@ -61,6 +61,7 @@ def main(ts: float, t_f: float, t_N: float, x_0: np.ndarray, L: list, odom_pub_1
     # Prediction Node of the NMPC formulation
     N = np.arange(0, t_N + ts, ts)
     N_prediction = N.shape[0]
+    print(N_prediction)
 
     # Auxiliary variables for the execution time of the NMPC
     delta_t = np.zeros((1, t.shape[0] - N_prediction), dtype=np.double)
@@ -339,7 +340,7 @@ def get_random_position(min_trans, max_trans, number):
 if __name__ == '__main__':
     try: #################################### Simulation  #####################################################
         # Time parameters
-        ts = 0.03
+        ts = 0.01
         t_f = 10
         t_N = 0.5
 
@@ -354,7 +355,7 @@ if __name__ == '__main__':
         # Initial conditions of the system
         X_total = []
         X_total_aux = []
-        number_experiments = 100
+        number_experiments = 20
         max_position = 4
         min_position = -4
 
