@@ -417,7 +417,7 @@ void quadrotor_acados_create_5_set_nlp_in(quadrotor_solver_capsule* capsule, con
     if (new_time_steps) {
         quadrotor_acados_update_time_steps(capsule, N, new_time_steps);
     } else {// all time_steps are identical
-        double time_step = 0.027777777777777776;
+        double time_step = 0.00980392156862745;
         for (int i = 0; i < N; i++)
         {
             ocp_nlp_in_set(nlp_config, nlp_dims, nlp_in, i, "Ts", &time_step);
@@ -496,20 +496,20 @@ void quadrotor_acados_create_5_set_nlp_in(quadrotor_solver_capsule* capsule, con
     double* lbx0 = lubx0;
     double* ubx0 = lubx0 + NBX0;
     // change only the non-zero elements:
-    lbx0[0] = -1.6714942607824623;
-    ubx0[0] = -1.6714942607824623;
-    lbx0[1] = 0.8013398456857965;
-    ubx0[1] = 0.8013398456857965;
-    lbx0[2] = 0.4379528293199817;
-    ubx0[2] = 0.4379528293199817;
-    lbx0[6] = -0.7478226455157267;
-    ubx0[6] = -0.7478226455157267;
-    lbx0[7] = 0.03571655493889951;
-    ubx0[7] = 0.03571655493889951;
-    lbx0[8] = -0.5812313913742272;
-    ubx0[8] = -0.5812313913742272;
-    lbx0[9] = 0.31883489181445673;
-    ubx0[9] = 0.31883489181445673;
+    lbx0[0] = -0.9533065320612968;
+    ubx0[0] = -0.9533065320612968;
+    lbx0[1] = -1.7939901849149145;
+    ubx0[1] = -1.7939901849149145;
+    lbx0[2] = -0.8581673672366152;
+    ubx0[2] = -0.8581673672366152;
+    lbx0[6] = 0.008188256252536195;
+    ubx0[6] = 0.008188256252536195;
+    lbx0[7] = -0.367946740489254;
+    ubx0[7] = -0.367946740489254;
+    lbx0[8] = 0.34062084529039316;
+    ubx0[8] = 0.34062084529039316;
+    lbx0[9] = -0.8651737330597448;
+    ubx0[9] = -0.8651737330597448;
 
     ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, 0, "idxbx", idxbx0);
     ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, 0, "lbx", lbx0);
@@ -705,7 +705,7 @@ void quadrotor_acados_create_6_set_opts(quadrotor_solver_capsule* capsule)
     /* options QP solver */
     int qp_solver_cond_N;
 
-    const int qp_solver_cond_N_ori = 4;
+    const int qp_solver_cond_N_ori = 12;
     qp_solver_cond_N = N < qp_solver_cond_N_ori ? N : qp_solver_cond_N_ori; // use the minimum value here
     ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "qp_cond_N", &qp_solver_cond_N);
 
@@ -771,13 +771,13 @@ void quadrotor_acados_create_7_set_nlp_out(quadrotor_solver_capsule* capsule)
 
     // initialize with x0
     
-    x0[0] = -1.6714942607824623;
-    x0[1] = 0.8013398456857965;
-    x0[2] = 0.4379528293199817;
-    x0[6] = -0.7478226455157267;
-    x0[7] = 0.03571655493889951;
-    x0[8] = -0.5812313913742272;
-    x0[9] = 0.31883489181445673;
+    x0[0] = -0.9533065320612968;
+    x0[1] = -1.7939901849149145;
+    x0[2] = -0.8581673672366152;
+    x0[6] = 0.008188256252536195;
+    x0[7] = -0.367946740489254;
+    x0[8] = 0.34062084529039316;
+    x0[9] = -0.8651737330597448;
 
 
     double* u0 = xu0 + NX;

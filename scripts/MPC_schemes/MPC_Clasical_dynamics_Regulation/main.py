@@ -355,7 +355,7 @@ if __name__ == '__main__':
         # Initial conditions of the system
         X_total = []
         X_total_aux = []
-        number_experiments = 20
+        number_experiments = 30
         max_position = 4
         min_position = -4
 

@@ -408,7 +408,7 @@ void quadrotor_ocp_acados_create_5_set_nlp_in(quadrotor_ocp_solver_capsule* caps
     if (new_time_steps) {
         quadrotor_ocp_acados_update_time_steps(capsule, N, new_time_steps);
     } else {// all time_steps are identical
-        double time_step = 0.027777777777777776;
+        double time_step = 0.00980392156862745;
         for (int i = 0; i < N; i++)
         {
             ocp_nlp_in_set(nlp_config, nlp_dims, nlp_in, i, "Ts", &time_step);
@@ -491,22 +491,22 @@ void quadrotor_ocp_acados_create_5_set_nlp_in(quadrotor_ocp_solver_capsule* caps
     double* lbx0 = lubx0;
     double* ubx0 = lubx0 + NBX0;
     // change only the non-zero elements:
-    lbx0[0] = 0.03609761789073557;
-    ubx0[0] = 0.03609761789073557;
-    lbx0[1] = 0.760949519518071;
-    ubx0[1] = 0.760949519518071;
-    lbx0[2] = 0.6477299418924065;
-    ubx0[2] = 0.6477299418924065;
-    lbx0[3] = 0.009935446839013613;
-    ubx0[3] = 0.009935446839013613;
-    lbx0[4] = 1.8674692073974568;
-    ubx0[4] = 1.8674692073974568;
-    lbx0[5] = -0.06624278569040501;
-    ubx0[5] = -0.06624278569040501;
-    lbx0[6] = -0.041713573759330214;
-    ubx0[6] = -0.041713573759330214;
-    lbx0[7] = 1.0080429135036182;
-    ubx0[7] = 1.0080429135036182;
+    lbx0[0] = -0.3660944469042789;
+    ubx0[0] = -0.3660944469042789;
+    lbx0[1] = 0.7380579056604053;
+    ubx0[1] = 0.7380579056604053;
+    lbx0[2] = 0.3352579039997067;
+    ubx0[2] = 0.3352579039997067;
+    lbx0[3] = -0.4569983825395338;
+    ubx0[3] = -0.4569983825395338;
+    lbx0[4] = -0.10353718311058474;
+    ubx0[4] = -0.10353718311058474;
+    lbx0[5] = -0.40522143750214645;
+    ubx0[5] = -0.40522143750214645;
+    lbx0[6] = -0.8543357657958434;
+    ubx0[6] = -0.8543357657958434;
+    lbx0[7] = -1.1982434441372758;
+    ubx0[7] = -1.1982434441372758;
 
     ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, 0, "idxbx", idxbx0);
     ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, 0, "lbx", lbx0);
@@ -745,14 +745,14 @@ void quadrotor_ocp_acados_create_7_set_nlp_out(quadrotor_ocp_solver_capsule* cap
 
     // initialize with x0
     
-    x0[0] = 0.03609761789073557;
-    x0[1] = 0.760949519518071;
-    x0[2] = 0.6477299418924065;
-    x0[3] = 0.009935446839013613;
-    x0[4] = 1.8674692073974568;
-    x0[5] = -0.06624278569040501;
-    x0[6] = -0.041713573759330214;
-    x0[7] = 1.0080429135036182;
+    x0[0] = -0.3660944469042789;
+    x0[1] = 0.7380579056604053;
+    x0[2] = 0.3352579039997067;
+    x0[3] = -0.4569983825395338;
+    x0[4] = -0.10353718311058474;
+    x0[5] = -0.40522143750214645;
+    x0[6] = -0.8543357657958434;
+    x0[7] = -1.1982434441372758;
 
 
     double* u0 = xu0 + NX;

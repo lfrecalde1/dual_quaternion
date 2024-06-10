@@ -91,7 +91,7 @@ static const casadi_int casadi_s3[22] = {18, 1, 0, 18, 0, 1, 2, 3, 4, 5, 6, 7, 8
 static const casadi_int casadi_s4[5] = {1, 1, 0, 1, 0};
 
 static const casadi_real casadi_c0[36] = {2., 0., 0., 0., 0., 0., 0., 2., 0., 0., 0., 0., 0., 0., 2., 0., 0., 0., 0., 0., 0., 1.6000000000000001e+00, 0., 0., 0., 0., 0., 0., 1.6000000000000001e+00, 0., 0., 0., 0., 0., 0., 1.6000000000000001e+00};
-static const casadi_real casadi_c1[16] = {3.3557046979865772e-02, 0., 0., 0., 0., 10., 0., 0., 0., 0., 10., 0., 0., 0., 0., 10.};
+static const casadi_real casadi_c1[16] = {6.7114093959731547e-01, 0., 0., 0., 0., 200., 0., 0., 0., 0., 200., 0., 0., 0., 0., 200.};
 
 /* quadrotor_ocp_cost_ext_cost_fun:(i0[14],i1[4],i2[],i3[18])->(o0) */
 static int casadi_f0(const casadi_real** arg, casadi_real** res, casadi_int* iw, casadi_real* w, int mem) {
@@ -504,10 +504,10 @@ static int casadi_f0(const casadi_real** arg, casadi_real** res, casadi_int* iw,
   /* #157: @15 = @14' */
   casadi_copy(w14, 4, w15);
   /* #158: @18 = 
-  [[0.033557, 0, 0, 0], 
-   [0, 10, 0, 0], 
-   [0, 0, 10, 0], 
-   [0, 0, 0, 10]] */
+  [[0.671141, 0, 0, 0], 
+   [0, 200, 0, 0], 
+   [0, 0, 200, 0], 
+   [0, 0, 0, 200]] */
   casadi_copy(casadi_c1, 16, w18);
   /* #159: @11 = mac(@15,@18,@11) */
   for (i=0, rr=w11; i<4; ++i) for (j=0; j<1; ++j, ++rr) for (k=0, ss=w15+j, tt=w18+i*4; k<4; ++k) *rr += ss[k*1]**tt++;

@@ -29,10 +29,10 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
 
     # Control effort using gain matrices
     R = DM.zeros(4, 4)
-    R[0, 0] = 1/F_max
-    R[1, 1] = 1/tau_1_max
-    R[2, 2] = 1/tau_2_max
-    R[3, 3] = 1/tau_3_max
+    R[0, 0] = 20/F_max
+    R[1, 1] = 20/tau_1_max
+    R[2, 2] = 20/tau_2_max
+    R[3, 3] = 20/tau_3_max
 
     # Definition of the cost functions (EXTERNAL)
     ocp.cost.cost_type = "EXTERNAL"

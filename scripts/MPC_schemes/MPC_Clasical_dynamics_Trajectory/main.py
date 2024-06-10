@@ -332,8 +332,8 @@ def get_random_position(min_trans, max_trans, number):
 if __name__ == '__main__':
     try: #################################### Simulation  #####################################################
         # Time parameters
-        ts = 0.03
-        t_f = 30
+        ts = 0.01
+        t_f = 20
         t_N = 0.5
 
         # Parameters of the system  (mass, inertial matrix, gravity)
@@ -351,7 +351,7 @@ if __name__ == '__main__':
         # Initial conditions of the system
         X_total = []
         X_total_aux = []
-        number_experiments = 70
+        number_experiments = 50
         max_position = 4
         min_position = -4
 

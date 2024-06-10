@@ -68,7 +68,7 @@ def main(odom_pub_1, odom_pub_2, L, x0, initial):
     m = L[0]
     g = L[4]
     # Sample Time Defintion
-    sample_time = 0.03
+    sample_time = 0.01
     t_f = 30
 
     # Time defintion aux variable
