@@ -88,11 +88,12 @@ def create_ocp_solver(x0, N_horizon, t_horizon, wx_max, wx_min, wy_max, wy_min, 
     ocp.cost.zu = 100*np.ones((ns, ))
 #
     ### Norm of a quaternion should be one
-    ocp.constraints.lh = np.array([constraint.min])
-    ocp.constraints.uh = np.array([constraint.max])
+    ocp.constraints.lh = np.array([constraint.min, constraint.min2])
+    ocp.constraints.uh = np.array([constraint.max, constraint.max2])
     ocp.constraints.lsh = np.zeros(nsh)
     ocp.constraints.ush = np.zeros(nsh)
     ocp.constraints.idxsh = np.array(range(nsh))
+#
 #
     # Set options
     ocp.solver_options.qp_solver = "FULL_CONDENSING_HPIPM" 

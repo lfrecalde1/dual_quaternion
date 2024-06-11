@@ -408,6 +408,36 @@ def ln_dual(q_error):
 
     return q_e_ln
 
+def quatdot_c(quat, omega):
+    # Quaternion evolution guaranteeing norm 1 (Improve this section)
+    # INPUT
+    # quat                                                   - actual quaternion
+    # omega                                                  - angular velocities
+    # OUTPUT
+    # qdot                                                   - rate of change of the quaternion
+    # Split values quaternion
+    qw = quat[0, 0]
+    qx = quat[1, 0]
+    qy = quat[2, 0]
+    qz = quat[3, 0]
+
+
+    # Auxiliary variable in order to avoid numerical issues
+    K_quat = 10
+    quat_error = 1 - (qw**2 + qx**2 + qy**2 + qz**2)
+
+    # Create skew matrix
+    H_r_plus = ca.vertcat(ca.horzcat(quat[0, 0], -quat[1, 0], -quat[2, 0], -quat[3, 0]),
+                                ca.horzcat(quat[1, 0], quat[0, 0], -quat[3, 0], quat[2, 0]),
+                                ca.horzcat(quat[2, 0], quat[3, 0], quat[0, 0], -quat[1, 0]),
+                                ca.horzcat(quat[3, 0], -quat[2, 0], quat[1, 0], quat[0, 0]))
+
+    omega_quat = ca.vertcat(0.0, omega[0, 0], omega[1, 0], omega[2, 0])
+
+
+    q_dot = (1/2)*(H_r_plus@omega_quat) + K_quat*quat_error*quat
+    return q_dot
+
 def quadrotorModel(L: list)-> AcadosModel:
     # Dynamics of the quadrotor based on unit quaternions
     # INPUT
@@ -465,7 +495,7 @@ def quadrotorModel(L: list)-> AcadosModel:
     norm_q = ca.norm_2(get_quat(X[0:8]))
     dot_real_dual = 2* ca.dot(X[0:4], X[4:8])
     constraint.norm = Function("norm", [X], [norm_q])
-    constraint.expr = ca.vertcat(norm_q)
+    constraint.expr = ca.vertcat(norm_q, dot_real_dual)
     constraint.min = 1.0
     constraint.max = 1.0
     constraint.min2 = 0.0
@@ -491,6 +521,94 @@ def quadrotorModel(L: list)-> AcadosModel:
     model.p = p
     model.name = model_name
     return model, get_trans, get_quat, constraint, error_dual, ln_dual
+
+def quadrotorModelnominal(L: list)-> AcadosModel:
+    # Dynamics of the quadrotor based on unit quaternions
+    # INPUT
+    # L                                                          - system parameters(mass, Inertias and gravity)
+    # OUTPUT                           
+    # model                                                      - Acados model
+    model_name = 'quadrotor'
+    constraint = ca.types.SimpleNamespace()
+    # Split system parameters
+    # States of the system
+    x = ca.MX.sym('x')
+    y = ca.MX.sym('y')
+    z = ca.MX.sym('z')
+
+
+    qw = ca.MX.sym('qw')
+    q1 = ca.MX.sym('q1')
+    q2 = ca.MX.sym('q2')
+    q3 = ca.MX.sym('q3')
+
+
+    X = ca.vertcat(x, y, z, qw, q1, q2, q3)
+
+    # Auxiliary variables implicit function
+    x_dot = ca.MX.sym('x_dot')
+    y_dot = ca.MX.sym('y_dot')
+    z_dot = ca.MX.sym('z_dot')
+
+
+    qw_dot = ca.MX.sym('qw_dot')
+    q1_dot = ca.MX.sym('q1_dot')
+    q2_dot = ca.MX.sym('q2_dot')
+    q3_dot = ca.MX.sym('q3_dot')
+
+
+    X_dot = ca.vertcat(x_dot, y_dot, z_dot, qw_dot, q1_dot, q2_dot, q3_dot)
+
+
+    # Defining the desired Velocity using symbolics
+    vx_1d = ca.MX.sym("vx_1d", 1, 1)
+    vy_1d = ca.MX.sym("vy_1d", 1, 1)
+    vz_1d = ca.MX.sym("vz_1d", 1, 1)
+
+    wx_1d = ca.MX.sym("wx_1d", 1, 1)
+    wy_1d = ca.MX.sym("wy_1d", 1, 1)
+    wz_1d = ca.MX.sym("wz_1d", 1, 1)
+
+    # Split States of the system
+    u = ca.vertcat(wx_1d, wy_1d, wz_1d, vx_1d, vy_1d, vz_1d)
+
+    # Split values
+    quat = X[3:7, 0]
+    omega = u[0:3]
+    vel = u[3:6]
+    qdot = quatdot_c(quat, omega)
+    xdot = vel
+
+    # Reference velocities
+    p = ca.MX.sym('p', 13, 1)
+
+    # Explicit and implicit functions
+    f_expl = ca.vertcat(xdot, qdot)
+    f_system = Function('system',[X, u], [f_expl])
+    f_impl = X_dot - f_expl
+
+    # Constraints quaternions
+    norm_q = ca.norm_2(X[3:7, 0])
+    constraint.norm = Function("norm", [X], [norm_q])
+    constraint.expr = ca.vertcat(norm_q)
+    constraint.min = 1.0
+    constraint.max = 1.0
+
+
+    # Algebraic variables
+    z = []
+
+    # Dynamics
+    model = AcadosModel()
+    model.f_impl_expr = f_impl
+    model.f_expl_expr = f_expl
+    model.x = X
+    model.xdot = X_dot
+    model.u = u
+    model.z = z
+    model.p = p
+    model.name = model_name
+    return model, f_system, constraint, error_quaternion_li
 
 def ref_trajectory_agresive(t, ts, mul):
         # Compute the desired Trajecotry of the system
@@ -708,3 +826,19 @@ def compute_reference(t, ts, mul, L):
     q_d = q
 
     return h_d, h_d_d, q_d, w_d, f_d, M_d
+
+def error_quaternion_li(qk, qd, weight):
+    q_aux = ca.vertcat(
+     qd[0] * qk[0] + qd[1] * qk[1] + qd[2] * qk[2] + qd[3] * qk[3],
+    -qd[1] * qk[0] + qd[0] * qk[1] + qd[3] * qk[2] - qd[2] * qk[3],
+    -qd[2] * qk[0] - qd[3] * qk[1] + qd[0] * qk[2] + qd[1] * qk[3],
+    -qd[3] * qk[0] + qd[2] * qk[1] - qd[1] * qk[2] + qd[0] * qk[3])
+
+    q_att_denom = ca.sqrt(q_aux[0] * q_aux[0] + q_aux[3] * q_aux[3] + 1e-3)
+
+    q_att = ca.vertcat(
+    q_aux[0] * q_aux[1] - q_aux[2] * q_aux[3],
+    q_aux[0] * q_aux[2] + q_aux[1] * q_aux[3],
+    q_aux[3]) / q_att_denom
+
+    return ca.transpose(q_att) @ weight @ q_att

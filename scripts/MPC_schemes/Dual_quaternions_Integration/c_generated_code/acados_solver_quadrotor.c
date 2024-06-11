@@ -448,9 +448,13 @@ void quadrotor_acados_create_5_set_nlp_in(quadrotor_solver_capsule* capsule, con
     double* zu = zlumem+NS*3;
     // change only the non-zero elements:
     Zl[0] = 100;
+    Zl[1] = 100;
     Zu[0] = 100;
+    Zu[1] = 100;
     zl[0] = 100;
+    zl[1] = 100;
     zu[0] = 100;
+    zu[1] = 100;
 
     for (int i = 0; i < N; i++)
     {
@@ -481,8 +485,14 @@ void quadrotor_acados_create_5_set_nlp_in(quadrotor_solver_capsule* capsule, con
     double* lbx0 = lubx0;
     double* ubx0 = lubx0 + NBX0;
     // change only the non-zero elements:
-    lbx0[0] = 1;
-    ubx0[0] = 1;
+    lbx0[0] = 0.7071067811865476;
+    ubx0[0] = 0.7071067811865476;
+    lbx0[3] = 0.7071067811865475;
+    ubx0[3] = 0.7071067811865475;
+    lbx0[5] = 0.3535533905932738;
+    ubx0[5] = 0.3535533905932738;
+    lbx0[6] = -0.35355339059327373;
+    ubx0[6] = -0.35355339059327373;
 
     ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, 0, "idxbx", idxbx0);
     ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, 0, "lbx", lbx0);
@@ -517,18 +527,18 @@ void quadrotor_acados_create_5_set_nlp_in(quadrotor_solver_capsule* capsule, con
     double* lbu = lubu;
     double* ubu = lubu + NBU;
     
-    lbu[0] = -10;
-    ubu[0] = 10;
-    lbu[1] = -10;
-    ubu[1] = 10;
-    lbu[2] = -10;
-    ubu[2] = 10;
-    lbu[3] = -10;
-    ubu[3] = 10;
-    lbu[4] = -10;
-    ubu[4] = 10;
-    lbu[5] = -10;
-    ubu[5] = 10;
+    lbu[0] = -7;
+    ubu[0] = 7;
+    lbu[1] = -7;
+    ubu[1] = 7;
+    lbu[2] = -7;
+    ubu[2] = 7;
+    lbu[3] = -7;
+    ubu[3] = 7;
+    lbu[4] = -7;
+    ubu[4] = 7;
+    lbu[5] = -7;
+    ubu[5] = 7;
 
     for (int i = 0; i < N; i++)
     {
@@ -546,6 +556,7 @@ void quadrotor_acados_create_5_set_nlp_in(quadrotor_solver_capsule* capsule, con
     int* idxsh = malloc(NSH * sizeof(int));
     
     idxsh[0] = 0;
+    idxsh[1] = 1;
     double* lush = calloc(2*NSH, sizeof(double));
     double* lsh = lush;
     double* ush = lush + NSH;
@@ -720,7 +731,10 @@ void quadrotor_acados_create_7_set_nlp_out(quadrotor_solver_capsule* capsule)
 
     // initialize with x0
     
-    x0[0] = 1;
+    x0[0] = 0.7071067811865476;
+    x0[3] = 0.7071067811865475;
+    x0[5] = 0.3535533905932738;
+    x0[6] = -0.35355339059327373;
 
 
     double* u0 = xu0 + NX;

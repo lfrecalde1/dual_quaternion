@@ -27,7 +27,7 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
     ocp.dims.N = N_horizon
 
     # Control effort using gain matrices
-    R = DM.zeros(4, 4)
+    R = MX.zeros(4, 4)
     R[0, 0] = 20/F_max
     R[1, 1] = 60/tau_1_max
     R[2, 2] = 60/tau_2_max
@@ -59,7 +59,7 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
 
     # Gain Matrix complete error
 
-    Q_l = DM.zeros(6, 6)
+    Q_l = MX.zeros(6, 6)
     Q_l[0, 0] = 2
     Q_l[1, 1] = 2
     Q_l[2, 2] = 2

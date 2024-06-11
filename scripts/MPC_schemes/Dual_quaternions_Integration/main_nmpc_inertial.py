@@ -146,7 +146,7 @@ def main(ts: float, t_f: float, t_N: float, L: list, odom_pub_1, odom_pub_2, ini
     for stage in range(N_prediction):
         acados_ocp_solver.set(stage, "u", u[:, 0])
 
-    hd, hd_d, qd, w_d, f_d, M_d = compute_reference(t, ts, 40.0*(initial+1), L)
+    hd, hd_d, qd, w_d, f_d, M_d = compute_reference(t, ts, 20.0*(initial+1), L)
 
     # Initial condition for the desired states
     X_d = np.zeros((14, t.shape[0]+1), dtype=np.double)
