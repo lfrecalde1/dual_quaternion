@@ -10,7 +10,6 @@ from ode_acados import dualquat_trans_casadi, dualquat_quat_casadi, rotation_cas
 from ode_acados import f_rk4_casadi_simple, noise, cost_quaternion_casadi, cost_translation_casadi
 from ode_acados import error_dual_aux_casadi, compute_reference
 from nmpc_acados import create_ocp_solver
-from nmpc import create_simulation_solver
 from acados_template import AcadosOcpSolver, AcadosSimSolver
 import scipy.io
 from scipy.io import savemat
@@ -130,7 +129,6 @@ def main(odom_pub_1, odom_pub_2, L, x0, initial):
     Q1_velocities_data[:, 0] = np.array(velocities).reshape((6, ))
     X[:, 0] = np.array(ca.vertcat(dual_1, dual_twist_1)).reshape((14, ))
     X_aux[:, 0] = np.array(ca.vertcat(Q1_trans_data[1:4, 0], Q1_velocities_data[3:6, 0], Q1_quat_data[0:4, 0], Q1_velocities_data[0:3, 0])).reshape((13, ))
-    print(X_aux[:, 0].shape)
 
     # Constraints on control actions
     F_max = L[0]*L[4] + 20
@@ -198,8 +196,8 @@ def main(odom_pub_1, odom_pub_2, L, x0, initial):
     ocp = create_ocp_solver(X[:, 0], N_prediction, t_N, F_max, F_min, tau_1_max, tau_1_min, tau_2_max, tau_2_min, tau_3_max, taux_3_min, L, sample_time)
 
     # No Cython
-    #acados_ocp_solver = AcadosOcpSolver(ocp, json_file="acados_ocp_" + ocp.model.name + ".json", build= True, generate= True)
-    acados_ocp_solver = AcadosOcpSolver(ocp, json_file="acados_ocp_" + ocp.model.name + ".json", build= False, generate= False)
+    acados_ocp_solver = AcadosOcpSolver(ocp, json_file="acados_ocp_" + ocp.model.name + ".json", build= True, generate= True)
+    #acados_ocp_solver = AcadosOcpSolver(ocp, json_file="acados_ocp_" + ocp.model.name + ".json", build= False, generate= False)
 
     #ocp_simulation = create_simulation_solver(X_aux[:, 0], N_prediction, t_N, F_max, F_min, tau_1_max, tau_1_min, tau_2_max, tau_2_min, tau_3_max, taux_3_min, L, sample_time)
 
@@ -208,8 +206,8 @@ def main(odom_pub_1, odom_pub_2, L, x0, initial):
     #acados_integrator = AcadosSimSolver(ocp_simulation, json_file="acados_sim_simulation_" + ocp_simulation.model.name + ".json", build= False, generate= False)
 
     # Integration Without Drag
-    #acados_integrator = AcadosSimSolver(ocp, json_file="acados_sim_" + ocp.model.name + ".json", build= True, generate= True)
-    acados_integrator = AcadosSimSolver(ocp, json_file="acados_sim_" + ocp.model.name + ".json", build= False, generate= False)
+    acados_integrator = AcadosSimSolver(ocp, json_file="acados_sim_" + ocp.model.name + ".json", build= True, generate= True)
+    #acados_integrator = AcadosSimSolver(ocp, json_file="acados_sim_" + ocp.model.name + ".json", build= False, generate= False)
 
     # Dimensions of the optimization problem
     x_dim = ocp.model.x.size()[0]

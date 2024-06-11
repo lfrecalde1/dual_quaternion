@@ -82,6 +82,7 @@ extern "C" {
 #define casadi_s52 CASADI_PREFIX(s52)
 #define casadi_s53 CASADI_PREFIX(s53)
 #define casadi_s54 CASADI_PREFIX(s54)
+#define casadi_s55 CASADI_PREFIX(s55)
 #define casadi_s6 CASADI_PREFIX(s6)
 #define casadi_s7 CASADI_PREFIX(s7)
 #define casadi_s8 CASADI_PREFIX(s8)
@@ -295,10 +296,11 @@ static const casadi_int casadi_s49[5] = {8, 1, 0, 1, 6};
 static const casadi_int casadi_s50[5] = {8, 1, 0, 1, 7};
 static const casadi_int casadi_s51[10] = {6, 1, 0, 6, 0, 1, 2, 3, 4, 5};
 static const casadi_int casadi_s52[3] = {0, 0, 0};
-static const casadi_int casadi_s53[57] = {8, 6, 0, 8, 16, 24, 32, 40, 48, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7};
-static const casadi_int casadi_s54[3] = {8, 0, 0};
+static const casadi_int casadi_s53[18] = {14, 1, 0, 14, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13};
+static const casadi_int casadi_s54[57] = {8, 6, 0, 8, 16, 24, 32, 40, 48, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7};
+static const casadi_int casadi_s55[3] = {8, 0, 0};
 
-/* quadrotor_impl_dae_fun_jac_x_xdot_u_z:(i0[8],i1[8],i2[6],i3[],i4[])->(o0[8],o1[8x8,48nz],o2[8x8,8nz],o3[8x6],o4[8x0]) */
+/* quadrotor_impl_dae_fun_jac_x_xdot_u_z:(i0[8],i1[8],i2[6],i3[],i4[14])->(o0[8],o1[8x8,48nz],o2[8x8,8nz],o3[8x6],o4[8x0]) */
 static int casadi_f0(const casadi_real** arg, casadi_real** res, casadi_int* iw, casadi_real* w, int mem) {
   casadi_int i, j, k;
   casadi_real *rr, *ss, *tt;
@@ -1534,7 +1536,7 @@ CASADI_SYMBOL_EXPORT const casadi_int* quadrotor_impl_dae_fun_jac_x_xdot_u_z_spa
     case 1: return casadi_s6;
     case 2: return casadi_s51;
     case 3: return casadi_s52;
-    case 4: return casadi_s52;
+    case 4: return casadi_s53;
     default: return 0;
   }
 }
@@ -1544,8 +1546,8 @@ CASADI_SYMBOL_EXPORT const casadi_int* quadrotor_impl_dae_fun_jac_x_xdot_u_z_spa
     case 0: return casadi_s6;
     case 1: return casadi_s42;
     case 2: return casadi_s5;
-    case 3: return casadi_s53;
-    case 4: return casadi_s54;
+    case 3: return casadi_s54;
+    case 4: return casadi_s55;
     default: return 0;
   }
 }

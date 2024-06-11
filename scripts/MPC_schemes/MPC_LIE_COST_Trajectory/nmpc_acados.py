@@ -30,9 +30,9 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
     # Control effort using gain matrices
     R = DM.zeros(4, 4)
     R[0, 0] = 20/F_max
-    R[1, 1] = 20/tau_1_max
-    R[2, 2] = 20/tau_2_max
-    R[3, 3] = 20/tau_3_max
+    R[1, 1] = 60/tau_1_max
+    R[2, 2] = 60/tau_2_max
+    R[3, 3] = 60/tau_3_max
 
     # Definition of the cost functions (EXTERNAL)
     ocp.cost.cost_type = "EXTERNAL"
@@ -78,8 +78,8 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
     #ocp.model.cost_expr_ext_cost_e =  10*(ln_error.T@Q_l@ln_error) + 0.2*(error_w.T@error_w) + 0.2*(error_v.T@error_v)
 
 
-    ocp.model.cost_expr_ext_cost = 15*(ln_error.T@Q_l@ln_error) + 1*(error_nominal_input.T @ R @ error_nominal_input)
-    ocp.model.cost_expr_ext_cost_e =  15*(ln_error.T@Q_l@ln_error)
+    ocp.model.cost_expr_ext_cost = 10*(ln_error.T@Q_l@ln_error) + 1*(error_nominal_input.T @ R @ error_nominal_input)
+    ocp.model.cost_expr_ext_cost_e =  10*(ln_error.T@Q_l@ln_error)
 
 
     # Auxiliary variable initialization

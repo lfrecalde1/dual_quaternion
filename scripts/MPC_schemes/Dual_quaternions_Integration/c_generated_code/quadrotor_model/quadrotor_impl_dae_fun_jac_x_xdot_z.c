@@ -73,6 +73,7 @@ extern "C" {
 #define casadi_s44 CASADI_PREFIX(s44)
 #define casadi_s45 CASADI_PREFIX(s45)
 #define casadi_s46 CASADI_PREFIX(s46)
+#define casadi_s47 CASADI_PREFIX(s47)
 #define casadi_s5 CASADI_PREFIX(s5)
 #define casadi_s6 CASADI_PREFIX(s6)
 #define casadi_s7 CASADI_PREFIX(s7)
@@ -280,9 +281,10 @@ static const casadi_int casadi_s42[59] = {8, 8, 0, 8, 16, 24, 32, 36, 40, 44, 48
 static const casadi_int casadi_s43[59] = {8, 8, 0, 4, 8, 12, 16, 24, 32, 40, 48, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7};
 static const casadi_int casadi_s44[10] = {6, 1, 0, 6, 0, 1, 2, 3, 4, 5};
 static const casadi_int casadi_s45[3] = {0, 0, 0};
-static const casadi_int casadi_s46[3] = {8, 0, 0};
+static const casadi_int casadi_s46[18] = {14, 1, 0, 14, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13};
+static const casadi_int casadi_s47[3] = {8, 0, 0};
 
-/* quadrotor_impl_dae_fun_jac_x_xdot_z:(i0[8],i1[8],i2[6],i3[],i4[])->(o0[8],o1[8x8,48nz],o2[8x8,8nz],o3[8x0]) */
+/* quadrotor_impl_dae_fun_jac_x_xdot_z:(i0[8],i1[8],i2[6],i3[],i4[14])->(o0[8],o1[8x8,48nz],o2[8x8,8nz],o3[8x0]) */
 static int casadi_f0(const casadi_real** arg, casadi_real** res, casadi_int* iw, casadi_real* w, int mem) {
   casadi_int i, j, k;
   casadi_real *rr, *ss, *tt;
@@ -1367,7 +1369,7 @@ CASADI_SYMBOL_EXPORT const casadi_int* quadrotor_impl_dae_fun_jac_x_xdot_z_spars
     case 1: return casadi_s6;
     case 2: return casadi_s44;
     case 3: return casadi_s45;
-    case 4: return casadi_s45;
+    case 4: return casadi_s46;
     default: return 0;
   }
 }
@@ -1377,7 +1379,7 @@ CASADI_SYMBOL_EXPORT const casadi_int* quadrotor_impl_dae_fun_jac_x_xdot_z_spars
     case 0: return casadi_s6;
     case 1: return casadi_s42;
     case 2: return casadi_s5;
-    case 3: return casadi_s46;
+    case 3: return casadi_s47;
     default: return 0;
   }
 }

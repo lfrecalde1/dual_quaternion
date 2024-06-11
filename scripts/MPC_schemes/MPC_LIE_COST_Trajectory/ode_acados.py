@@ -466,12 +466,36 @@ def error_dual(qd, q):
 
     return q_error
 
+def error_dual_right(qd, q):
+    qd_conjugate = ca.vertcat(qd[0], -qd[1], -qd[2], -qd[3], qd[4], -qd[5], -qd[6], -qd[7])
+    quat_data = q[0:4]
+    dual_data =  q[4:8]
+
+    H_r_plus = ca.vertcat(ca.horzcat(quat_data[0], -quat_data[1], -quat_data[2], -quat_data[3]),
+                                ca.horzcat(quat_data[1], quat_data[0], -quat_data[3], quat_data[2]),
+                                ca.horzcat(quat_data[2], quat_data[3], quat_data[0], -quat_data[1]),
+                                ca.horzcat(quat_data[3], -quat_data[2], quat_data[1], quat_data[0]))
+
+    H_d_plus = ca.vertcat(ca.horzcat(dual_data[0], -dual_data[1], -dual_data[2], -dual_data[3]),
+                                ca.horzcat(dual_data[1], dual_data[0], -dual_data[3], dual_data[2]),
+                                ca.horzcat(dual_data[2], dual_data[3], dual_data[0], -dual_data[1]),
+                                ca.horzcat(dual_data[3], -dual_data[2], dual_data[1], dual_data[0]))
+    zeros = ca.DM.zeros(4, 4)
+    Hplus = ca.vertcat(ca.horzcat(H_r_plus, zeros),
+                        ca.horzcat(H_d_plus, H_r_plus))
+
+    q_e_aux = Hplus @ qd_conjugate
+
+    q_error = q_e_aux
+
+    return q_error
+
 def error_dual_aux_casadi():
     qd = ca.MX.sym('qd', 8, 1)
     q = ca.MX.sym('q', 8, 1)
     qd_conjugate = ca.vertcat(qd[0], -qd[1], -qd[2], -qd[3], qd[4], -qd[5], -qd[6], -qd[7])
-    quat_d_data = qd_conjugate[0:4]
-    dual_d_data =  qd_conjugate[4:8]
+    quat_d_data = q[0:4]
+    dual_d_data =  q[4:8]
 
     H_r_plus = ca.vertcat(ca.horzcat(quat_d_data[0], -quat_d_data[1], -quat_d_data[2], -quat_d_data[3]),
                                 ca.horzcat(quat_d_data[1], quat_d_data[0], -quat_d_data[3], quat_d_data[2]),
@@ -486,7 +510,7 @@ def error_dual_aux_casadi():
     Hplus = ca.vertcat(ca.horzcat(H_r_plus, zeros),
                         ca.horzcat(H_d_plus, H_r_plus))
 
-    q_e_aux = Hplus @ q
+    q_e_aux = Hplus @ qd_conjugate
     
     q_error = q_e_aux
 
@@ -683,7 +707,7 @@ def quadrotorModel(L: list)-> AcadosModel:
     model.z = z
     model.p = p
     model.name = model_name
-    return model, get_trans, get_quat, constraint, error_lie, error_dual, ln_dual, Ad, conjugate_dual, rotation
+    return model, get_trans, get_quat, constraint, error_lie, error_dual_right, ln_dual, Ad, conjugate_dual, rotation
 
 def noise(x, noise):
     # Get position and quaternion

@@ -40,7 +40,7 @@
 #define QUADROTOR_NX     8
 #define QUADROTOR_NZ     0
 #define QUADROTOR_NU     6
-#define QUADROTOR_NP     0
+#define QUADROTOR_NP     14
 
 #ifdef __cplusplus
 extern "C" {

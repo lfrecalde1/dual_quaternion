@@ -7,7 +7,7 @@ def create_integral_solver(L, ts)->AcadosSim:
     sim = AcadosSim()
 
     # Model of the system
-    model, get_trans, get_quat, constraint = quadrotorModel(L)
+    model, get_trans, get_quat, constraint, _, _ = quadrotorModel(L)
 
     # Constructing the optimal control problem
     sim.model = model
@@ -16,7 +16,6 @@ def create_integral_solver(L, ts)->AcadosSim:
     # Dimensions of the problem
     nx = model.x.size()[0]
     nu = model.u.size()[0]
-
 
     # Set options
     sim.solver_options.integrator_type = "ERK"
