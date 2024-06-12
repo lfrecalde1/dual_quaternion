@@ -11,7 +11,7 @@ from fancy_plots import plot_dual_real_reference, plot_dual_dual_reference, plot
 from integrator import create_integral_solver
 from nmpc_acados import create_ocp_solver
 from ode_acados import dual_velocity_casadi, f_rk4_casadi_simple, quat_multi_casadi, dualquat_quat_casadi, dualquat_trans_casadi, compute_reference, velocities_from_twist_casadi
-from ode_acados import dualquat_get_real_casadi, dualquat_get_dual_casadi
+from ode_acados import dualquat_get_real_casadi, dualquat_get_dual_casadi, rotation_inverse_casadi
 
 dualquat_from_pose = dualquat_from_pose_casadi()
 dual_twist = dual_velocity_casadi()
@@ -22,6 +22,9 @@ get_quat = dualquat_quat_casadi()
 get_real = dualquat_get_real_casadi()
 get_dual = dualquat_get_dual_casadi()
 velocities_from_twist = velocities_from_twist_casadi()
+rotation_body = rotation_inverse_casadi()
+
+
 
 
 import os
@@ -119,19 +122,19 @@ def main(ts: float, t_f: float, t_N: float, L: list, odom_pub_1, odom_pub_2, ini
     message_ros = "Dual Quaternion Integrations "
 
     # Constrainsts
-    wx_max = + 8
-    wy_max = + 8
-    wz_max = + 8
-    vx_max = + 8
-    vy_max = + 8
-    vz_max = + 8
+    wx_max = + 7
+    wy_max = + 7
+    wz_max = + 7
+    vx_max = + 5
+    vy_max = + 5
+    vz_max = + 5
 
-    wx_min = - 8 
-    wy_min = - 8 
-    wz_min = - 8 
-    vx_min = - 8 
-    vy_min = - 8 
-    vz_min = - 8 
+    wx_min = - 7
+    wy_min = - 7
+    wz_min = - 7
+    vx_min = - 5
+    vy_min = - 5
+    vz_min = - 5
 
     # Integration set up
     ocp = create_ocp_solver(D1[:, 0], N_prediction, t_N, wx_max, wx_min, wy_max, wy_min, wz_max, wz_min, vx_max, vx_min, vy_max, vy_min,  vz_max, vz_min, L, ts)
@@ -146,7 +149,7 @@ def main(ts: float, t_f: float, t_N: float, L: list, odom_pub_1, odom_pub_2, ini
     for stage in range(N_prediction):
         acados_ocp_solver.set(stage, "u", u[:, 0])
 
-    hd, hd_d, qd, w_d, f_d, M_d = compute_reference(t, ts, 20.0*(initial+1), L)
+    hd, hd_d, qd, w_d, f_d, M_d = compute_reference(t, ts, 70.0*(initial+1), L)
 
     # Initial condition for the desired states
     X_d = np.zeros((14, t.shape[0]+1), dtype=np.double)
@@ -160,12 +163,15 @@ def main(ts: float, t_f: float, t_N: float, L: list, odom_pub_1, odom_pub_2, ini
         ty1_d = hd[1, k]
         tz1_d = hd[2, k]
 
+
         # Initial Desired Dualquaternion
         dual_1_d = dualquat_from_pose(qw1_d, qx1_d, qy1_d,  qz1_d, tx1_d, ty1_d, tz1_d)
 
-        hxd_d = hd_d[0, k]
-        hyd_d = hd_d[1, k]
-        hzd_d = hd_d[2, k]
+        velocity_body = rotation_body(qd[:, k], hd_d[:, k])
+
+        hxd_d = velocity_body[0, 0]
+        hyd_d = velocity_body[1, 0]
+        hzd_d = velocity_body[2, 0]
 
         wx_d = w_d[0, k]
         wy_d = w_d[1, k]
@@ -252,7 +258,7 @@ def main(ts: float, t_f: float, t_N: float, L: list, odom_pub_1, odom_pub_2, ini
     plot_states_velocity_reference(fig14, ax14, ax24, ax34, u[3:6, :], hd_d[0:3, :], t, "Linear Velocity of the System Based on LieAlgebra and Reference "+ str(initial), folder_path)
 
     fig15, ax15, ax25, ax35 = fancy_plots_3()
-    plot_states_velocity_reference(fig15, ax15, ax25, ax35, xi[3:6, :], xi[3:6, :], t, "Linear Velocity Body Frame of the System Based on LieAlgebra and Reference "+ str(initial), folder_path)
+    plot_states_velocity_reference(fig15, ax15, ax25, ax35, xi[3:6, :], X_d[11:14, :], t, "Linear Velocity Body Frame of the System Based on LieAlgebra and Reference "+ str(initial), folder_path)
     return None
 
 if __name__ == '__main__':

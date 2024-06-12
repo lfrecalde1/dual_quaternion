@@ -487,8 +487,8 @@ def quadrotorModel(L: list)-> AcadosModel:
 
     # Dualquaternion dot
     
-    #twist_1 = dual_twist(u, dualquat_1)
-    twist_1 = u
+    twist_1 = dual_twist(u, dualquat_1)
+    #twist_1 = u
     dualdot = quatdot_simple(dualquat_1, twist_1)
 
 

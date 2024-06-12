@@ -9,9 +9,9 @@ from functions import dualquat_from_pose_casadi
 from fancy_plots import fancy_plots_3, fancy_plots_4, fancy_plots_1
 from fancy_plots import plot_dual_real_reference, plot_dual_dual_reference, plot_states_velocity_reference, plot_states_angular_reference, plot_states_position, plot_states_quaternion
 from nmpc import create_ocp_solver
-from ode_acados import dual_velocity_casadi, f_rk4_casadi_simple, quat_multi_casadi, dualquat_quat_casadi, dualquat_trans_casadi, compute_reference, velocities_from_twist_casadi
-from ode_acados import dualquat_get_real_casadi, dualquat_get_dual_casadi
+from ode_acados import compute_reference, rotation_inverse_casadi
 
+rotation_body = rotation_inverse_casadi()
 import os
 script_dir = os.path.dirname(__file__)
 folder_path = os.path.join(script_dir, 'results_nominal/')
@@ -77,10 +77,10 @@ def main(ts: float, t_f: float, t_N: float, L: list, odom_pub_1, odom_pub_2, ini
 
 
     # Initial States of the system
-    x0 = 1.0
+    x0 = 0.0
     y0 = 0.0
     z0 = 0.0
-    angle = np.pi/2
+    angle = 0.0*np.pi/2
     axis = np.array([0, 0, 1])
     quat_0 = np.hstack([np.cos(angle / 2), np.sin(angle / 2) * axis])
 
@@ -90,6 +90,7 @@ def main(ts: float, t_f: float, t_N: float, L: list, odom_pub_1, odom_pub_2, ini
 
     # Linear velocity inertial frame and angular velocity body frame
     u = np.zeros((6, t.shape[0] - N_prediction), dtype=np.double)
+    xi = np.zeros((3, t.shape[0] - N_prediction), dtype=np.double)
 
     # Ros time definitions
     hz = int(1/ts)
@@ -107,16 +108,16 @@ def main(ts: float, t_f: float, t_N: float, L: list, odom_pub_1, odom_pub_2, ini
     wx_max = + 7
     wy_max = + 7
     wz_max = + 7
-    vx_max = + 7
-    vy_max = + 7
-    vz_max = + 7
+    vx_max = + 5
+    vy_max = + 5
+    vz_max = + 5
 
     wx_min = - 7 
     wy_min = - 7 
     wz_min = - 7 
-    vx_min = - 7 
-    vy_min = - 7 
-    vz_min = - 7 
+    vx_min = - 5 
+    vy_min = - 5 
+    vz_min = - 5 
 
     # Integration set up
     ocp = create_ocp_solver(X1[:, 0], N_prediction, t_N, wx_max, wx_min, wy_max, wy_min, wz_max, wz_min, vx_max, vx_min, vy_max, vy_min,  vz_max, vz_min, L, ts)
@@ -131,7 +132,7 @@ def main(ts: float, t_f: float, t_N: float, L: list, odom_pub_1, odom_pub_2, ini
     for stage in range(N_prediction):
         acados_ocp_solver.set(stage, "u", u[:, 0])
 
-    hd, hd_d, qd, w_d, f_d, M_d = compute_reference(t, ts, 50.0*(initial+1), L)
+    hd, hd_d, qd, w_d, f_d, M_d = compute_reference(t, ts, 70.0*(initial+1), L)
 
     # Initial condition for the desired states
     X_d = np.zeros((13, t.shape[0]+1), dtype=np.double)
@@ -145,9 +146,10 @@ def main(ts: float, t_f: float, t_N: float, L: list, odom_pub_1, odom_pub_2, ini
         ty1_d = hd[1, k]
         tz1_d = hd[2, k]
 
-        hxd_d = hd_d[0, k]
-        hyd_d = hd_d[1, k]
-        hzd_d = hd_d[2, k]
+        velocity_body = rotation_body(qd[:, k], hd_d[:, k])
+        hxd_d = velocity_body[0, 0]
+        hyd_d = velocity_body[1, 0]
+        hzd_d = velocity_body[2, 0]
 
         wx_d = w_d[0, k]
         wy_d = w_d[1, k]
@@ -194,6 +196,7 @@ def main(ts: float, t_f: float, t_N: float, L: list, odom_pub_1, odom_pub_2, ini
 
         aux_control = acados_ocp_solver.get(0, "u")
         u[:, k] = aux_control
+        xi[:, k] = np.array(rotation_body(X1[3:7, k], u[3:6, k])).reshape((3, ))
 
         # Acados integration
         acados_integrator.set("x", X1[:, k])
@@ -223,13 +226,19 @@ def main(ts: float, t_f: float, t_N: float, L: list, odom_pub_1, odom_pub_2, ini
     fig12, ax12, ax22, ax32, ax42 = fancy_plots_4()
     plot_states_quaternion(fig12, ax12, ax22, ax32, ax42, X1[3:7, :], X_d[3:7, :], t, "Quaternions of the System "+ str(initial), folder_path)
 
+
     # Linear Velocities Inertial frame
     fig13, ax13, ax23, ax33 = fancy_plots_3()
     plot_states_velocity_reference(fig13, ax13, ax23, ax33, u[3:6, :], hd_d[0:3, :], t, "Linear Velocity of the System and Reference "+ str(initial), folder_path)
 
+
     # Angular Velocities Body Frame
     fig14, ax14, ax24, ax34 = fancy_plots_3()
     plot_states_angular_reference(fig14, ax14, ax24, ax34, u[0:3, :], w_d[0:3, :], t, "Angular Velocity of the System and Reference "+ str(initial), folder_path)
+
+    # Linear Velocities Inertial frame
+    fig15, ax15, ax25, ax35 = fancy_plots_3()
+    plot_states_velocity_reference(fig15, ax15, ax25, ax35, xi[0:3, :], X_d[10:13, :], t, "Linear Velocity Body of the System and Reference "+ str(initial), folder_path)
     return None
 
 if __name__ == '__main__':

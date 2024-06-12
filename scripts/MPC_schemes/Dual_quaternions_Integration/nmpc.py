@@ -31,9 +31,9 @@ def create_ocp_solver(x0, N_horizon, t_horizon, wx_max, wx_min, wy_max, wy_min, 
     Q[2, 2] = 10.5
 
     Qq = MX.zeros(3, 3)
-    Qq[0, 0] = 50.5
-    Qq[1, 1] = 50.5
-    Qq[2, 2] = 50.5
+    Qq[0, 0] = 60.5
+    Qq[1, 1] = 60.5
+    Qq[2, 2] = 60.5
 
     # Control effort using gain matrices
     R = MX.zeros(6, 6)
