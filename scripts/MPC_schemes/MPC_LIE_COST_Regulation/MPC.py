@@ -252,19 +252,6 @@ def main(odom_pub_1, odom_pub_2, L, x0, initial):
     # Simulation loop
     for k in range(0, t.shape[0] - N_prediction):
         tic = rospy.get_time()
-         # Check Desired Dual Quaternion in order to compute the shortest path between the desired dual quaternion and the real
-        #for j in range(N_prediction):
-        #    # check shortest path
-        #    error_dual_no_filter = np.array(error_dual_f(X_d[0:8, k+j], X[0:8, k])).reshape((8, ))
-        #    if error_dual_no_filter[0] > 0.0:
-        #        X_d[0:8, k+j] = X_d[0:8, k+j]
-        #    else:
-        #        X_d[0:8, k+j] = -X_d[0:8, k+j]
-        #error_dual_no_filter = np.array(error_dual_f(X_d[0:8, k+N_prediction], X[0:8, k])).reshape((8, ))
-        #if error_dual_no_filter[0] > 0.0:
-        #    X_d[0:8, k+N_prediction] = X_d[0:8, k+N_prediction]
-        #else:
-        #    X_d[0:8, k+N_prediction] = -X_d[0:8, k+N_prediction]
 #
         white_noise = np.random.multivariate_normal(np.zeros(12),uav_white_noise_cov)
 
@@ -332,8 +319,8 @@ def main(odom_pub_1, odom_pub_2, L, x0, initial):
         xcurrent = acados_integrator.get("x")
 
         # Update Data of the system
-        X[:, k+1] = xcurrent
-        #X[:, k+1] = noise(xcurrent, white_noise)
+        #X[:, k+1] = xcurrent
+        X[:, k+1] = noise(xcurrent, white_noise)
 
         # Update Matrices of our system
         Q1_trans_data[:, k + 1] = np.array(get_trans(X[0:8, k+1])).reshape((4, ))

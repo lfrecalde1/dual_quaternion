@@ -37,13 +37,14 @@ def get_odometry(odom_msg, dqd, name):
     t_d = get_trans(dqd)
 
     q_d = get_quat(dqd)
+    t_i = rot(q_d, t_d[1:4])
 
     odom_msg.header.stamp = rospy.Time.now()
     odom_msg.header.frame_id = "world"
     odom_msg.child_frame_id = name
-    odom_msg.pose.pose.position.x = t_d[1]
-    odom_msg.pose.pose.position.y = t_d[2]
-    odom_msg.pose.pose.position.z = t_d[3]
+    odom_msg.pose.pose.position.x = t_i[0, 0]
+    odom_msg.pose.pose.position.y = t_i[1, 0]
+    odom_msg.pose.pose.position.z = t_i[2, 0]
 
     odom_msg.pose.pose.orientation.x = q_d[1]
     odom_msg.pose.pose.orientation.y = q_d[2]

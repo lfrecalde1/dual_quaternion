@@ -596,6 +596,81 @@ def plot_states_quaternion(fig11, ax11, ax21, ax31, ax41, x, xd, t, name, path):
         fig11.savefig(png_file_path)
         return None
         
+def plot_control_actions_joints(fig11, ax11, ax21, ax31, ax41, q, t, name, path):
+        t = t[0:q.shape[1]]
+        ax11.set_xlim((t[0], t[-1]))
+        ax21.set_xlim((t[0], t[-1]))
+        ax31.set_xlim((t[0], t[-1]))
+        ax41.set_xlim((t[0], t[-1]))
+
+        ax11.set_xticklabels([])
+        ax21.set_xticklabels([])
+        ax31.set_xticklabels([])
+
+        state_1_e, = ax11.plot(t[0:t.shape[0]], q[0, 0:t.shape[0]],
+                    color='#C43C29', lw=1.0, ls="-")
+
+        state_2_e, = ax21.plot(t[0:t.shape[0]], q[1, 0:t.shape[0]],
+                        color='#3FB454', lw=1.0, ls="-")
+
+        state_3_e, = ax31.plot(t[0:t.shape[0]], q[2, 0:t.shape[0]],
+                        color='#3F8BB4', lw=1.0, ls="-")
+
+        state_4_e, = ax41.plot(t[0:t.shape[0]], q[3, 0:t.shape[0]],
+                        color='#36323E', lw=1.0, ls="-")
+
+        state_5_e, = ax41.plot(t[0:t.shape[0]], q[4, 0:t.shape[0]],
+                        color='#36323E', lw=1.0, ls="-")
+
+        state_6_e, = ax41.plot(t[0:t.shape[0]], q[5, 0:t.shape[0]],
+                        color='#36323E', lw=1.0, ls="-")
+
+        ax11.set_ylabel(r"$[N]$", rotation='vertical')
+        ax11.legend([state_1_e],
+                [ r'$q_1$'],
+                loc="best",
+                frameon=True, fancybox=True, shadow=False, ncol=2,
+                borderpad=0.5, labelspacing=0.5, handlelength=3, handletextpad=0.1,
+                borderaxespad=0.3, columnspacing=2)
+        ax11.grid(color='#949494', linestyle='-.', linewidth=0.5)
+
+        ax21.set_ylabel(r"$[N.m]$", rotation='vertical')
+        ax21.legend([state_2_e],
+                [r'$q_2$'],
+                loc="best",
+                frameon=True, fancybox=True, shadow=False, ncol=2,
+                borderpad=0.5, labelspacing=0.5, handlelength=3, handletextpad=0.1,
+                borderaxespad=0.3, columnspacing=2)
+        ax21.grid(color='#949494', linestyle='-.', linewidth=0.5)
+        ax21.set_xticklabels([])
+
+        ax31.set_ylabel(r"$[N.m]$", rotation='vertical')
+        ax31.legend([state_3_e],
+                [r'$q_3$'],
+                loc="best",
+                frameon=True, fancybox=True, shadow=False, ncol=2,
+                borderpad=0.5, labelspacing=0.5, handlelength=3, handletextpad=0.1,
+                borderaxespad=0.3, columnspacing=2)
+        ax31.grid(color='#949494', linestyle='-.', linewidth=0.5)
+        ax31.set_xticklabels([])
+    
+        ax41.set_ylabel(r"$[N.m]$", rotation='vertical')
+        ax41.legend([state_4_e],
+                [r'$q_4$'],
+                loc="best",
+                frameon=True, fancybox=True, shadow=False, ncol=2,
+                borderpad=0.5, labelspacing=0.5, handlelength=3, handletextpad=0.1,
+                borderaxespad=0.3, columnspacing=2)
+        ax41.grid(color='#949494', linestyle='-.', linewidth=0.5)
+        ax41.set_xlabel(r"$\textrm{Time}[s]$", labelpad=5)
+
+        pdf_file_path = os.path.join(path, name + ".pdf")
+        png_file_path = os.path.join(path, name + ".png")
+
+        fig11.savefig(pdf_file_path)
+        fig11.savefig(png_file_path)
+        return None
+
 def plot_control_actions(fig11, ax11, ax21, ax31, ax41, F, M, t, name, path):
         t = t[0:M.shape[1]]
         ax11.set_xlim((t[0], t[-1]))

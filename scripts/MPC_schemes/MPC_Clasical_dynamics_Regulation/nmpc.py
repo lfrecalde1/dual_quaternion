@@ -56,6 +56,11 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
     Qq[1, 1] = 6.5
     Qq[2, 2] = 6.5
 
+    Q_l = MX.zeros(3, 3)
+    Q_l[0, 0] = 2
+    Q_l[1, 1] = 2
+    Q_l[2, 2] = 2
+
     # Control effort using gain matrices
     R = MX.zeros(4, 4)
     R[0, 0] = 20/F_max
@@ -90,8 +95,8 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
     #ocp.model.cost_expr_ext_cost = 1*(error_position.T @ Q @error_position) + 1*(error_nominal_input.T @ R @ error_nominal_input) + 1*(error_ori_li)
     #ocp.model.cost_expr_ext_cost_e = 1*(error_position.T @ Q @error_position)+ 1*(error_ori_li) + w.T@w + vb.T@vb
 
-    ocp.model.cost_expr_ext_cost = 1*(error_position.T @ Q @error_position) + 1*(error_nominal_input.T @ R @ error_nominal_input) + 1*(error_ori_li)
-    ocp.model.cost_expr_ext_cost_e = 1*(error_position.T @ Q @error_position)+ 1*(error_ori_li)
+    ocp.model.cost_expr_ext_cost = 1*(error_position.T @ Q @error_position) + 1*(error_nominal_input.T @ R @ error_nominal_input) + 10*(error_ori.T@Q_l@error_ori)
+    ocp.model.cost_expr_ext_cost_e = 1*(error_position.T @ Q @error_position)+ 10*(error_ori.T@Q_l@error_ori)
 
     # Auxiliary variable initialization
     ocp.parameter_values = np.zeros(nx + nu)
@@ -127,6 +132,15 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
     ocp.constraints.idxsh = np.array(range(nsh))
 
     # Set options
+    #ocp.solver_options.qp_solver = "FULL_CONDENSING_HPIPM" 
+    #ocp.solver_options.qp_solver_cond_N = N_horizon // 4
+    #ocp.solver_options.hessian_approx = "GAUSS_NEWTON"  
+    #ocp.solver_options.regularize_method = "CONVEXIFY"  
+    #ocp.solver_options.integrator_type = "IRK"
+    #ocp.solver_options.nlp_solver_type = "SQP"
+    #ocp.solver_options.Tsim = ts
+    #ocp.solver_options.tf = t_horizon
+
     ocp.solver_options.qp_solver = "FULL_CONDENSING_HPIPM" 
     ocp.solver_options.qp_solver_cond_N = N_horizon // 4
     ocp.solver_options.hessian_approx = "GAUSS_NEWTON"  

@@ -213,6 +213,11 @@ def main(ts: float, t_f: float, t_N: float, x_0: np.ndarray, L: list, odom_pub_1
     sqp_iteration = np.zeros((1, t.shape[0] - N_prediction), dtype=np.double)
     error_quat_no_filter = np.zeros((4, t.shape[0] - N_prediction), dtype=np.double)
 
+    error_dual_no_filter = np.array(error_dual_f(xref[6:10, 0], x[6:10, 0])).reshape((4, ))
+    if error_dual_no_filter[0] > 0.0:
+        xref[6:10, :] = xref[6:10, :]
+    else:
+        xref[6:10, :] = -xref[6:10, :]
     # Loop simulation
     for k in range(0, t.shape[0] - N_prediction):
         tic = rospy.get_time()
@@ -276,8 +281,8 @@ def main(ts: float, t_f: float, t_N: float, x_0: np.ndarray, L: list, odom_pub_1
         xcurrent = acados_integrator.get("x")
 
         # System evolution
-        #x[:, k+1] = noise(xcurrent, white_noise)
-        x[:, k+1] = xcurrent
+        x[:, k+1] = noise(xcurrent, white_noise)
+        #x[:, k+1] = xcurrent
         euler[:, k+1] = get_euler_angles(x[6:10, k+1])
 
         # Send msg to Ros

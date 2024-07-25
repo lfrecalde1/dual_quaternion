@@ -130,7 +130,7 @@ def main(odom_pub_1, odom_pub_2, L):
     X_d = np.zeros((14, t.shape[0]+1), dtype=np.double)
     X_d[:, 0] = np.array(ca.vertcat(dual_1_d, dual_twist_1_d)).reshape((14, ))
     for k in range(0, t.shape[0]):
-        angular_linear_1_d = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]) # Angular Body linear Inertial
+        angular_linear_1_d = np.array([0.0, 0.0, 0.1, 0.5, -0.5, 0.0]) # Angular Body linear Inertial
         dual_twist_1_d = dual_twist(angular_linear_1_d, dual_1_d)
         dual_1_d = f_rk4(dual_1_d, dual_twist_1_d, sample_time)
         # Update Reference
