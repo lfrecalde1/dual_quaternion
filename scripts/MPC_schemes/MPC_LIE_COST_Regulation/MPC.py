@@ -265,9 +265,9 @@ def main(odom_pub_1, odom_pub_2, L, x0, initial):
         dual = X[4:8, k]
         # Chekc norm of the quaternion
         quat_check = get_quat(X[0:8, k])
-        print("-----")
-        print(np.linalg.norm(quat_check))
-        print(np.dot(real, dual))
+        #print("-----")
+        #print(np.linalg.norm(quat_check))
+        #print(np.dot(real, dual))
         # Control Law Acados
         acados_ocp_solver.set(0, "lbx", X[:, k])
         acados_ocp_solver.set(0, "ubx", X[:, k])
@@ -292,11 +292,12 @@ def main(odom_pub_1, odom_pub_2, L, x0, initial):
         stat_fields = ['statistics', 'time_tot', 'time_lin', 'time_sim', 'time_sim_ad', 'time_sim_la', 'time_qp', 'time_qp_solver_call', 'time_reg', 'sqp_iter', 'residuals', 'qp_iter', 'alpha']
 
         for field in stat_fields:
-            print(f"{field} : {acados_ocp_solver.get_stats(field)}")
+            #print(f"{field} : {acados_ocp_solver.get_stats(field)}")
+            None
         print(initial)
         kkt_values[:, k]  = acados_ocp_solver.get_stats('residuals')
         sqp_iteration[:, k] = acados_ocp_solver.get_stats('sqp_iter')
-        acados_ocp_solver.print_statistics()
+        #acados_ocp_solver.print_statistics()
 
         # Get the control Action
         aux_control = acados_ocp_solver.get(0, "u")
@@ -392,6 +393,8 @@ if __name__ == '__main__':
         Data_N_prediction = []
         Data_KKT = []
         Data_sqp = []
+
+        print(x_0.shape[0])
 
         # Multiple Experiments
         for k in range(x_0.shape[0]):

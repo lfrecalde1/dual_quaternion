@@ -252,11 +252,12 @@ def main(ts: float, t_f: float, t_N: float, x_0: np.ndarray, L: list, odom_pub_1
         #acados_ocp_solver.solve()
         stat_fields = ['statistics', 'time_tot', 'time_lin', 'time_sim', 'time_sim_ad', 'time_sim_la', 'time_qp', 'time_qp_solver_call', 'time_reg', 'sqp_iter', 'residuals', 'qp_iter', 'alpha']
         for field in stat_fields:
-            print(f"{field} : {acados_ocp_solver.get_stats(field)}")
+            #print(f"{field} : {acados_ocp_solver.get_stats(field)}")
+            None
         print(initial)
         kkt_values[:, k]  = acados_ocp_solver.get_stats('residuals')
         sqp_iteration[:, k] = acados_ocp_solver.get_stats('sqp_iter')
-        print(error_quat_no_filter[:, k])
+        #print(error_quat_no_filter[:, k])
         # compute gradient
 
         # Get the control Action
@@ -360,7 +361,8 @@ if __name__ == '__main__':
         # Initial conditions of the system
         X_total = []
         X_total_aux = []
-        number_experiments = 30
+        number_experiments = 300
+        print(number_experiments)
         max_position = 4
         min_position = -4
 
