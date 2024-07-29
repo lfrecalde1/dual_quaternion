@@ -424,13 +424,14 @@ def cost_quaternion_casadi():
 
     # Check shortest path
     # Check shortest path
-    condition1 = q_e_aux[0, 0] > 0.0
+    #condition1 = q_e_aux[0, 0] > 0.0
 
     # Define expressions for each condition
-    expr1 =  q_e_aux
-    expr2 = -q_e_aux
+    #expr1 =  q_e_aux
+    #expr2 = -q_e_aux
 
-    q_error = ca.if_else(condition1, expr1, expr2) 
+    #q_error = ca.if_else(condition1, expr1, expr2) 
+    q_error = q_e_aux
     
     qw = q_error[0, 0] + ca.np.finfo(np.float64).eps
     angle = 2*ca.acos(qw)

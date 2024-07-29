@@ -519,18 +519,19 @@ def error_quaternion(qd, q):
 
     q_e_aux = H_r_plus @ quaternion
 
-    condition1 = q_e_aux[0, 0] > 0.0
+    #condition1 = q_e_aux[0, 0] > 0.0
 
     # Define expressions for each condition
-    expr1 =  q_e_aux
-    expr2 = -q_e_aux
+    #expr1 =  q_e_aux
+    #expr2 = -q_e_aux
 
-    q_error = ca.if_else(condition1, expr1, expr2) 
+    #q_error = ca.if_else(condition1, expr1, expr2) 
+    q_error = q_e_aux
 
     norm = ca.norm_2(q_error[1:4] + ca.np.finfo(np.float64).eps)
     angle = ca.atan2(norm, q_error[0])
 
-    ln_quaternion = ca.vertcat(0.0,  (1/2)*angle*q_error[1, 0]/norm, (1/2)*angle*q_error[2, 0]/norm, (1/2)*angle*q_error[3, 0]/norm)
+    ln_quaternion = ca.vertcat((1/2)*angle*q_error[1, 0]/norm, (1/2)*angle*q_error[2, 0]/norm, (1/2)*angle*q_error[3, 0]/norm)
 
 
     # Sux variable in roder to get a norm

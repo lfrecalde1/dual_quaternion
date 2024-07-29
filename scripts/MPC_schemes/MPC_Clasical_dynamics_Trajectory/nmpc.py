@@ -52,16 +52,21 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
     #Q[1, 1] = 8.0
     #Q[2, 2] = 6.0
 
-    Qq[0, 0] = 7.5
-    Qq[1, 1] = 7.5
-    Qq[2, 2] = 7.5
+    Qq[0, 0] = 6.5
+    Qq[1, 1] = 6.5
+    Qq[2, 2] = 6.5
+
+    Q_l = MX.zeros(3, 3)
+    Q_l[0, 0] = 2
+    Q_l[1, 1] = 2
+    Q_l[2, 2] = 2
 
     # Control effort using gain matrices
     R = MX.zeros(4, 4)
-    R[0, 0] = 1/F_max
-    R[1, 1] = 1/tau_1_max
-    R[2, 2] = 1/tau_2_max
-    R[3, 3] = 1/tau_3_max
+    R[0, 0] = 20/F_max
+    R[1, 1] = 60/tau_1_max
+    R[2, 2] = 60/tau_2_max
+    R[3, 3] = 60/tau_3_max
 
     # Definition of the cost functions (EXTERNAL)
     ocp.cost.cost_type = "EXTERNAL"
@@ -76,21 +81,26 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
     q_d = ocp.p[6:10]
     q = model.x[6:10]
     error_ori_li = error_quaternion_li(q, q_d, Qq)
+    error_ori = error_quaternion(q_d, q)
+
 
     # Angular velocities
     w = model.x[10:13] - ocp.p[10:13]
     vi = model.x[3:6] - ocp.p[3:6]
     vb = vi
 
-    ocp.model.cost_expr_ext_cost = 1*(error_position.T @ Q @error_position) + 1*(error_nominal_input.T @ R @ error_nominal_input) + 1*(error_ori_li) + 0.2*(w.T@w) + 0.2*(vb.T@vb)
-    ocp.model.cost_expr_ext_cost_e = 1*(error_position.T @ Q @error_position)+ 1*(error_ori_li) + 0.2*(w.T@w) + 0.2*(vb.T@vb)
-
+    #ocp.model.cost_expr_ext_cost = 1*(error_position.T @ Q @error_position) + 1*(error_nominal_input.T @ R @ error_nominal_input) + 1*(error_ori_li) + 0.2*(w.T@w) + 0.2*(vb.T@vb)
+    #ocp.model.cost_expr_ext_cost_e = 1*(error_position.T @ Q @error_position)+ 1*(error_ori_li) + 0.2*(w.T@w) + 0.2*(vb.T@vb)
 
     #ocp.model.cost_expr_ext_cost = 1*(error_position.T @ Q @error_position) + 1*(error_nominal_input.T @ R @ error_nominal_input) + 1*(error_ori_li)
     #ocp.model.cost_expr_ext_cost_e = 1*(error_position.T @ Q @error_position)+ 1*(error_ori_li) + w.T@w + vb.T@vb
 
     #ocp.model.cost_expr_ext_cost = 1*(error_position.T @ Q @error_position) + 1*(error_nominal_input.T @ R @ error_nominal_input) + 1*(error_ori_li)
     #ocp.model.cost_expr_ext_cost_e = 1*(error_position.T @ Q @error_position)+ 1*(error_ori_li)
+
+    ocp.model.cost_expr_ext_cost = 1*(error_position.T @ Q @error_position) + 1*(error_nominal_input.T @ R @ error_nominal_input) + 10*(error_ori.T@Q_l@error_ori)
+    ocp.model.cost_expr_ext_cost_e = 1*(error_position.T @ Q @error_position)+ 10*(error_ori.T@Q_l@error_ori)
+
 
     # Auxiliary variable initialization
     ocp.parameter_values = np.zeros(nx + nu)
@@ -126,12 +136,12 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
     ocp.constraints.idxsh = np.array(range(nsh))
 
     # Set options
-    ocp.solver_options.qp_solver = "PARTIAL_CONDENSING_HPIPM" 
+    ocp.solver_options.qp_solver = "FULL_CONDENSING_HPIPM" 
     ocp.solver_options.qp_solver_cond_N = N_horizon // 4
-    ocp.solver_options.hessian_approx = "EXACT"  
+    ocp.solver_options.hessian_approx = "GAUSS_NEWTON"  
     ocp.solver_options.regularize_method = "CONVEXIFY"  
     ocp.solver_options.integrator_type = "IRK"
-    ocp.solver_options.nlp_solver_type = "SQP"
+    ocp.solver_options.nlp_solver_type = "SQP_RTI"
     ocp.solver_options.Tsim = ts
     ocp.solver_options.tf = t_horizon
 
@@ -264,7 +274,7 @@ def create_simulation_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, 
     ocp.solver_options.hessian_approx = "GAUSS_NEWTON"  
     ocp.solver_options.regularize_method = "CONVEXIFY"  
     ocp.solver_options.integrator_type = "IRK"
-    ocp.solver_options.nlp_solver_type = "SQP"
+    ocp.solver_options.nlp_solver_type = "SQP_RTI"
     ocp.solver_options.Tsim = ts
     ocp.solver_options.tf = t_horizon
 

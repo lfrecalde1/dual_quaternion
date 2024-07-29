@@ -1,6 +1,7 @@
 import numpy as np
 import time
 import matplotlib.pyplot as plt
+import itertools
 from fancy_plots import fancy_plots_3, fancy_plots_4, fancy_plots_1
 from fancy_plots import plot_states_position, plot_states_quaternion, plot_control_actions, plot_cost_total, plot_control_actions_reference, plot_states_velocity_reference, plot_states_angular_reference
 from system_functions import get_euler_angles
@@ -35,7 +36,7 @@ script_dir = os.path.dirname(__file__)
 folder_path = os.path.join(script_dir, 'cost_without_velocities/')
 # Check if the folder exists, and create it if it doesn't
 
-def main(ts: float, t_f: float, t_N: float, x_0: np.ndarray, L: list, odom_pub_1, odom_pub_2, pub_planning, pub_ref, initial)-> None:
+def main(ts: float, t_f: float, t_N: float, x_0: np.ndarray, L: list, odom_pub_1, odom_pub_2, pub_planning, pub_ref,  v_max, a_max, n, initial)-> None:
     # DESCRIPTION
     # simulation of a quadrotor using a NMPC as a controller
     # INPUTS
@@ -71,10 +72,10 @@ def main(ts: float, t_f: float, t_N: float, x_0: np.ndarray, L: list, odom_pub_1
     x[:, 0] = x_0
 
     # Reference States
-    hd, hd_d, qd, w_d, f_d, M_d = compute_reference(t, ts, 1.0*(initial+1), L)
+    hd, hd_d, qd, w_d, f_d, M_d = compute_reference(t, ts, v_max, a_max, n, L)
     u_planning = np.zeros((4, t.shape[0]), dtype=np.double)
-    u_planning[0, :] = L[0] * L[4]
-    #u_planning[1:4, :] = M_d[0:3, :]
+    u_planning[0, :] = f_d
+    u_planning[1:4, :] = M_d[0:3, :]
 
     # Euler angles of the system
     euler = np.zeros((3, t.shape[0] + 1 - N_prediction), dtype=np.double)
@@ -195,6 +196,12 @@ def main(ts: float, t_f: float, t_N: float, x_0: np.ndarray, L: list, odom_pub_1
     sqp_iteration = np.zeros((1, t.shape[0] - N_prediction), dtype=np.double)
     error_quat_no_filter = np.zeros((4, t.shape[0] - N_prediction), dtype=np.double)
 
+    error_dual_no_filter = np.array(error_dual_f(xref[6:10, 0], x[6:10, 0])).reshape((4, ))
+    if error_dual_no_filter[0] > 0.0:
+        xref[6:10, :] = xref[6:10, :]
+    else:
+        xref[6:10, :] = -xref[6:10, :]
+    
     # Loop simulation
     for k in range(0, t.shape[0] - N_prediction):
         tic = rospy.get_time()
@@ -227,13 +234,13 @@ def main(ts: float, t_f: float, t_N: float, x_0: np.ndarray, L: list, odom_pub_1
 
         # Check Solution since there can be possible errors 
         #acados_ocp_solver.solve()
-        stat_fields = ['statistics', 'time_tot', 'time_lin', 'time_sim', 'time_sim_ad', 'time_sim_la', 'time_qp', 'time_qp_solver_call', 'time_reg', 'sqp_iter', 'residuals', 'qp_iter', 'alpha']
-        for field in stat_fields:
-            print(f"{field} : {acados_ocp_solver.get_stats(field)}")
-        print(initial)
-        kkt_values[:, k]  = acados_ocp_solver.get_stats('residuals')
-        sqp_iteration[:, k] = acados_ocp_solver.get_stats('sqp_iter')
-        print(error_quat_no_filter[:, k])
+        #stat_fields = ['statistics', 'time_tot', 'time_lin', 'time_sim', 'time_sim_ad', 'time_sim_la', 'time_qp', 'time_qp_solver_call', 'time_reg', 'sqp_iter', 'residuals', 'qp_iter', 'alpha']
+        #for field in stat_fields:
+        #    print(f"{field} : {acados_ocp_solver.get_stats(field)}")
+        #print(initial)
+        #kkt_values[:, k]  = acados_ocp_solver.get_stats('residuals')
+        #sqp_iteration[:, k] = acados_ocp_solver.get_stats('sqp_iter')
+        #print(error_quat_no_filter[:, k])
         # compute gradient
 
         # Get the control Action
@@ -306,7 +313,6 @@ def main(ts: float, t_f: float, t_N: float, x_0: np.ndarray, L: list, odom_pub_1
     fig18, ax18  = fancy_plots_1()
     plot_cost_total(fig18, ax18, orientation_cost, t, "Cost Ori "+ str(initial), folder_path)
 
-
     return x, xref, F, M, orientation_cost, translation_cost, control_cost, t, N_prediction, kkt_values, sqp_iteration
 
 def get_random_quaternion(min_angle=0.0, max_angle=np.math.pi):
@@ -351,29 +357,36 @@ if __name__ == '__main__':
         # Initial conditions of the system
         X_total = []
         X_total_aux = []
-        number_experiments = 50
-        max_position = 4
-        min_position = -4
+        a_max = np.array([10, 20])*0.3
+        v_max = np.array([5, 10, 15])*1
 
-        # Random quaternions
-        ramdon_quaternions = get_random_quaternion_complete(number_experiments)
-        ramdon_positions = get_random_position(min_position, max_position, number_experiments)
+        # Use itertools.product to get all possible combinations
+        combinations = np.array(list(itertools.product(v_max, a_max)))
+        print(combinations)
+        number_experiments = combinations.shape[0]
+        print(number_experiments)
+        t = np.arange(0, 5 + ts, ts)
+
         for i_random in range(number_experiments):
+            # Reference States
+            hd, hd_d, qd, w_d, f_d, M_d = compute_reference(t, ts, combinations[i_random, 0], combinations[i_random, 1], 1, L)
             # Fixed intial position
             #pos_0 = np.array([0.0, 0.0, 0.0])
+            pos_0 = np.array([hd[0,0], hd[1, 0], hd[2, 0]])
 
             # Random Initial positions
-            pos_0 = np.array([ramdon_positions[i_random, 0], ramdon_positions[i_random, 1], ramdon_positions[i_random, 2]])
-            vel_0 = np.array([0.0, 0.0, 0.0], dtype=np.double)
-            omega_0 = np.array([0.0, 0.0, 0.0], dtype=np.double)
+            #pos_0 = np.array([ramdon_positions[i_random, 0], ramdon_positions[i_random, 1], ramdon_positions[i_random, 2]])
+            vel_0 = np.array([hd_d[0, 0], hd_d[1, 0], hd_d[2, 0]], dtype=np.double)
+            omega_0 = np.array([w_d[0, 0], w_d[1, 0], w_d[2, 0]], dtype=np.double)
 
             # Fixed Initial Conditions
-            #theta_0 = 0.99*np.pi
-            #n_0 = np.array([0.0, 0.0, 1.0])
+            theta_0 = 0.0
+            n_0 = np.array([0.0, 0.0, 1.0])
             #quat_0 = np.hstack([np.cos(theta_0 / 2), np.sin(theta_0 / 2) * np.array(n_0)])
+            quat_0 = np.hstack([qd[0,0], qd[1, 0], qd[2, 0], qd[3, 0]])
 
             # Random initial conditions
-            quat_0 = np.array([ramdon_quaternions[i_random, 3], ramdon_quaternions[i_random, 0], ramdon_quaternions[i_random, 1], ramdon_quaternions[i_random, 2]])
+            #quat_0 = np.array([ramdon_quaternions[i_random, 3], ramdon_quaternions[i_random, 0], ramdon_quaternions[i_random, 1], ramdon_quaternions[i_random, 2]])
             x = np.hstack((pos_0, vel_0, quat_0, omega_0))
             x_aux = np.hstack((pos_0, quat_0, omega_0, vel_0))
             X_total.append(x)
@@ -413,7 +426,7 @@ if __name__ == '__main__':
 
         for k in range(0, X_total.shape[0]):
             # Simulation
-            x, xref, F, M, orientation_cost, translation_cost, control_cost, t, N_prediction, kkt_values, sqp_iteration = main(ts, t_f, t_N, X_total[k, :], L, odometry_publisher_1, odometry_publisher_2, planning_publisher, ref_publisher, k)
+            x, xref, F, M, orientation_cost, translation_cost, control_cost, t, N_prediction, kkt_values, sqp_iteration = main(ts, t_f, t_N, X_total[k, :], L, odometry_publisher_1, odometry_publisher_2, planning_publisher, ref_publisher, combinations[k, 0], combinations[k, 1], 1, k)
             Data_States.append(x)
             Data_reference.append(xref)
             Data_F.append(F)

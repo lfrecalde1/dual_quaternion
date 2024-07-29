@@ -425,13 +425,14 @@ def cost_quaternion_casadi():
 
     # Check shortest path
     # Check shortest path
-    condition1 = q_e_aux[0, 0] > 0.0
+    #condition1 = q_e_aux[0, 0] > 0.0
 
     # Define expressions for each condition
-    expr1 =  q_e_aux
-    expr2 = -q_e_aux
+    #expr1 =  q_e_aux
+    #expr2 = -q_e_aux
 
-    q_error = ca.if_else(condition1, expr1, expr2) 
+    #q_error = ca.if_else(condition1, expr1, expr2) 
+    q_error = q_e_aux
     
     qw = q_error[0, 0] + ca.np.finfo(np.float64).eps
     angle = 2*ca.acos(qw)
@@ -660,7 +661,7 @@ def error_quat_aux_casadi():
     f_error_quat = Function('f_error_dual', [qd, q], [q_error])
     return f_error_quat
 
-def ref_trajectory_agresive(t, ts, mul):
+def ref_trajectory_agresive(t, ts, v_max, a_max, n):
         # Compute the desired Trajecotry of the system
         # INPUT 
         # t                                                - time
@@ -669,33 +670,35 @@ def ref_trajectory_agresive(t, ts, mul):
         # theta                                            - desired orientation
         # theta_p                                          - desired angular velocity
         t = t
-        Q = mul
+        r_max = (v_max*v_max)/a_max
+        k = a_max/v_max
+        r_min = r_max/n
 
         # Compute desired reference x y z
-        xd = 4 * np.sin(mul * 0.04* t)
-        yd = 4 * np.sin(mul * 0.08 * t)
-        zd = 1 * np.sin(0.05*Q*t) + 1
+        xd = r_max * np.sin(1*k * t)
+        yd = r_min * np.sin(2*k * t)
+        zd = 1 * np.sin(0.5*k*t) + 1
 
         # Compute velocities
         # Compute velocities
-        xd_p = 4 * mul * 0.04 * np.cos(mul * 0.04 * t)
-        yd_p = 4 * mul * 0.08 * np.cos(mul * 0.08 * t)
-        zd_p = 0.05 * Q * np.cos(0.05*Q * t)
+        xd_p = r_max * 1 * k * np.cos(1 * k * t)
+        yd_p = r_min * 2 * k * np.cos(2 * k * t)
+        zd_p = 0.5 * k * np.cos(0.5*k * t)
 
         # Compute acceleration
-        xd_pp = -4 * mul * mul * 0.04 * 0.04 * np.sin(mul * 0.04 * t)
-        yd_pp = -4 * mul * mul * 0.08 * 0.08 * np.sin(mul * 0.08 * t);  
-        zd_pp = -0.05 * 0.05 * Q * Q *  np.sin(0.05*Q * t)
+        xd_pp = - r_max * 1 * 1 * k * k * np.sin(1 * k * t)
+        yd_pp = - r_min * 2 * 2 * k * k * np.sin(2 * k * t) 
+        zd_pp = -0.5 * 0.5 * k * k *  np.sin(0.5*k * t)
 
         # Compute jerk
-        xd_ppp = -4 * mul * mul * mul * 0.04 * 0.04 * 0.04 * np.cos(mul * 0.04 * t)
-        yd_ppp = -4 * mul * mul * mul * 0.08 * 0.08 * 0.08 * np.cos(mul * 0.08 * t);  
-        zd_ppp = -0.05 * 0.05 * 0.05* Q * Q * Q * np.cos(0.05*Q * t)
+        xd_ppp = - r_max * 1 * 1 * 1 * k * k * k * np.cos(1 * k * t)
+        yd_ppp = - r_min * 2 * 2 * 2 * k * k * k * np.cos(2 * k * t) 
+        zd_ppp = -0.5 * 0.5 * 0.5* k * k * k * np.cos(0.5*k * t)
 
         # Compute snap
-        xd_pppp = 4 * mul * mul * mul * mul * 0.04 * 0.04 * 0.04 * 0.04 * np.sin(mul * 0.04 * t)
-        yd_pppp = 4 * mul * mul * mul * mul * 0.08 * 0.08 * 0.08 * 0.08 * np.sin(mul * 0.08 * t);  
-        zd_pppp = 0.05 * 0.05 * 0.05 * 0.05 * Q * Q * Q * Q * np.sin(0.05*Q * t)
+        xd_pppp =  r_max * 1 * 1 * 1 * 1 * k * k * k * k * np.sin(1 * k * t)
+        yd_pppp =  r_min * 2 * 2 * 2 * 2 * k * k * k * k * np.sin(2 * k * t) 
+        zd_pppp = 0.5 * 0.5 * 0.5 * 0.5 * k * k * k * k * np.sin(0.5*k * t)
 
         # Compute angular displacement
         theta = np.arctan2(yd_p, xd_p)
@@ -719,7 +722,7 @@ def ref_trajectory_agresive(t, ts, mul):
 
         return hd, theta, hd_p, theta_p, hd_pp, hd_ppp, hd_pppp, theta_pp
 
-def compute_reference(t, ts, mul, L):
+def compute_reference(t, ts,  v_max, a_max, n, L):
     # Drone Parameters
     m = L[0]
     Jxx = L[1]
@@ -734,7 +737,7 @@ def compute_reference(t, ts, mul, L):
     Yw = np.array([[0.0], [1.0], [0.0]])
 
     # Desired Flat outputs
-    hd, theta, hd_p, theta_p, hd_pp, hd_ppp, hd_pppp, theta_pp = ref_trajectory_agresive(t, ts, mul)
+    hd, theta, hd_p, theta_p, hd_pp, hd_ppp, hd_pppp, theta_pp = ref_trajectory_agresive(t, ts,  v_max, a_max, n)
 
     # Empty vector for the internal values
 

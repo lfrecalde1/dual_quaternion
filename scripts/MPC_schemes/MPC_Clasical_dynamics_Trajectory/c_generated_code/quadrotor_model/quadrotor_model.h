@@ -71,14 +71,6 @@ const int *quadrotor_impl_dae_fun_jac_x_xdot_u_sparsity_in(int);
 const int *quadrotor_impl_dae_fun_jac_x_xdot_u_sparsity_out(int);
 int quadrotor_impl_dae_fun_jac_x_xdot_u_n_in(void);
 int quadrotor_impl_dae_fun_jac_x_xdot_u_n_out(void);
-// implicit ODE - hessian
-int quadrotor_impl_dae_hess(const real_t** arg, real_t** res, int* iw, real_t* w, void *mem);
-int quadrotor_impl_dae_hess_work(int *, int *, int *, int *);
-const int *quadrotor_impl_dae_hess_sparsity_in(int);
-const int *quadrotor_impl_dae_hess_sparsity_out(int);
-int quadrotor_impl_dae_hess_n_in(void);
-int quadrotor_impl_dae_hess_n_out(void);
-	
   
 
 

@@ -2,6 +2,7 @@
 import rospy
 import numpy as np
 import matplotlib.pyplot as plt
+import itertools
 import casadi as ca
 from dual_quaternion import plot_states_quaternion, plot_states_position, fancy_plots_4, fancy_plots_3, fancy_plots_1, plot_cost_total, plot_states_angular_reference, plot_states_velocity_reference, plot_control_actions_reference
 from nav_msgs.msg import Odometry
@@ -62,13 +63,13 @@ def send_odometry(odom_msg, odom_pub):
     odom_pub.publish(odom_msg)
     return None
 
-def main(odom_pub_1, odom_pub_2, L, x0, initial):
+def main(odom_pub_1, odom_pub_2, L, x0, v_max, a_max, n, initial):
     # Split Values
     m = L[0]
     g = L[4]
     # Sample Time Defintion
     sample_time = 0.01
-    t_f = 30
+    t_f = 20
 
     # Time defintion aux variable
     t = np.arange(0, t_f + sample_time, sample_time)
@@ -141,7 +142,7 @@ def main(odom_pub_1, odom_pub_2, L, x0, initial):
     taux_3_min = -0.1
 
     # Differential Flatness
-    hd, hd_d, qd, w_d, f_d, M_d = compute_reference(t, sample_time, 1.0*(initial+1), L)
+    hd, hd_d, qd, w_d, f_d, M_d = compute_reference(t, sample_time, v_max, a_max, n, L)
     qd_filter = np.zeros((4, t.shape[0]+1), dtype=np.double)
 
     # Initial condition for the desired states
@@ -175,8 +176,8 @@ def main(odom_pub_1, odom_pub_2, L, x0, initial):
 
     # Desired Reference Inputs
     u_d = np.zeros((4, t.shape[0]), dtype=np.double)
-    u_d[0, :] = L[0] * L[4]
-    #u_d[1:4, :] = M_d[0:3, :]
+    u_d[0, :] = f_d
+    u_d[1:4, :] = M_d[0:3, :]
 
     # Empty vectors for the desired Dualquaernion
     Q2_trans_data = np.zeros((4, t.shape[0] + 1 - N_prediction), dtype=np.double)
@@ -196,8 +197,8 @@ def main(odom_pub_1, odom_pub_2, L, x0, initial):
     ocp = create_ocp_solver(X[:, 0], N_prediction, t_N, F_max, F_min, tau_1_max, tau_1_min, tau_2_max, tau_2_min, tau_3_max, taux_3_min, L, sample_time)
 
     # No Cython
-    acados_ocp_solver = AcadosOcpSolver(ocp, json_file="acados_ocp_" + ocp.model.name + ".json", build= True, generate= True)
-    #acados_ocp_solver = AcadosOcpSolver(ocp, json_file="acados_ocp_" + ocp.model.name + ".json", build= False, generate= False)
+    #acados_ocp_solver = AcadosOcpSolver(ocp, json_file="acados_ocp_" + ocp.model.name + ".json", build= True, generate= True)
+    acados_ocp_solver = AcadosOcpSolver(ocp, json_file="acados_ocp_" + ocp.model.name + ".json", build= False, generate= False)
 
     #ocp_simulation = create_simulation_solver(X_aux[:, 0], N_prediction, t_N, F_max, F_min, tau_1_max, tau_1_min, tau_2_max, tau_2_min, tau_3_max, taux_3_min, L, sample_time)
 
@@ -206,8 +207,8 @@ def main(odom_pub_1, odom_pub_2, L, x0, initial):
     #acados_integrator = AcadosSimSolver(ocp_simulation, json_file="acados_sim_simulation_" + ocp_simulation.model.name + ".json", build= False, generate= False)
 
     # Integration Without Drag
-    acados_integrator = AcadosSimSolver(ocp, json_file="acados_sim_" + ocp.model.name + ".json", build= True, generate= True)
-    #acados_integrator = AcadosSimSolver(ocp, json_file="acados_sim_" + ocp.model.name + ".json", build= False, generate= False)
+    #acados_integrator = AcadosSimSolver(ocp, json_file="acados_sim_" + ocp.model.name + ".json", build= True, generate= True)
+    acados_integrator = AcadosSimSolver(ocp, json_file="acados_sim_" + ocp.model.name + ".json", build= False, generate= False)
 
     # Dimensions of the optimization problem
     x_dim = ocp.model.x.size()[0]
@@ -262,9 +263,8 @@ def main(odom_pub_1, odom_pub_2, L, x0, initial):
     kkt_values = np.zeros((4, t.shape[0] - N_prediction), dtype=np.double)
     sqp_iteration = np.zeros((1, t.shape[0] - N_prediction), dtype=np.double)
 
-
     error_dual_no_filter = np.array(error_dual_f(X_d[0:8, 0], X[0:8, 0])).reshape((8, ))
-    if error_dual_no_filter[0] > 0.0:
+    if error_dual_no_filter[0] >= 0.0:
         X_d[0:8, :] = X_d[0:8, :]
     else:
         X_d[0:8, :] = -X_d[0:8, :]
@@ -311,13 +311,13 @@ def main(odom_pub_1, odom_pub_2, L, x0, initial):
         #acados_ocp_solver.options_set("rti_phase", 2)
         acados_ocp_solver.solve()
 
-        stat_fields = ['statistics', 'time_tot', 'time_lin', 'time_sim', 'time_sim_ad', 'time_sim_la', 'time_qp', 'time_qp_solver_call', 'time_reg', 'sqp_iter', 'residuals', 'qp_iter', 'alpha']
+        #stat_fields = ['statistics', 'time_tot', 'time_lin', 'time_sim', 'time_sim_ad', 'time_sim_la', 'time_qp', 'time_qp_solver_call', 'time_reg', 'sqp_iter', 'residuals', 'qp_iter', 'alpha']
 
-        for field in stat_fields:
-            print(f"{field} : {acados_ocp_solver.get_stats(field)}")
-        print(initial)
-        kkt_values[:, k]  = acados_ocp_solver.get_stats('residuals')
-        sqp_iteration[:, k] = acados_ocp_solver.get_stats('sqp_iter')
+        #for field in stat_fields:
+        #    print(f"{field} : {acados_ocp_solver.get_stats(field)}")
+        #print(initial)
+        #kkt_values[:, k]  = acados_ocp_solver.get_stats('residuals')
+        #sqp_iteration[:, k] = acados_ocp_solver.get_stats('sqp_iter')
         #acados_ocp_solver.print_statistics()
 
         # Get the control Action
@@ -340,30 +340,6 @@ def main(odom_pub_1, odom_pub_2, L, x0, initial):
         status_integral = acados_integrator.solve()
         xcurrent = acados_integrator.get("x")
 
-        # Mapping to dual quaternion system
-        #tx1 = xcurrent_quaternion[0]
-        #ty1 = xcurrent_quaternion[1]
-        #tz1 = xcurrent_quaternion[2]
-#
-        #vx = xcurrent_quaternion[3]
-        #vy = xcurrent_quaternion[4]
-        #vz = xcurrent_quaternion[5]
-#
-        #qw1 = xcurrent_quaternion[6]
-        #qx1 = xcurrent_quaternion[7]
-        #qy1 = xcurrent_quaternion[8]
-        #qz1 = xcurrent_quaternion[9]
-#
-        #wx = xcurrent_quaternion[10]
-        #wy = xcurrent_quaternion[11]
-        #wz = xcurrent_quaternion[12]
-#
-        ## Initial Dualquaternion
-        #dual_1 = dualquat_from_pose(qw1, qx1, qy1,  qz1, tx1, ty1, tz1)
-        #angular_linear_1 = np.array([wx, wy, wz, vx, vy, vz]) # Angular Body linear Inertial
-        #dual_twist_1 = dual_twist(angular_linear_1, dual_1)
-#
-        #xcurrent = np.array(ca.vertcat(dual_1, dual_twist_1)).reshape((14, ))
 #
         # Update Data of the system
         X[:, k+1] = xcurrent
@@ -457,9 +433,19 @@ if __name__ == '__main__':
         Data_KKT = []
         Data_sqp = []
 
+        # Reference Trajectories
+        a_max = np.array([10, 20])*0.3
+        v_max = np.array([5, 10, 15])*1
+
+        # Use itertools.product to get all possible combinations
+        combinations = np.array(list(itertools.product(v_max, a_max)))
+        print(combinations)
+        number_experiments = combinations.shape[0]
+        print(number_experiments)
+
         # Multiple Experiments
         for k in range(x_0.shape[0]):
-            x, xref, F, M, orientation_cost, translation_cost, control_cost, t, N_prediction, kkt_values, sqp_iteration = main(odometry_publisher_1, odometry_publisher_2, L, x_0[k, :], k)
+            x, xref, F, M, orientation_cost, translation_cost, control_cost, t, N_prediction, kkt_values, sqp_iteration = main(odometry_publisher_1, odometry_publisher_2, L, x_0[k, :], combinations[k, 0], combinations[k, 1], 1, k)
             Data_States.append(x)
             Data_reference.append(xref)
             Data_F.append(F)
