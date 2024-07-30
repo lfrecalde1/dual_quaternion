@@ -133,7 +133,7 @@ def main(odom_pub_1, odom_pub_2, L, x0, v_max, a_max, n, initial):
 
     # Constraints on control actions
     F_max = L[0]*L[4] + 20
-    F_min = L[0]*L[4] - 5
+    F_min = 0
     tau_1_max = 0.1
     tau_1_min = -0.1
     tau_2_max = 0.1
@@ -434,8 +434,8 @@ if __name__ == '__main__':
         Data_sqp = []
 
         # Reference Trajectories
-        a_max = np.array([10, 20])*0.3
-        v_max = np.array([5, 10, 15])*1
+        a_max = np.array([1, 3])*0.3
+        v_max = np.array([1, 3, 5, 8])*1
 
         # Use itertools.product to get all possible combinations
         combinations = np.array(list(itertools.product(v_max, a_max)))

@@ -179,8 +179,8 @@ int quadrotor_acados_sim_create(sim_solver_capsule * capsule)
 
     /* initialize input */
     // x
-    double x0[8];
-    for (int ii = 0; ii < 8; ii++)
+    double x0[7];
+    for (int ii = 0; ii < 7; ii++)
         x0[ii] = 0.0;
 
     sim_in_set(quadrotor_sim_config, quadrotor_sim_dims,
@@ -196,11 +196,11 @@ int quadrotor_acados_sim_create(sim_solver_capsule * capsule)
                quadrotor_sim_in, "u", u0);
 
     // S_forw
-    double S_forw[112];
-    for (int ii = 0; ii < 112; ii++)
+    double S_forw[91];
+    for (int ii = 0; ii < 91; ii++)
         S_forw[ii] = 0.0;
-    for (int ii = 0; ii < 8; ii++)
-        S_forw[ii + ii * 8 ] = 1.0;
+    for (int ii = 0; ii < 7; ii++)
+        S_forw[ii + ii * 7 ] = 1.0;
 
 
     sim_in_set(quadrotor_sim_config, quadrotor_sim_dims,

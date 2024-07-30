@@ -24,8 +24,7 @@
             3,
             4,
             5,
-            6,
-            7
+            6
         ],
         "idxbx_e": [],
         "idxbxe_0": [
@@ -35,8 +34,7 @@
             3,
             4,
             5,
-            6,
-            7
+            6
         ],
         "idxsbu": [],
         "idxsbx": [],
@@ -44,8 +42,7 @@
         "idxsg": [],
         "idxsg_e": [],
         "idxsh": [
-            0,
-            1
+            0
         ],
         "idxsh_e": [],
         "idxsphi": [],
@@ -60,11 +57,10 @@
         ],
         "lbx": [],
         "lbx_0": [
+            0.0,
+            0.0,
+            0.0,
             1.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
             0.0,
             0.0,
             0.0
@@ -73,8 +69,7 @@
         "lg": [],
         "lg_e": [],
         "lh": [
-            1.0,
-            0.0
+            1.0
         ],
         "lh_e": [],
         "lphi": [],
@@ -85,7 +80,6 @@
         "lsg": [],
         "lsg_e": [],
         "lsh": [
-            0.0,
             0.0
         ],
         "lsh_e": [],
@@ -101,11 +95,10 @@
         ],
         "ubx": [],
         "ubx_0": [
+            0.0,
+            0.0,
+            0.0,
             1.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
             0.0,
             0.0,
             0.0
@@ -114,8 +107,7 @@
         "ug": [],
         "ug_e": [],
         "uh": [
-            1.0,
-            0.0
+            1.0
         ],
         "uh_e": [],
         "uphi": [],
@@ -126,7 +118,6 @@
         "usg": [],
         "usg_e": [],
         "ush": [
-            0.0,
             0.0
         ],
         "ush_e": [],
@@ -145,12 +136,10 @@
         "W_0": [],
         "W_e": [],
         "Zl": [
-            100.0,
             100.0
         ],
         "Zl_e": [],
         "Zu": [
-            100.0,
             100.0
         ],
         "Zu_e": [],
@@ -164,12 +153,10 @@
         "yref_0": [],
         "yref_e": [],
         "zl": [
-            100.0,
             100.0
         ],
         "zl_e": [],
         "zu": [
-            100.0,
             100.0
         ],
         "zu_e": []
@@ -182,31 +169,31 @@
         "N": 51,
         "nbu": 6,
         "nbx": 0,
-        "nbx_0": 8,
+        "nbx_0": 7,
         "nbx_e": 0,
-        "nbxe_0": 8,
+        "nbxe_0": 7,
         "ng": 0,
         "ng_e": 0,
-        "nh": 2,
+        "nh": 1,
         "nh_e": 0,
-        "np": 14,
+        "np": 13,
         "nphi": 0,
         "nphi_e": 0,
         "nr": 0,
         "nr_e": 0,
-        "ns": 2,
+        "ns": 1,
         "ns_e": 0,
         "nsbu": 0,
         "nsbx": 0,
         "nsbx_e": 0,
         "nsg": 0,
         "nsg_e": 0,
-        "nsh": 2,
+        "nsh": 1,
         "nsh_e": 0,
         "nsphi": 0,
         "nsphi_e": 0,
         "nu": 6,
-        "nx": 8,
+        "nx": 7,
         "ny": 0,
         "ny_0": 0,
         "ny_e": 0,
@@ -214,7 +201,7 @@
     },
     "json_file": "acados_ocp_quadrotor.json",
     "model": {
-        "con_h_expr": "@1=vertcat(qw_1d, qx_1d, qy_1d, qz_1d, dw_1d, dx_1d, dy_1d, dz_1d), vertcat(||f_quat(@1){0}||_F, (2.*dot(@1[:4], @1[4:8])))",
+        "con_h_expr": "||vertcat(x, y, z, qw, q1, q2, q3)[3:7]||_F",
         "con_h_expr_e": null,
         "con_phi_expr": null,
         "con_phi_expr_e": null,
@@ -225,12 +212,12 @@
         "cost_conl_custom_outer_hess": null,
         "cost_conl_custom_outer_hess_0": null,
         "cost_conl_custom_outer_hess_e": null,
-        "cost_expr_ext_cost": "@1=p[1], @2=p[2], @3=p[3], @4=(-@1), @5=(-@2), @6=(-@3), @7=horzcat(horzcat(p[0], @1, @2, @3)', horzcat(@4, p[0], @3, @5)', horzcat(@5, @6, p[0], @1)', horzcat(@6, @2, @4, p[0])')', @8=p[5], @9=p[6], @10=p[7], @11=(-@8), @12=(-@9), @13=(-@10), @14=mac(horzcat(horzcat(@7, zeros(4x4))', horzcat(horzcat(horzcat(p[4], @8, @9, @10)', horzcat(@11, p[4], @10, @12)', horzcat(@12, @13, p[4], @8)', horzcat(@13, @9, @11, p[4])')', @7)')',vertcat(qw_1d, qx_1d, qy_1d, qz_1d, dw_1d, dx_1d, dy_1d, dz_1d),zeros(8x1)), @15=||(all_2.22045e-16(3x1)+@14[1:4])||_F, @16=atan2(@15,@14[0]), @17=mac((2.*horzcat(horzcat(@14[4], (-@14[5]), (-@14[6]), (-@14[7]))', horzcat(@14[5], @14[4], (-@14[7]), @14[6])', horzcat(@14[6], @14[7], @14[4], (-@14[5]))', horzcat(@14[7], (-@14[6]), @14[5], @14[4])')'),vertcat(@14[0], (-@14[1]), (-@14[2]), (-@14[3])),zeros(4x1)), @18=vertcat((((0.5*@16)*@14[1])/@15), (((0.5*@16)*@14[2])/@15), (((0.5*@16)*@14[3])/@15), (0.5*@17[1]), (0.5*@17[2]), (0.5*@17[3])), @19=vertcat(wx_1d, wy_1d, wz_1d, vx_1d, vy_1d, vz_1d), ((15*mac(mac(@18',\n[[2, 0, 0, 0, 0, 0], \n [0, 2, 0, 0, 0, 0], \n [0, 0, 2, 0, 0, 0], \n [0, 0, 0, 2, 0, 0], \n [0, 0, 0, 0, 2, 0], \n [0, 0, 0, 0, 0, 2]],zeros(1x6)),@18,0))+(0.1*mac(mac(@19',\n[[0.142857, 0, 0, 0, 0, 0], \n [0, 0.142857, 0, 0, 0, 0], \n [0, 0, 0.142857, 0, 0, 0], \n [0, 0, 0, 0.2, 0, 0], \n [0, 0, 0, 0, 0.2, 0], \n [0, 0, 0, 0, 0, 0.2]],zeros(1x6)),@19,0)))",
-        "cost_expr_ext_cost_0": "@1=p[1], @2=p[2], @3=p[3], @4=(-@1), @5=(-@2), @6=(-@3), @7=horzcat(horzcat(p[0], @1, @2, @3)', horzcat(@4, p[0], @3, @5)', horzcat(@5, @6, p[0], @1)', horzcat(@6, @2, @4, p[0])')', @8=p[5], @9=p[6], @10=p[7], @11=(-@8), @12=(-@9), @13=(-@10), @14=mac(horzcat(horzcat(@7, zeros(4x4))', horzcat(horzcat(horzcat(p[4], @8, @9, @10)', horzcat(@11, p[4], @10, @12)', horzcat(@12, @13, p[4], @8)', horzcat(@13, @9, @11, p[4])')', @7)')',vertcat(qw_1d, qx_1d, qy_1d, qz_1d, dw_1d, dx_1d, dy_1d, dz_1d),zeros(8x1)), @15=||(all_2.22045e-16(3x1)+@14[1:4])||_F, @16=atan2(@15,@14[0]), @17=mac((2.*horzcat(horzcat(@14[4], (-@14[5]), (-@14[6]), (-@14[7]))', horzcat(@14[5], @14[4], (-@14[7]), @14[6])', horzcat(@14[6], @14[7], @14[4], (-@14[5]))', horzcat(@14[7], (-@14[6]), @14[5], @14[4])')'),vertcat(@14[0], (-@14[1]), (-@14[2]), (-@14[3])),zeros(4x1)), @18=vertcat((((0.5*@16)*@14[1])/@15), (((0.5*@16)*@14[2])/@15), (((0.5*@16)*@14[3])/@15), (0.5*@17[1]), (0.5*@17[2]), (0.5*@17[3])), @19=vertcat(wx_1d, wy_1d, wz_1d, vx_1d, vy_1d, vz_1d), ((15*mac(mac(@18',\n[[2, 0, 0, 0, 0, 0], \n [0, 2, 0, 0, 0, 0], \n [0, 0, 2, 0, 0, 0], \n [0, 0, 0, 2, 0, 0], \n [0, 0, 0, 0, 2, 0], \n [0, 0, 0, 0, 0, 2]],zeros(1x6)),@18,0))+(0.1*mac(mac(@19',\n[[0.142857, 0, 0, 0, 0, 0], \n [0, 0.142857, 0, 0, 0, 0], \n [0, 0, 0.142857, 0, 0, 0], \n [0, 0, 0, 0.2, 0, 0], \n [0, 0, 0, 0, 0.2, 0], \n [0, 0, 0, 0, 0, 0.2]],zeros(1x6)),@19,0)))",
+        "cost_expr_ext_cost": "@1=(p[:3]-vertcat(x, y, z, qw, q1, q2, q3)[:3]), @2=vertcat(wx_1d, wy_1d, wz_1d, vx_1d, vy_1d, vz_1d), @3=((((p[3]*qw)+(p[4]*q1))+(p[5]*q2))+(p[6]*q3)), @4=((((p[3]*q1)-(p[4]*qw))+(p[6]*q2))-(p[5]*q3)), @5=((((-(p[5]*qw))-(p[6]*q1))+(p[3]*q2))+(p[4]*q3)), @6=((((p[5]*q1)-(p[6]*qw))-(p[4]*q2))+(p[3]*q3)), @7=(vertcat(((@3*@4)-(@5*@6)), ((@3*@5)+(@4*@6)), @6)/sqrt((0.001+(sq(@3)+sq(@6))))), ((mac(mac(@1',(((zeros(3x3)[0] = 10.5)[4] = 10.5)[8] = 10.5),zeros(1x3)),@1,0)+mac(mac(@2',((((((zeros(6x6)[0] = 0.142857)[7] = 0.142857)[14] = 0.142857)[21] = 0.2)[28] = 0.2)[35] = 0.2),zeros(1x6)),@2,0))+mac(mac(@7',(((zeros(3x3)[0] = 60.5)[4] = 60.5)[8] = 60.5),zeros(1x3)),@7,0))",
+        "cost_expr_ext_cost_0": "@1=(p[:3]-vertcat(x, y, z, qw, q1, q2, q3)[:3]), @2=vertcat(wx_1d, wy_1d, wz_1d, vx_1d, vy_1d, vz_1d), @3=((((p[3]*qw)+(p[4]*q1))+(p[5]*q2))+(p[6]*q3)), @4=((((p[3]*q1)-(p[4]*qw))+(p[6]*q2))-(p[5]*q3)), @5=((((-(p[5]*qw))-(p[6]*q1))+(p[3]*q2))+(p[4]*q3)), @6=((((p[5]*q1)-(p[6]*qw))-(p[4]*q2))+(p[3]*q3)), @7=(vertcat(((@3*@4)-(@5*@6)), ((@3*@5)+(@4*@6)), @6)/sqrt((0.001+(sq(@3)+sq(@6))))), ((mac(mac(@1',(((zeros(3x3)[0] = 10.5)[4] = 10.5)[8] = 10.5),zeros(1x3)),@1,0)+mac(mac(@2',((((((zeros(6x6)[0] = 0.142857)[7] = 0.142857)[14] = 0.142857)[21] = 0.2)[28] = 0.2)[35] = 0.2),zeros(1x6)),@2,0))+mac(mac(@7',(((zeros(3x3)[0] = 60.5)[4] = 60.5)[8] = 60.5),zeros(1x3)),@7,0))",
         "cost_expr_ext_cost_custom_hess": null,
         "cost_expr_ext_cost_custom_hess_0": null,
         "cost_expr_ext_cost_custom_hess_e": null,
-        "cost_expr_ext_cost_e": "@1=p[1], @2=p[2], @3=p[3], @4=(-@1), @5=(-@2), @6=(-@3), @7=horzcat(horzcat(p[0], @1, @2, @3)', horzcat(@4, p[0], @3, @5)', horzcat(@5, @6, p[0], @1)', horzcat(@6, @2, @4, p[0])')', @8=p[5], @9=p[6], @10=p[7], @11=(-@8), @12=(-@9), @13=(-@10), @14=mac(horzcat(horzcat(@7, zeros(4x4))', horzcat(horzcat(horzcat(p[4], @8, @9, @10)', horzcat(@11, p[4], @10, @12)', horzcat(@12, @13, p[4], @8)', horzcat(@13, @9, @11, p[4])')', @7)')',vertcat(qw_1d, qx_1d, qy_1d, qz_1d, dw_1d, dx_1d, dy_1d, dz_1d),zeros(8x1)), @15=||(all_2.22045e-16(3x1)+@14[1:4])||_F, @16=atan2(@15,@14[0]), @17=mac((2.*horzcat(horzcat(@14[4], (-@14[5]), (-@14[6]), (-@14[7]))', horzcat(@14[5], @14[4], (-@14[7]), @14[6])', horzcat(@14[6], @14[7], @14[4], (-@14[5]))', horzcat(@14[7], (-@14[6]), @14[5], @14[4])')'),vertcat(@14[0], (-@14[1]), (-@14[2]), (-@14[3])),zeros(4x1)), @18=vertcat((((0.5*@16)*@14[1])/@15), (((0.5*@16)*@14[2])/@15), (((0.5*@16)*@14[3])/@15), (0.5*@17[1]), (0.5*@17[2]), (0.5*@17[3])), (15*mac(mac(@18',\n[[2, 0, 0, 0, 0, 0], \n [0, 2, 0, 0, 0, 0], \n [0, 0, 2, 0, 0, 0], \n [0, 0, 0, 2, 0, 0], \n [0, 0, 0, 0, 2, 0], \n [0, 0, 0, 0, 0, 2]],zeros(1x6)),@18,0))",
+        "cost_expr_ext_cost_e": "@1=(p[:3]-vertcat(x, y, z, qw, q1, q2, q3)[:3]), @2=((((p[3]*qw)+(p[4]*q1))+(p[5]*q2))+(p[6]*q3)), @3=((((p[3]*q1)-(p[4]*qw))+(p[6]*q2))-(p[5]*q3)), @4=((((-(p[5]*qw))-(p[6]*q1))+(p[3]*q2))+(p[4]*q3)), @5=((((p[5]*q1)-(p[6]*qw))-(p[4]*q2))+(p[3]*q3)), @6=(vertcat(((@2*@3)-(@4*@5)), ((@2*@4)+(@3*@5)), @5)/sqrt((0.001+(sq(@2)+sq(@5))))), (mac(mac(@1',(((zeros(3x3)[0] = 10.5)[4] = 10.5)[8] = 10.5),zeros(1x3)),@1,0)+mac(mac(@6',(((zeros(3x3)[0] = 60.5)[4] = 60.5)[8] = 60.5),zeros(1x3)),@6,0))",
         "cost_psi_expr": null,
         "cost_psi_expr_0": null,
         "cost_psi_expr_e": null,
@@ -246,8 +233,8 @@
         "dyn_disc_fun_jac_hess": null,
         "dyn_ext_fun_type": "casadi",
         "dyn_generic_source": null,
-        "f_expl_expr": "@1=horzcat(horzcat(qw_1d, (-qx_1d), (-qy_1d), (-qz_1d))', horzcat(qx_1d, qw_1d, (-qz_1d), qy_1d)', horzcat(qy_1d, qz_1d, qw_1d, (-qx_1d))', horzcat(qz_1d, (-qy_1d), qx_1d, qw_1d)')', @2=vertcat(qw_1d, qx_1d, qy_1d, qz_1d, dw_1d, dx_1d, dy_1d, dz_1d), @3=f_velocity(vertcat(wx_1d, wy_1d, wz_1d, vx_1d, vy_1d, vz_1d), @2){0}, @4=@2[:4], @5=@2[4:8], ((0.5*mac(horzcat(horzcat(@1, zeros(4x4))', horzcat(horzcat(horzcat(dw_1d, (-dx_1d), (-dy_1d), (-dz_1d))', horzcat(dx_1d, dw_1d, (-dz_1d), dy_1d)', horzcat(dy_1d, dz_1d, dw_1d, (-dx_1d))', horzcat(dz_1d, (-dy_1d), dx_1d, dw_1d)')', @1)')',vertcat(0, @3[0], @3[1], @3[2], 0, @3[3], @3[4], @3[5]),zeros(8x1)))+vertcat((@4*(10*(1-||@4||_F))), (@5*(10*(2.*dot(@4, @5))))))",
-        "f_impl_expr": "@1=horzcat(horzcat(qw_1d, (-qx_1d), (-qy_1d), (-qz_1d))', horzcat(qx_1d, qw_1d, (-qz_1d), qy_1d)', horzcat(qy_1d, qz_1d, qw_1d, (-qx_1d))', horzcat(qz_1d, (-qy_1d), qx_1d, qw_1d)')', @2=vertcat(qw_1d, qx_1d, qy_1d, qz_1d, dw_1d, dx_1d, dy_1d, dz_1d), @3=f_velocity(vertcat(wx_1d, wy_1d, wz_1d, vx_1d, vy_1d, vz_1d), @2){0}, @4=@2[:4], @5=@2[4:8], (vertcat(qw_1dot, qx_1dot, qy_1dot, qz_1dot, dw_1dot, dx_1dot, dy_1dot, dz_1dot)-((0.5*mac(horzcat(horzcat(@1, zeros(4x4))', horzcat(horzcat(horzcat(dw_1d, (-dx_1d), (-dy_1d), (-dz_1d))', horzcat(dx_1d, dw_1d, (-dz_1d), dy_1d)', horzcat(dy_1d, dz_1d, dw_1d, (-dx_1d))', horzcat(dz_1d, (-dy_1d), dx_1d, dw_1d)')', @1)')',vertcat(0, @3[0], @3[1], @3[2], 0, @3[3], @3[4], @3[5]),zeros(8x1)))+vertcat((@4*(10*(1-||@4||_F))), (@5*(10*(2.*dot(@4, @5)))))))",
+        "f_expl_expr": "vertcat(vertcat(wx_1d, wy_1d, wz_1d, vx_1d, vy_1d, vz_1d)[3:6], ((0.5*mac(horzcat(horzcat(qw, (-q1), (-q2), (-q3))', horzcat(q1, qw, (-q3), q2)', horzcat(q2, q3, qw, (-q1))', horzcat(q3, (-q2), q1, qw)')',vertcat(0, wx_1d, wy_1d, wz_1d),zeros(4x1)))+((10*(1-(((sq(qw)+sq(q1))+sq(q2))+sq(q3))))*vertcat(x, y, z, qw, q1, q2, q3)[3:7])))",
+        "f_impl_expr": "(vertcat(x_dot, y_dot, z_dot, qw_dot, q1_dot, q2_dot, q3_dot)-vertcat(vertcat(wx_1d, wy_1d, wz_1d, vx_1d, vy_1d, vz_1d)[3:6], ((0.5*mac(horzcat(horzcat(qw, (-q1), (-q2), (-q3))', horzcat(q1, qw, (-q3), q2)', horzcat(q2, q3, qw, (-q1))', horzcat(q3, (-q2), q1, qw)')',vertcat(0, wx_1d, wy_1d, wz_1d),zeros(4x1)))+((10*(1-(((sq(qw)+sq(q1))+sq(q2))+sq(q3))))*vertcat(x, y, z, qw, q1, q2, q3)[3:7]))))",
         "gnsf": {
             "nontrivial_f_LO": 1,
             "purely_linear": 0
@@ -255,13 +242,12 @@
         "name": "quadrotor",
         "p": "p",
         "u": "vertcat(wx_1d, wy_1d, wz_1d, vx_1d, vy_1d, vz_1d)",
-        "x": "vertcat(qw_1d, qx_1d, qy_1d, qz_1d, dw_1d, dx_1d, dy_1d, dz_1d)",
-        "xdot": "vertcat(qw_1dot, qx_1dot, qy_1dot, qz_1dot, dw_1dot, dx_1dot, dy_1dot, dz_1dot)",
+        "x": "vertcat(x, y, z, qw, q1, q2, q3)",
+        "xdot": "vertcat(x_dot, y_dot, z_dot, qw_dot, q1_dot, q2_dot, q3_dot)",
         "z": "0x0"
     },
     "p": "p",
     "parameter_values": [
-        0.0,
         0.0,
         0.0,
         0.0,

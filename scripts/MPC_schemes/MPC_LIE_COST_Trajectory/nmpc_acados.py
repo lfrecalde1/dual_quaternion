@@ -66,13 +66,15 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
 
     # Gain Matrix complete error
 
-    Q_l = MX.zeros(6, 6)
+    Q_l = MX.zeros(8, 8)
     Q_l[0, 0] = 2
     Q_l[1, 1] = 2
     Q_l[2, 2] = 2
-    Q_l[3, 3] = 1.6
+    Q_l[3, 3] = 2
     Q_l[4, 4] = 1.6
     Q_l[5, 5] = 1.6
+    Q_l[6, 6] = 1.6
+    Q_l[7, 7] = 1.6
 
     #ocp.model.cost_expr_ext_cost = 10*(ln_error.T@Q_l@ln_error) + 1*(error_nominal_input.T @ R @ error_nominal_input)  + 0.2*(error_w.T@error_w) + 0.2*(error_v.T@error_v)
     #ocp.model.cost_expr_ext_cost_e =  10*(ln_error.T@Q_l@ln_error) + 0.2*(error_w.T@error_w) + 0.2*(error_v.T@error_v)
@@ -119,7 +121,7 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
     ocp.solver_options.qp_solver_cond_N = N_horizon // 4
     ocp.solver_options.hessian_approx = "GAUSS_NEWTON"  
     ocp.solver_options.regularize_method = "CONVEXIFY"  
-    ocp.solver_options.integrator_type = "IRK"
+    ocp.solver_options.integrator_type = "ERK"
     ocp.solver_options.nlp_solver_type = "SQP_RTI"
     ocp.solver_options.Tsim = ts
     ocp.solver_options.tf = t_horizon

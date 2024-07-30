@@ -392,26 +392,32 @@ def error_lie(qd, q):
 
     q_error = q_e_aux
 
-    q_error_real = q_error[0:4, 0]
-    q_error_real_c = ca.vertcat(q_error_real[0, 0], -q_error_real[1, 0], -q_error_real[2, 0], -q_error_real[3, 0])
-    q_error_dual = q_error[4:8, 0]
+    ones = ca.DM.zeros(8, 1)
+    ones[0, 0] = 1.0
 
-    ## Real Part
-    norm = ca.norm_2(q_error_real[1:4] + ca.np.finfo(np.float64).eps)
-    angle = 2*ca.atan2(norm, q_error_real[0])
+    distance = ones - q_error
 
-    ## Dual Part
-    H_error_dual_plus = ca.vertcat(ca.horzcat(q_error_dual[0, 0], -q_error_dual[1, 0], -q_error_dual[2, 0], -q_error_dual[3, 0]),
-                                ca.horzcat(q_error_dual[1, 0], q_error_dual[0, 0], -q_error_dual[3, 0], q_error_dual[2, 0]),
-                                ca.horzcat(q_error_dual[2, 0], q_error_dual[3, 0], q_error_dual[0, 0], -q_error_dual[1, 0]),
-                                ca.horzcat(q_error_dual[3, 0], -q_error_dual[2, 0], q_error_dual[1, 0], q_error_dual[0, 0]))
+    #q_error_real = q_error[0:4, 0]
+    #q_error_real_c = ca.vertcat(q_error_real[0, 0], -q_error_real[1, 0], -q_error_real[2, 0], -q_error_real[3, 0])
+    #q_error_dual = q_error[4:8, 0]
 
-    trans_error = 2 * H_error_dual_plus@q_error_real_c
-    # Computing log map
-    ln_quaternion = ca.vertcat((1/2)*angle*q_error_real[1, 0]/norm, (1/2)*angle*q_error_real[2, 0]/norm, (1/2)*angle*q_error_real[3, 0]/norm)
-    ln_trans = ca.vertcat((1/2)*trans_error[1, 0], (1/2)*trans_error[2, 0], (1/2)*trans_error[3, 0])
+    ### Real Part
+    #norm = ca.norm_2(q_error_real[1:4] + ca.np.finfo(np.float64).eps)
+    #angle = ca.atan2(norm, q_error_real[0])
 
-    q_e_ln = ca.vertcat(ln_quaternion, ln_trans)
+    ### Dual Part
+    #H_error_dual_plus = ca.vertcat(ca.horzcat(q_error_dual[0, 0], -q_error_dual[1, 0], -q_error_dual[2, 0], -q_error_dual[3, 0]),
+    #                            ca.horzcat(q_error_dual[1, 0], q_error_dual[0, 0], -q_error_dual[3, 0], q_error_dual[2, 0]),
+    #                            ca.horzcat(q_error_dual[2, 0], q_error_dual[3, 0], q_error_dual[0, 0], -q_error_dual[1, 0]),
+    #                            ca.horzcat(q_error_dual[3, 0], -q_error_dual[2, 0], q_error_dual[1, 0], q_error_dual[0, 0]))
+
+    #trans_error = 2 * H_error_dual_plus@q_error_real_c
+    ## Computing log map
+    #ln_quaternion = ca.vertcat((1/2)*angle*q_error_real[1, 0]/norm, (1/2)*angle*q_error_real[2, 0]/norm, (1/2)*angle*q_error_real[3, 0]/norm)
+    #ln_trans = ca.vertcat((1/2)*trans_error[1, 0], (1/2)*trans_error[2, 0], (1/2)*trans_error[3, 0])
+
+    #q_e_ln = ca.vertcat(ln_quaternion, ln_trans)
+    q_e_ln = distance
     return q_e_ln
 
 def ln_dual(q_error):
