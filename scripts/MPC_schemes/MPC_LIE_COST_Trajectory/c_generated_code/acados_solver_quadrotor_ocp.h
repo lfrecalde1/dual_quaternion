@@ -63,7 +63,7 @@
 #define QUADROTOR_OCP_NY0    0
 #define QUADROTOR_OCP_NY     0
 #define QUADROTOR_OCP_NYN    0
-#define QUADROTOR_OCP_N      51
+#define QUADROTOR_OCP_N      21
 #define QUADROTOR_OCP_NH     2
 #define QUADROTOR_OCP_NPHI   0
 #define QUADROTOR_OCP_NHN    0
@@ -94,8 +94,9 @@ typedef struct quadrotor_ocp_solver_capsule
     /* external functions */
     // dynamics
 
-    external_function_param_casadi *forw_vde_casadi;
-    external_function_param_casadi *expl_ode_fun;
+    external_function_param_casadi *impl_dae_fun;
+    external_function_param_casadi *impl_dae_fun_jac_x_xdot_z;
+    external_function_param_casadi *impl_dae_jac_x_xdot_u_z;
 
 
 

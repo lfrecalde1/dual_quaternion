@@ -408,7 +408,7 @@ void quadrotor_acados_create_5_set_nlp_in(quadrotor_solver_capsule* capsule, con
     if (new_time_steps) {
         quadrotor_acados_update_time_steps(capsule, N, new_time_steps);
     } else {// all time_steps are identical
-        double time_step = 0.00980392156862745;
+        double time_step = 0.045454545454545456;
         for (int i = 0; i < N; i++)
         {
             ocp_nlp_in_set(nlp_config, nlp_dims, nlp_in, i, "Ts", &time_step);
@@ -486,24 +486,8 @@ void quadrotor_acados_create_5_set_nlp_in(quadrotor_solver_capsule* capsule, con
     double* lbx0 = lubx0;
     double* ubx0 = lubx0 + NBX0;
     // change only the non-zero elements:
-    lbx0[1] = 8.333333333333334;
-    ubx0[1] = 8.333333333333334;
-    lbx0[2] = 1;
-    ubx0[2] = 1;
-    lbx0[3] = 5;
-    ubx0[3] = 5;
-    lbx0[5] = 0.03;
-    ubx0[5] = 0.03;
-    lbx0[6] = 0.9889893719114052;
-    ubx0[6] = 0.9889893719114052;
-    lbx0[7] = 0.14798656103269703;
-    ubx0[7] = 0.14798656103269703;
-    lbx0[10] = 0.0000007711348057882713;
-    ubx0[10] = 0.0000007711348057882713;
-    lbx0[11] = -0.17562856325646703;
-    ubx0[11] = -0.17562856325646703;
-    lbx0[12] = 0.05376384589483685;
-    ubx0[12] = 0.05376384589483685;
+    lbx0[6] = 1;
+    ubx0[6] = 1;
 
     ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, 0, "idxbx", idxbx0);
     ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, 0, "lbx", lbx0);
@@ -541,7 +525,6 @@ void quadrotor_acados_create_5_set_nlp_in(quadrotor_solver_capsule* capsule, con
     double* lbu = lubu;
     double* ubu = lubu + NBU;
     
-    lbu[0] = 4.800000000000001;
     ubu[0] = 29.8;
     lbu[1] = -0.1;
     ubu[1] = 0.1;
@@ -722,15 +705,7 @@ void quadrotor_acados_create_7_set_nlp_out(quadrotor_solver_capsule* capsule)
 
     // initialize with x0
     
-    x0[1] = 8.333333333333334;
-    x0[2] = 1;
-    x0[3] = 5;
-    x0[5] = 0.03;
-    x0[6] = 0.9889893719114052;
-    x0[7] = 0.14798656103269703;
-    x0[10] = 0.0000007711348057882713;
-    x0[11] = -0.17562856325646703;
-    x0[12] = 0.05376384589483685;
+    x0[6] = 1;
 
 
     double* u0 = xu0 + NX;

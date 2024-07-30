@@ -98,9 +98,8 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
     #ocp.model.cost_expr_ext_cost = 1*(error_position.T @ Q @error_position) + 1*(error_nominal_input.T @ R @ error_nominal_input) + 1*(error_ori_li)
     #ocp.model.cost_expr_ext_cost_e = 1*(error_position.T @ Q @error_position)+ 1*(error_ori_li)
 
-    ocp.model.cost_expr_ext_cost = 1*(error_position.T @ Q @error_position) + 1*(error_nominal_input.T @ R @ error_nominal_input) + 10*(error_ori.T@Q_l@error_ori)
-    ocp.model.cost_expr_ext_cost_e = 1*(error_position.T @ Q @error_position)+ 10*(error_ori.T@Q_l@error_ori)
-
+    ocp.model.cost_expr_ext_cost = 1*(error_position.T @ Q @error_position) + 1*(error_nominal_input.T @ R @ error_nominal_input) + 10*(error_ori.T@Q_l@error_ori) + 0.2*(w.T@w) + 0.2*(vb.T@vb)
+    ocp.model.cost_expr_ext_cost_e = 1*(error_position.T @ Q @error_position)+ 10*(error_ori.T@Q_l@error_ori)  + 0.2*(w.T@w) + 0.2*(vb.T@vb)
 
     # Auxiliary variable initialization
     ocp.parameter_values = np.zeros(nx + nu)
@@ -165,7 +164,7 @@ def create_simulation_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, 
     ocp = AcadosOcp()
 
     # Model of the system
-    model, f_d, constraint, f_error, error_quaternion, rotation_inverse, error_quaternion_li, error_quaternion_z = quadrotorModelDrag(L)
+    model, f_d, constraint, f_error, error_quaternion, rotation_inverse, error_quaternion_li, error_quaternion_z = quadrotorModel(L)
 
     # Constructing the optimal control problem
     ocp.model = model
@@ -225,15 +224,15 @@ def create_simulation_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, 
     vi = model.x[3:6] - ocp.p[3:6]
     vb = vi
 
-    #ocp.model.cost_expr_ext_cost = 1*(error_position.T @ Q @error_position) + 1*(error_nominal_input.T @ R @ error_nominal_input) + 1*(error_ori_li) + 0.2*(w.T@w) + 0.2*(vb.T@vb)
-    #ocp.model.cost_expr_ext_cost_e = 1*(error_position.T @ Q @error_position)+ 1*(error_ori_li) + 0.2*(w.T@w) + 0.2*(vb.T@vb)
+    ocp.model.cost_expr_ext_cost = 1*(error_position.T @ Q @error_position) + 1*(error_nominal_input.T @ R @ error_nominal_input) + 1*(error_ori_li) + 0.2*(w.T@w) + 0.2*(vb.T@vb)
+    ocp.model.cost_expr_ext_cost_e = 1*(error_position.T @ Q @error_position)+ 1*(error_ori_li) + 0.2*(w.T@w) + 0.2*(vb.T@vb)
 
 
     #ocp.model.cost_expr_ext_cost = 1*(error_position.T @ Q @error_position) + 1*(error_nominal_input.T @ R @ error_nominal_input) + 1*(error_ori_li)
     #ocp.model.cost_expr_ext_cost_e = 1*(error_position.T @ Q @error_position)+ 1*(error_ori_li) + w.T@w + vb.T@vb
 
-    ocp.model.cost_expr_ext_cost = 1*(error_position.T @ Q @error_position) + 1*(error_nominal_input.T @ R @ error_nominal_input) + 1*(error_ori_li)
-    ocp.model.cost_expr_ext_cost_e = 1*(error_position.T @ Q @error_position)+ 1*(error_ori_li)
+    #ocp.model.cost_expr_ext_cost = 1*(error_position.T @ Q @error_position) + 1*(error_nominal_input.T @ R @ error_nominal_input) + 1*(error_ori_li)
+    #ocp.model.cost_expr_ext_cost_e = 1*(error_position.T @ Q @error_position)+ 1*(error_ori_li)
 
     # Auxiliary variable initialization
     ocp.parameter_values = np.zeros(nx + nu)

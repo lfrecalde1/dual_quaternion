@@ -52,15 +52,14 @@ def main(ts: float, t_f: float, t_N: float, x_0: np.ndarray, L: list, odom_pub_1
 
     # Simulation time definition
     t = np.arange(0, t_f + ts, ts)
-    N_planning = t.shape[0]-1
 
     # Ros time definitions
     hz = int(1/ts)
     loop_rate = rospy.Rate(hz)
 
-
+    ts_nmpc = 0.05
     # Prediction Node of the NMPC formulation
-    N = np.arange(0, t_N + ts, ts)
+    N = np.arange(0, t_N + ts_nmpc, ts_nmpc)
     N_prediction = N.shape[0]
 
     # Auxiliary variables for the execution time of the NMPC
@@ -107,22 +106,22 @@ def main(ts: float, t_f: float, t_N: float, x_0: np.ndarray, L: list, odom_pub_1
     taux_3_min = -0.1
 
     # Optimization problem
-    ocp = create_ocp_solver(x[:, 0], N_prediction, t_N, F_max, F_min, tau_1_max, tau_1_min, tau_2_max, tau_2_min, tau_3_max, taux_3_min, L, ts)
+    ocp = create_ocp_solver(x[:, 0], N_prediction, t_N, F_max, F_min, tau_1_max, tau_1_min, tau_2_max, tau_2_min, tau_3_max, taux_3_min, L, ts_nmpc)
 
 
     # No Cython
     #acados_ocp_solver = AcadosOcpSolver(ocp, json_file="acados_ocp_" + ocp.model.name + ".json", build= True, generate= True)
     acados_ocp_solver = AcadosOcpSolver(ocp, json_file="acados_ocp_" + ocp.model.name + ".json", build= False, generate= False)
 
-    #ocp_simulation = create_simulation_solver(x[:, 0], N_prediction, t_N, F_max, F_min, tau_1_max, tau_1_min, tau_2_max, tau_2_min, tau_3_max, taux_3_min, L, ts)
+    ocp_simulation = create_simulation_solver(x[:, 0], N_prediction, t_N, F_max, F_min, tau_1_max, tau_1_min, tau_2_max, tau_2_min, tau_3_max, taux_3_min, L, ts)
 
     # Integration Drag Model
     #acados_integrator = AcadosSimSolver(ocp_simulation, json_file="acados_simulation_" + ocp_simulation.model.name + ".json", build= True, generate= True)
-    #acados_integrator = AcadosSimSolver(ocp_simulation, json_file="acados_simumlation_" + ocp_simulation.model.name + ".json", build= False, generate= False)
+    acados_integrator = AcadosSimSolver(ocp_simulation, json_file="acados_simumlation_" + ocp_simulation.model.name + ".json", build= False, generate= False)
 
     # Integration Without Drag
     #acados_integrator = AcadosSimSolver(ocp, json_file="acados_sim_" + ocp.model.name + ".json", build= True, generate= True)
-    acados_integrator = AcadosSimSolver(ocp, json_file="acados_sim_" + ocp.model.name + ".json", build= False, generate= False)
+    #acados_integrator = AcadosSimSolver(ocp, json_file="acados_sim_" + ocp.model.name + ".json", build= False, generate= False)
     # Auxiliary variables and control
     nx = ocp.model.x.size()[0]
     nu = ocp.model.u.size()[0]
@@ -206,6 +205,10 @@ def main(ts: float, t_f: float, t_N: float, x_0: np.ndarray, L: list, odom_pub_1
     for k in range(0, t.shape[0] - N_prediction):
         tic = rospy.get_time()
         white_noise = np.random.multivariate_normal(np.zeros(12),uav_white_noise_cov)
+        print("v_max")
+        print(v_max)
+        print("a_max")
+        print(a_max)
 
         # Compute cost
         orientation_cost[:, k] = cost_quaternion(xref[6:10, k], x[6:10, k])
@@ -265,8 +268,8 @@ def main(ts: float, t_f: float, t_N: float, x_0: np.ndarray, L: list, odom_pub_1
         xcurrent = acados_integrator.get("x")
 
         # System evolution
-        x[:, k+1] = xcurrent
-        #x[:, k+1] = noise(xcurrent, white_noise)
+        #x[:, k+1] = xcurrent
+        x[:, k+1] = noise(xcurrent, white_noise)
         #euler[:, k+1] = get_euler_angles(x[6:10, k+1])
 
         # Send msg to Ros
@@ -357,8 +360,8 @@ if __name__ == '__main__':
         # Initial conditions of the system
         X_total = []
         X_total_aux = []
-        a_max = np.array([1, 3])*0.3
-        v_max = np.array([1, 3, 5, 8])*1
+        a_max = np.array([2, 3, 4, 5, 6])*0.3
+        v_max = np.array([1, 2, 3, 4, 5, 6])*1
 
         # Use itertools.product to get all possible combinations
         combinations = np.array(list(itertools.product(v_max, a_max)))
@@ -371,19 +374,21 @@ if __name__ == '__main__':
             # Reference States
             hd, hd_d, qd, w_d, f_d, M_d = compute_reference(t, ts, combinations[i_random, 0], combinations[i_random, 1], 1, L)
             # Fixed intial position
-            #pos_0 = np.array([0.0, 0.0, 0.0])
-            pos_0 = np.array([hd[0,0], hd[1, 0], hd[2, 0]])
+            pos_0 = np.array([0.0, 0.0, 0.0])
+            #pos_0 = np.array([hd[0,0], hd[1, 0], hd[2, 0]])
 
             # Random Initial positions
             #pos_0 = np.array([ramdon_positions[i_random, 0], ramdon_positions[i_random, 1], ramdon_positions[i_random, 2]])
-            vel_0 = np.array([hd_d[0, 0], hd_d[1, 0], hd_d[2, 0]], dtype=np.double)
-            omega_0 = np.array([w_d[0, 0], w_d[1, 0], w_d[2, 0]], dtype=np.double)
+            vel_0 = np.array([0.0, 0.0, 0.0], dtype=np.double)
+            omega_0 = np.array([0.0, 0.0, 0.0], dtype=np.double)
+            #vel_0 = np.array([hd_d[0, 0], hd_d[1, 0], hd_d[2, 0]], dtype=np.double)
+            #omega_0 = np.array([w_d[0, 0], w_d[1, 0], w_d[2, 0]], dtype=np.double)
 
             # Fixed Initial Conditions
             theta_0 = 0.0
             n_0 = np.array([0.0, 0.0, 1.0])
-            #quat_0 = np.hstack([np.cos(theta_0 / 2), np.sin(theta_0 / 2) * np.array(n_0)])
-            quat_0 = np.hstack([qd[0,0], qd[1, 0], qd[2, 0], qd[3, 0]])
+            quat_0 = np.hstack([np.cos(theta_0 / 2), np.sin(theta_0 / 2) * np.array(n_0)])
+            #quat_0 = np.hstack([qd[0,0], qd[1, 0], qd[2, 0], qd[3, 0]])
 
             # Random initial conditions
             #quat_0 = np.array([ramdon_quaternions[i_random, 3], ramdon_quaternions[i_random, 0], ramdon_quaternions[i_random, 1], ramdon_quaternions[i_random, 2]])
