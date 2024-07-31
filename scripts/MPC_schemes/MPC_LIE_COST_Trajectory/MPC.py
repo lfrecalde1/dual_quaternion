@@ -79,7 +79,7 @@ def main(odom_pub_1, odom_pub_2, L, x0, v_max, a_max, n, initial):
     loop_rate = rospy.Rate(hz)
 
     t_N = 1
-    ts_nmpc = 0.05
+    ts_nmpc = 0.01
     # Prediction Node of the NMPC formulation
     N = np.arange(0, t_N + ts_nmpc, ts_nmpc)
     N_prediction = N.shape[0]

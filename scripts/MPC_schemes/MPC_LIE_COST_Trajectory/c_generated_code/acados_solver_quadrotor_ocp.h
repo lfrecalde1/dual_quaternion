@@ -63,7 +63,7 @@
 #define QUADROTOR_OCP_NY0    0
 #define QUADROTOR_OCP_NY     0
 #define QUADROTOR_OCP_NYN    0
-#define QUADROTOR_OCP_N      21
+#define QUADROTOR_OCP_N      101
 #define QUADROTOR_OCP_NH     2
 #define QUADROTOR_OCP_NPHI   0
 #define QUADROTOR_OCP_NHN    0
