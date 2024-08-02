@@ -408,7 +408,7 @@ void quadrotor_ocp_acados_create_5_set_nlp_in(quadrotor_ocp_solver_capsule* caps
     if (new_time_steps) {
         quadrotor_ocp_acados_update_time_steps(capsule, N, new_time_steps);
     } else {// all time_steps are identical
-        double time_step = 0.0099009900990099;
+        double time_step = 0.00980392156862745;
         for (int i = 0; i < N; i++)
         {
             ocp_nlp_in_set(nlp_config, nlp_dims, nlp_in, i, "Ts", &time_step);
@@ -493,6 +493,12 @@ void quadrotor_ocp_acados_create_5_set_nlp_in(quadrotor_ocp_solver_capsule* caps
     // change only the non-zero elements:
     lbx0[0] = 1;
     ubx0[0] = 1;
+    lbx0[5] = 0.5;
+    ubx0[5] = 0.5;
+    lbx0[6] = 0.5;
+    ubx0[6] = 0.5;
+    lbx0[7] = -1;
+    ubx0[7] = -1;
 
     ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, 0, "idxbx", idxbx0);
     ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, 0, "lbx", lbx0);
@@ -713,6 +719,9 @@ void quadrotor_ocp_acados_create_7_set_nlp_out(quadrotor_ocp_solver_capsule* cap
     // initialize with x0
     
     x0[0] = 1;
+    x0[5] = 0.5;
+    x0[6] = 0.5;
+    x0[7] = -1;
 
 
     double* u0 = xu0 + NX;

@@ -78,7 +78,7 @@ def main(odom_pub_1, odom_pub_2, L, x0, v_max, a_max, n, initial):
     hz = int(1/(sample_time))
     loop_rate = rospy.Rate(hz)
 
-    t_N = 1
+    t_N = 0.5
     ts_nmpc = 0.01
     # Prediction Node of the NMPC formulation
     N = np.arange(0, t_N + ts_nmpc, ts_nmpc)
@@ -145,6 +145,11 @@ def main(odom_pub_1, odom_pub_2, L, x0, v_max, a_max, n, initial):
     # Differential Flatness
     hd, hd_d, qd, w_d, f_d, M_d = compute_reference(t, sample_time, v_max, a_max, n, L)
     qd_filter = np.zeros((4, t.shape[0]+1), dtype=np.double)
+    hd = hd*0
+    hd_d = hd_d*0
+    w_d = w_d*0
+    qd[0, :] = 1
+    qd[1:4, :] = qd[1:4, :]*0
 
     # Initial condition for the desired states
     X_d = np.zeros((14, t.shape[0]+1), dtype=np.double)
@@ -177,8 +182,8 @@ def main(odom_pub_1, odom_pub_2, L, x0, v_max, a_max, n, initial):
 
     # Desired Reference Inputs
     u_d = np.zeros((4, t.shape[0]), dtype=np.double)
-    u_d[0, :] = f_d
-    u_d[1:4, :] = M_d[0:3, :]
+    u_d[0, :] =  L[0] * L[4]
+    #u_d[1:4, :] = M_d[0:3, :]
 
     # Empty vectors for the desired Dualquaernion
     Q2_trans_data = np.zeros((4, t.shape[0] + 1 - N_prediction), dtype=np.double)
@@ -316,13 +321,13 @@ def main(odom_pub_1, odom_pub_2, L, x0, v_max, a_max, n, initial):
         #acados_ocp_solver.options_set("rti_phase", 2)
         acados_ocp_solver.solve()
 
-        #stat_fields = ['statistics', 'time_tot', 'time_lin', 'time_sim', 'time_sim_ad', 'time_sim_la', 'time_qp', 'time_qp_solver_call', 'time_reg', 'sqp_iter', 'residuals', 'qp_iter', 'alpha']
+        stat_fields = ['statistics', 'time_tot', 'time_lin', 'time_sim', 'time_sim_ad', 'time_sim_la', 'time_qp', 'time_qp_solver_call', 'time_reg', 'sqp_iter', 'residuals', 'qp_iter', 'alpha']
 
         #for field in stat_fields:
         #    print(f"{field} : {acados_ocp_solver.get_stats(field)}")
-        #print(initial)
-        #kkt_values[:, k]  = acados_ocp_solver.get_stats('residuals')
-        #sqp_iteration[:, k] = acados_ocp_solver.get_stats('sqp_iter')
+        print(initial)
+        kkt_values[:, k]  = acados_ocp_solver.get_stats('residuals')
+        sqp_iteration[:, k] = acados_ocp_solver.get_stats('sqp_iter')
         #acados_ocp_solver.print_statistics()
 
         # Get the control Action
@@ -439,8 +444,11 @@ if __name__ == '__main__':
         Data_sqp = []
 
         # Reference Trajectories
-        a_max = np.array([2, 3, 4, 5, 6])*0.3
-        v_max = np.array([1, 2, 3, 4, 5, 6])*1
+        #a_max = np.array([1 ,2, 3, 4, 5, 6])*0.3
+        #v_max = np.array([1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6])*1
+
+        a_max = np.array([1 ,2, 3, 4])*0.3
+        v_max = np.array([1, 1.5, 2])*1
 
         # Use itertools.product to get all possible combinations
         combinations = np.array(list(itertools.product(v_max, a_max)))

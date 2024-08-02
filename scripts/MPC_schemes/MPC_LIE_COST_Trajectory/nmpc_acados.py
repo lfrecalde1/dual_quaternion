@@ -79,10 +79,8 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
     ocp.model.cost_expr_ext_cost = 10*(error_total_lie.T@Q_l@error_total_lie) + 1*(error_nominal_input.T @ R @ error_nominal_input)  + 0.2*(error_w.T@error_w) + 0.2*(error_v.T@error_v)
     ocp.model.cost_expr_ext_cost_e =  10*(error_total_lie.T@Q_l@error_total_lie) + 0.2*(error_w.T@error_w) + 0.2*(error_v.T@error_v)
 
-
     #ocp.model.cost_expr_ext_cost = 10*(error_total_lie.T@Q_l@error_total_lie) + 1*(error_nominal_input.T @ R @ error_nominal_input)
     #ocp.model.cost_expr_ext_cost_e =  10*(error_total_lie.T@Q_l@error_total_lie)
-
 
     # Auxiliary variable initialization
     ocp.parameter_values = np.zeros(nx + nu)
@@ -243,7 +241,7 @@ def create_simulation_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, 
     ocp.solver_options.hessian_approx = "GAUSS_NEWTON"  
     ocp.solver_options.regularize_method = "CONVEXIFY"  
     ocp.solver_options.integrator_type = "IRK"
-    ocp.solver_options.nlp_solver_type = "SQP_RTI"
+    ocp.solver_options.nlp_solver_type = "SQP"
     ocp.solver_options.Tsim = ts
     ocp.solver_options.tf = t_horizon
     return ocp

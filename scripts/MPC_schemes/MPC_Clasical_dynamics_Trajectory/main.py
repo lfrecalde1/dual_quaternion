@@ -72,9 +72,12 @@ def main(ts: float, t_f: float, t_N: float, x_0: np.ndarray, L: list, odom_pub_1
 
     # Reference States
     hd, hd_d, qd, w_d, f_d, M_d = compute_reference(t, ts, v_max, a_max, n, L)
+
+    # Control actions
     u_planning = np.zeros((4, t.shape[0]), dtype=np.double)
     u_planning[0, :] = f_d
     u_planning[1:4, :] = M_d[0:3, :]
+
 
     # Euler angles of the system
     euler = np.zeros((3, t.shape[0] + 1 - N_prediction), dtype=np.double)
@@ -237,12 +240,12 @@ def main(ts: float, t_f: float, t_N: float, x_0: np.ndarray, L: list, odom_pub_1
 
         # Check Solution since there can be possible errors 
         #acados_ocp_solver.solve()
-        #stat_fields = ['statistics', 'time_tot', 'time_lin', 'time_sim', 'time_sim_ad', 'time_sim_la', 'time_qp', 'time_qp_solver_call', 'time_reg', 'sqp_iter', 'residuals', 'qp_iter', 'alpha']
+        stat_fields = ['statistics', 'time_tot', 'time_lin', 'time_sim', 'time_sim_ad', 'time_sim_la', 'time_qp', 'time_qp_solver_call', 'time_reg', 'sqp_iter', 'residuals', 'qp_iter', 'alpha']
         #for field in stat_fields:
         #    print(f"{field} : {acados_ocp_solver.get_stats(field)}")
-        #print(initial)
-        #kkt_values[:, k]  = acados_ocp_solver.get_stats('residuals')
-        #sqp_iteration[:, k] = acados_ocp_solver.get_stats('sqp_iter')
+        print(initial)
+        kkt_values[:, k]  = acados_ocp_solver.get_stats('residuals')
+        sqp_iteration[:, k] = acados_ocp_solver.get_stats('sqp_iter')
         #print(error_quat_no_filter[:, k])
         # compute gradient
 
@@ -360,8 +363,11 @@ if __name__ == '__main__':
         # Initial conditions of the system
         X_total = []
         X_total_aux = []
-        a_max = np.array([2, 3, 4, 5, 6])*0.3
-        v_max = np.array([1, 2, 3, 4, 5, 6])*1
+        #a_max = np.array([1 ,2, 3, 4, 5, 6])*0.3
+        #v_max = np.array([1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6])*1
+
+        a_max = np.array([1 ,2, 3])*0.3
+        v_max = np.array([1, 1.5])*1
 
         # Use itertools.product to get all possible combinations
         combinations = np.array(list(itertools.product(v_max, a_max)))
@@ -374,7 +380,7 @@ if __name__ == '__main__':
             # Reference States
             hd, hd_d, qd, w_d, f_d, M_d = compute_reference(t, ts, combinations[i_random, 0], combinations[i_random, 1], 1, L)
             # Fixed intial position
-            pos_0 = np.array([0.0, 0.0, 0.0])
+            pos_0 = np.array([0, 0, 0])
             #pos_0 = np.array([hd[0,0], hd[1, 0], hd[2, 0]])
 
             # Random Initial positions
