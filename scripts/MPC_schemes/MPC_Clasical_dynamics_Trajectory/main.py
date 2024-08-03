@@ -368,23 +368,26 @@ if __name__ == '__main__':
 
         a_max = np.array([1 ,2, 3])*0.3
         v_max = np.array([1, 1.5])*1
+        max_position = 4
+        min_position = -4
 
         # Use itertools.product to get all possible combinations
         combinations = np.array(list(itertools.product(v_max, a_max)))
         print(combinations)
         number_experiments = combinations.shape[0]
         print(number_experiments)
-        t = np.arange(0, 5 + ts, ts)
+
+        # Random initial Conditions
+        ramdon_quaternions = get_random_quaternion_complete(number_experiments)
+        ramdon_positions = get_random_position(min_position, max_position, number_experiments)
 
         for i_random in range(number_experiments):
             # Reference States
-            hd, hd_d, qd, w_d, f_d, M_d = compute_reference(t, ts, combinations[i_random, 0], combinations[i_random, 1], 1, L)
-            # Fixed intial position
-            pos_0 = np.array([0, 0, 0])
+            #pos_0 = np.array([0, 0, 0])
             #pos_0 = np.array([hd[0,0], hd[1, 0], hd[2, 0]])
 
             # Random Initial positions
-            #pos_0 = np.array([ramdon_positions[i_random, 0], ramdon_positions[i_random, 1], ramdon_positions[i_random, 2]])
+            pos_0 = np.array([ramdon_positions[i_random, 0], ramdon_positions[i_random, 1], ramdon_positions[i_random, 2]])
             vel_0 = np.array([0.0, 0.0, 0.0], dtype=np.double)
             omega_0 = np.array([0.0, 0.0, 0.0], dtype=np.double)
             #vel_0 = np.array([hd_d[0, 0], hd_d[1, 0], hd_d[2, 0]], dtype=np.double)
@@ -397,7 +400,7 @@ if __name__ == '__main__':
             #quat_0 = np.hstack([qd[0,0], qd[1, 0], qd[2, 0], qd[3, 0]])
 
             # Random initial conditions
-            #quat_0 = np.array([ramdon_quaternions[i_random, 3], ramdon_quaternions[i_random, 0], ramdon_quaternions[i_random, 1], ramdon_quaternions[i_random, 2]])
+            quat_0 = np.array([ramdon_quaternions[i_random, 3], ramdon_quaternions[i_random, 0], ramdon_quaternions[i_random, 1], ramdon_quaternions[i_random, 2]])
             x = np.hstack((pos_0, vel_0, quat_0, omega_0))
             x_aux = np.hstack((pos_0, quat_0, omega_0, vel_0))
             X_total.append(x)

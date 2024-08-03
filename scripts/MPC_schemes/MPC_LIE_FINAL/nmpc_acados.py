@@ -75,8 +75,11 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
     #ocp.model.cost_expr_ext_cost = 10*(ln_error.T@Q_l@ln_error) + 1*(error_nominal_input.T @ R @ error_nominal_input) + 1*(error_dot.T@error_dot) + 1*(ln_error.T@error_dot)
     #ocp.model.cost_expr_ext_cost_e =  10*(ln_error.T@Q_l@ln_error) + 1*(error_dot.T@error_dot) + 1*(ln_error.T@error_dot)
 
-    ocp.model.cost_expr_ext_cost = 10*(ln_error.T@Q_l@ln_error) + 1*(error_nominal_input.T @ R @ error_nominal_input)+ 0.2*(error_w.T@error_w) + 0.2*(error_v.T@error_v)
-    ocp.model.cost_expr_ext_cost_e =  10*(ln_error.T@Q_l@ln_error)+ 0.2*(error_w.T@error_w) + 0.2*(error_v.T@error_v)
+    #ocp.model.cost_expr_ext_cost = 10*(ln_error.T@Q_l@ln_error) + 1*(error_nominal_input.T @ R @ error_nominal_input)+ 0.2*(error_w.T@error_w) + 0.2*(error_v.T@error_v)
+    #ocp.model.cost_expr_ext_cost_e =  10*(ln_error.T@Q_l@ln_error)+ 0.2*(error_w.T@error_w) + 0.2*(error_v.T@error_v)
+
+    ocp.model.cost_expr_ext_cost = 10*(ln_error.T@Q_l@ln_error) + 1*(error_nominal_input.T @ R @ error_nominal_input)
+    ocp.model.cost_expr_ext_cost_e =  10*(ln_error.T@Q_l@ln_error)
 
     # Auxiliary variable initialization
     ocp.parameter_values = np.zeros(nx + nu)

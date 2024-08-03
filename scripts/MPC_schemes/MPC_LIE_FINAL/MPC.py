@@ -133,7 +133,7 @@ def main(odom_pub_1, odom_pub_2, L, x0, v_max, a_max, n, initial):
 
     # Constraints on control actions
     F_max = L[0]*L[4] + 20
-    F_min = L[0]*L[4] - 5
+    F_min = 0
     tau_1_max = 0.1
     tau_1_min = -0.1
     tau_2_max = 0.1
