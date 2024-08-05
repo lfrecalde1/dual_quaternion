@@ -491,8 +491,22 @@ void quadrotor_acados_create_5_set_nlp_in(quadrotor_solver_capsule* capsule, con
     double* lbx0 = lubx0;
     double* ubx0 = lubx0 + NBX0;
     // change only the non-zero elements:
-    lbx0[0] = 1;
-    ubx0[0] = 1;
+    lbx0[0] = 0.009999743099695617;
+    ubx0[0] = 0.009999743099695617;
+    lbx0[1] = 0.25982534980702;
+    ubx0[1] = 0.25982534980702;
+    lbx0[2] = 0.33152669852922373;
+    ubx0[2] = 0.33152669852922373;
+    lbx0[3] = 0.9069072945444384;
+    ubx0[3] = 0.9069072945444384;
+    lbx0[4] = 0.5353472864254505;
+    ubx0[4] = 0.5353472864254505;
+    lbx0[5] = -1.5140134368131046;
+    ubx0[5] = -1.5140134368131046;
+    lbx0[6] = -0.018781471839885405;
+    ubx0[6] = -0.018781471839885405;
+    lbx0[7] = 0.43472171546459887;
+    ubx0[7] = 0.43472171546459887;
 
     ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, 0, "idxbx", idxbx0);
     ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, 0, "lbx", lbx0);
@@ -730,7 +744,14 @@ void quadrotor_acados_create_7_set_nlp_out(quadrotor_solver_capsule* capsule)
 
     // initialize with x0
     
-    x0[0] = 1;
+    x0[0] = 0.009999743099695617;
+    x0[1] = 0.25982534980702;
+    x0[2] = 0.33152669852922373;
+    x0[3] = 0.9069072945444384;
+    x0[4] = 0.5353472864254505;
+    x0[5] = -1.5140134368131046;
+    x0[6] = -0.018781471839885405;
+    x0[7] = 0.43472171546459887;
 
 
     double* u0 = xu0 + NX;

@@ -363,11 +363,10 @@ if __name__ == '__main__':
         # Initial conditions of the system
         X_total = []
         X_total_aux = []
-        #a_max = np.array([1 ,2, 3, 4, 5, 6])*0.3
-        #v_max = np.array([1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6])*1
 
-        a_max = np.array([1 ,2, 3])*0.3
-        v_max = np.array([1, 1.5])*1
+        a_max = np.array([1 ,2, 3, 4])*0.3
+        v_max = np.array([1, 1.5, 2, 2.5, 3, 3.5, 4])*1
+
         max_position = 4
         min_position = -4
 

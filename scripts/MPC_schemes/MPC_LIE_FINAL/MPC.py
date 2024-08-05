@@ -416,8 +416,8 @@ if __name__ == '__main__':
 
         print(x_0.shape[0])
 
-        a_max = np.array([1 ,2, 3])*0.3
-        v_max = np.array([1, 1.5])*1
+        a_max = np.array([1 ,2, 3, 4])*0.3
+        v_max = np.array([1, 1.5, 2, 2.5, 3, 3.5, 4])*1
 
         # Use itertools.product to get all possible combinations
         combinations = np.array(list(itertools.product(v_max, a_max)))
