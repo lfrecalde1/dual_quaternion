@@ -697,16 +697,16 @@ def ref_circular_trajectory(t, p, w_c):
     zd_pppp = 0 * np.zeros((t.shape[0]))
 
     # Compute angular displacement
-    theta = 0 * np.zeros((t.shape[0]))
+    #theta = 0 * np.zeros((t.shape[0]))
 
     # Compute angular velocity
-    theta_p = 0 * np.zeros((t.shape[0]))
-    #theta = np.arctan2(yd_p, xd_p)
-    #theta = theta
+    #theta_p = 0 * np.zeros((t.shape[0]))
+    theta = np.arctan2(yd_p, xd_p)
+    theta = theta
 
     # Compute angular velocity
-    #theta_p = (1. / ((yd_p / xd_p) ** 2 + 1)) * ((yd_pp * xd_p - yd_p * xd_pp) / xd_p ** 2)
-    #theta_p[0] = 0.0
+    theta_p = (1. / ((yd_p / xd_p) ** 2 + 1)) * ((yd_pp * xd_p - yd_p * xd_pp) / xd_p ** 2)
+    theta_p[0] = 0.0
 
     theta_pp = 0 * np.zeros((theta.shape[0]))
 

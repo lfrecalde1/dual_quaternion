@@ -117,8 +117,8 @@ int main()
 
     double lbx0[NBX0];
     double ubx0[NBX0];
-    lbx0[0] = 1;
-    ubx0[0] = 1;
+    lbx0[0] = 0;
+    ubx0[0] = 0;
     lbx0[1] = 0;
     ubx0[1] = 0;
     lbx0[2] = 0;

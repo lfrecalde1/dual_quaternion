@@ -2,7 +2,7 @@
 clc, clear all, close all;
 
 % Define waypoints along the x-axis
-waypoints = [0; 1; 2];
+waypoints = [0; 2; 0];
 
 % Total time for the trajectory
 total_time = 2;  % Example total time
@@ -46,7 +46,7 @@ b_init = [waypoints(1); waypoints(2); 0;0;];
 A_v_m = [velocity_time(t_med)', zeros(1, 8);...
          zeros(1, 8), -velocity_time(t_med)'];
 
-b_v_m = [2;-2];
+b_v_m = [0;-0];
 
 %% Constrainst Middle Points Acceleration
 A_a_m = [acceleration_time(t_med)', zeros(1, 8);...
