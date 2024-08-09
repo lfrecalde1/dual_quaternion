@@ -251,7 +251,7 @@ def quatdot_simple(quat, omega):
     dual_error = norm_d
 
     aux_1 = quat_data * (K_quat*quat_error)
-    aux_2 = dual_data * (K_quat*dual_error)
+    aux_2 = dual_data * (0*dual_error)
 
     aux_dual = ca.vertcat(aux_1, aux_2)
 
@@ -604,7 +604,7 @@ def quadrotorModel(L: list)-> AcadosModel:
     norm_q = ca.norm_2(get_quat(X[0:8]))
     dot_real_dual = 2* ca.dot(X[0:4], X[4:8])
     constraint.norm = Function("norm", [X], [norm_q])
-    constraint.expr = ca.vertcat(norm_q, dot_real_dual)
+    constraint.expr = ca.vertcat(norm_q)
     constraint.min = 1.0
     constraint.max = 1.0
     constraint.min2 = 0.0

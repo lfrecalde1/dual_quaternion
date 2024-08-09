@@ -65,12 +65,12 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
     # Gain Matrix complete error
 
     Q_l = MX.zeros(6, 6)
-    Q_l[0, 0] = 2
-    Q_l[1, 1] = 2
-    Q_l[2, 2] = 2
-    Q_l[3, 3] = 1.6
-    Q_l[4, 4] = 1.6
-    Q_l[5, 5] = 1.6
+    Q_l[0, 0] = 4
+    Q_l[1, 1] = 4
+    Q_l[2, 2] = 4
+    Q_l[3, 3] = 2.6
+    Q_l[4, 4] = 2.6
+    Q_l[5, 5] = 2.6
 
     #ocp.model.cost_expr_ext_cost = 10*(ln_error.T@Q_l@ln_error) + 1*(error_nominal_input.T @ R @ error_nominal_input) + 1*(error_dot.T@error_dot) + 1*(ln_error.T@error_dot)
     #ocp.model.cost_expr_ext_cost_e =  10*(ln_error.T@Q_l@ln_error) + 1*(error_dot.T@error_dot) + 1*(ln_error.T@error_dot)
@@ -107,8 +107,8 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
     ocp.cost.zu = 100*np.ones((ns, ))
 #
     ### Norm of a quaternion should be one
-    ocp.constraints.lh = np.array([constraint.min, constraint.min2])
-    ocp.constraints.uh = np.array([constraint.max, constraint.max2])
+    ocp.constraints.lh = np.array([constraint.min])
+    ocp.constraints.uh = np.array([constraint.max])
     ocp.constraints.lsh = np.zeros(nsh)
     ocp.constraints.ush = np.zeros(nsh)
     ocp.constraints.idxsh = np.array(range(nsh))
@@ -119,7 +119,7 @@ def create_ocp_solver(x0, N_horizon, t_horizon, F_max, F_min, tau_1_max, tau_1_m
     ocp.solver_options.hessian_approx = "GAUSS_NEWTON"  
     ocp.solver_options.regularize_method = "CONVEXIFY"  
     ocp.solver_options.integrator_type = "IRK"
-    ocp.solver_options.nlp_solver_type = "SQP_RTI"
+    ocp.solver_options.nlp_solver_type = "SQP"
     ocp.solver_options.Tsim = ts
     ocp.solver_options.tf = t_horizon
     return ocp

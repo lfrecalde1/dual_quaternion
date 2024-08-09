@@ -100,7 +100,7 @@ def create_ocp_solver(x0, N_horizon, t_horizon, wx_max, wx_min, wy_max, wy_min, 
     ocp.solver_options.hessian_approx = "GAUSS_NEWTON"  
     ocp.solver_options.regularize_method = "CONVEXIFY"  
     ocp.solver_options.integrator_type = "IRK"
-    ocp.solver_options.nlp_solver_type = "SQP"
+    ocp.solver_options.nlp_solver_type = "SQP_RTI"
     ocp.solver_options.Tsim = ts
     ocp.solver_options.tf = t_horizon
     return ocp

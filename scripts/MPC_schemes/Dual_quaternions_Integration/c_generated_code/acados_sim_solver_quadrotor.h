@@ -37,10 +37,10 @@
 #include "acados_c/sim_interface.h"
 #include "acados_c/external_function_interface.h"
 
-#define QUADROTOR_NX     7
+#define QUADROTOR_NX     8
 #define QUADROTOR_NZ     0
 #define QUADROTOR_NU     6
-#define QUADROTOR_NP     13
+#define QUADROTOR_NP     14
 
 #ifdef __cplusplus
 extern "C" {

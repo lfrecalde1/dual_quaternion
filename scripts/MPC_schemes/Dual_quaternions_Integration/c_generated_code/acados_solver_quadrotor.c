@@ -141,7 +141,7 @@ void quadrotor_acados_create_1_set_plan(ocp_nlp_plan_t* nlp_solver_plan, const i
     /************************************************
     *  plan
     ************************************************/
-    nlp_solver_plan->nlp_solver = SQP;
+    nlp_solver_plan->nlp_solver = SQP_RTI;
 
     nlp_solver_plan->ocp_qp_solver_plan.qp_solver = FULL_CONDENSING_HPIPM;
 
@@ -226,7 +226,7 @@ ocp_nlp_dims* quadrotor_acados_create_2_create_and_set_dimensions(quadrotor_solv
     nbx[0]  = NBX0;
     nsbx[0] = 0;
     ns[0] = NS - NSBX;
-    nbxe[0] = 7;
+    nbxe[0] = 8;
     ny[0] = NY0;
 
     // terminal - common
@@ -298,7 +298,7 @@ void quadrotor_acados_create_3_create_and_set_functions(quadrotor_solver_capsule
         capsule->__CAPSULE_FNC__.casadi_sparsity_in = & __MODEL_BASE_FNC__ ## _sparsity_in; \
         capsule->__CAPSULE_FNC__.casadi_sparsity_out = & __MODEL_BASE_FNC__ ## _sparsity_out; \
         capsule->__CAPSULE_FNC__.casadi_work = & __MODEL_BASE_FNC__ ## _work; \
-        external_function_param_casadi_create(&capsule->__CAPSULE_FNC__ , 13); \
+        external_function_param_casadi_create(&capsule->__CAPSULE_FNC__ , 14); \
     }while(false)
 
 
@@ -448,9 +448,13 @@ void quadrotor_acados_create_5_set_nlp_in(quadrotor_solver_capsule* capsule, con
     double* zu = zlumem+NS*3;
     // change only the non-zero elements:
     Zl[0] = 100;
+    Zl[1] = 100;
     Zu[0] = 100;
+    Zu[1] = 100;
     zl[0] = 100;
+    zl[1] = 100;
     zu[0] = 100;
+    zu[1] = 100;
 
     for (int i = 0; i < N; i++)
     {
@@ -475,13 +479,14 @@ void quadrotor_acados_create_5_set_nlp_in(quadrotor_solver_capsule* capsule, con
     idxbx0[4] = 4;
     idxbx0[5] = 5;
     idxbx0[6] = 6;
+    idxbx0[7] = 7;
 
     double* lubx0 = calloc(2*NBX0, sizeof(double));
     double* lbx0 = lubx0;
     double* ubx0 = lubx0 + NBX0;
     // change only the non-zero elements:
-    lbx0[3] = 1;
-    ubx0[3] = 1;
+    lbx0[0] = 1;
+    ubx0[0] = 1;
 
     ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, 0, "idxbx", idxbx0);
     ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, 0, "lbx", lbx0);
@@ -489,7 +494,7 @@ void quadrotor_acados_create_5_set_nlp_in(quadrotor_solver_capsule* capsule, con
     free(idxbx0);
     free(lubx0);
     // idxbxe_0
-    int* idxbxe_0 = malloc(7 * sizeof(int));
+    int* idxbxe_0 = malloc(8 * sizeof(int));
     
     idxbxe_0[0] = 0;
     idxbxe_0[1] = 1;
@@ -498,6 +503,7 @@ void quadrotor_acados_create_5_set_nlp_in(quadrotor_solver_capsule* capsule, con
     idxbxe_0[4] = 4;
     idxbxe_0[5] = 5;
     idxbxe_0[6] = 6;
+    idxbxe_0[7] = 7;
     ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, 0, "idxbxe", idxbxe_0);
     free(idxbxe_0);
 
@@ -544,6 +550,7 @@ void quadrotor_acados_create_5_set_nlp_in(quadrotor_solver_capsule* capsule, con
     int* idxsh = malloc(NSH * sizeof(int));
     
     idxsh[0] = 0;
+    idxsh[1] = 1;
     double* lush = calloc(2*NSH, sizeof(double));
     double* lsh = lush;
     double* ush = lush + NSH;
@@ -668,24 +675,6 @@ void quadrotor_acados_create_6_set_opts(quadrotor_solver_capsule* capsule)
     ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "qp_hpipm_mode", "BALANCE");
 
 
-    // set SQP specific options
-    double nlp_solver_tol_stat = 0.000001;
-    ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "tol_stat", &nlp_solver_tol_stat);
-
-    double nlp_solver_tol_eq = 0.000001;
-    ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "tol_eq", &nlp_solver_tol_eq);
-
-    double nlp_solver_tol_ineq = 0.000001;
-    ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "tol_ineq", &nlp_solver_tol_ineq);
-
-    double nlp_solver_tol_comp = 0.000001;
-    ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "tol_comp", &nlp_solver_tol_comp);
-
-    int nlp_solver_max_iter = 100;
-    ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "max_iter", &nlp_solver_max_iter);
-
-    int initialize_t_slacks = 0;
-    ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "initialize_t_slacks", &initialize_t_slacks);
 
     int qp_solver_iter_max = 50;
     ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "qp_iter_max", &qp_solver_iter_max);
@@ -718,7 +707,7 @@ void quadrotor_acados_create_7_set_nlp_out(quadrotor_solver_capsule* capsule)
 
     // initialize with x0
     
-    x0[3] = 1;
+    x0[0] = 1;
 
 
     double* u0 = xu0 + NX;
@@ -864,7 +853,7 @@ int quadrotor_acados_update_params(quadrotor_solver_capsule* capsule, int stage,
 {
     int solver_status = 0;
 
-    int casadi_np = 13;
+    int casadi_np = 14;
     if (casadi_np != np) {
         printf("acados_update_params: trying to set %i parameters for external functions."
             " External function has %i parameters. Exiting.\n", np, casadi_np);
@@ -920,7 +909,7 @@ int quadrotor_acados_update_params_sparse(quadrotor_solver_capsule * capsule, in
 {
     int solver_status = 0;
 
-    int casadi_np = 13;
+    int casadi_np = 14;
     if (casadi_np < n_update) {
         printf("quadrotor_acados_update_params_sparse: trying to set %d parameters for external functions."
             " External function has %d parameters. Exiting.\n", n_update, casadi_np);
@@ -1062,24 +1051,16 @@ void quadrotor_acados_print_stats(quadrotor_solver_capsule* capsule)
     if (stat_n > 8)
         printf("\t\tqp_res_stat\tqp_res_eq\tqp_res_ineq\tqp_res_comp");
     printf("\n");
-
+    printf("iter\tqp_stat\tqp_iter\n");
     for (int i = 0; i < nrow; i++)
     {
         for (int j = 0; j < stat_n + 1; j++)
         {
-            if (j == 0 || j == 5 || j == 6)
-            {
-                tmp_int = (int) stat[i + j * nrow];
-                printf("%d\t", tmp_int);
-            }
-            else
-            {
-                printf("%e\t", stat[i + j * nrow]);
-            }
+            tmp_int = (int) stat[i + j * nrow];
+            printf("%d\t", tmp_int);
         }
         printf("\n");
     }
-
 }
 
 int quadrotor_acados_custom_update(quadrotor_solver_capsule* capsule, double* data, int data_len)

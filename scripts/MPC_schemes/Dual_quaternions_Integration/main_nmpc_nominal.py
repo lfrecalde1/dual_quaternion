@@ -229,12 +229,12 @@ def main(ts: float, t_f: float, t_N: float, L: list, odom_pub_1, odom_pub_2, ini
 
     # Linear Velocities Inertial frame
     fig13, ax13, ax23, ax33 = fancy_plots_3()
-    plot_states_velocity_reference(fig13, ax13, ax23, ax33, u[3:6, :], hd_d[0:3, :], t, "Linear Velocity of the System and Reference "+ str(initial), folder_path)
+    plot_states_velocity_reference(fig13, ax13, ax23, ax33, u[3:6, :], u[3:6, :], t, "Linear Velocity of the System and Reference "+ str(initial), folder_path)
 
 
     # Angular Velocities Body Frame
     fig14, ax14, ax24, ax34 = fancy_plots_3()
-    plot_states_angular_reference(fig14, ax14, ax24, ax34, u[0:3, :], w_d[0:3, :], t, "Angular Velocity of the System and Reference "+ str(initial), folder_path)
+    plot_states_angular_reference(fig14, ax14, ax24, ax34, u[0:3, :], u[0:3, :], t, "Angular Velocity of the System and Reference "+ str(initial), folder_path)
 
     # Linear Velocities Inertial frame
     fig15, ax15, ax25, ax35 = fancy_plots_3()

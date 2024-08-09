@@ -88,10 +88,10 @@ def main(ts: float, t_f: float, t_N: float, L: list, odom_pub_1, odom_pub_2, ini
 
 
     # Initial States of the system
-    x0 = 1.0
+    x0 = 0.0
     y0 = 0.0
     z0 = 0.0
-    angle = np.pi/2
+    angle = 0.0*np.pi/2
     axis = np.array([0, 0, 1])
     quat_0 = np.hstack([np.cos(angle / 2), np.sin(angle / 2) * axis])
 
@@ -126,16 +126,16 @@ def main(ts: float, t_f: float, t_N: float, L: list, odom_pub_1, odom_pub_2, ini
     wx_max = + 7
     wy_max = + 7
     wz_max = + 7
-    vx_max = + 7
-    vy_max = + 7
-    vz_max = + 7
+    vx_max = + 5
+    vy_max = + 5
+    vz_max = + 5
 
     wx_min = - 7 
     wy_min = - 7 
     wz_min = - 7 
-    vx_min = - 7 
-    vy_min = - 7 
-    vz_min = - 7 
+    vx_min = - 5 
+    vy_min = - 5 
+    vz_min = - 5 
 
     # Integration set up
     ocp = create_ocp_solver(D1[:, 0], N_prediction, t_N, wx_max, wx_min, wy_max, wy_min, wz_max, wz_min, vx_max, vx_min, vy_max, vy_min,  vz_max, vz_min, L, ts)
@@ -150,7 +150,7 @@ def main(ts: float, t_f: float, t_N: float, L: list, odom_pub_1, odom_pub_2, ini
     for stage in range(N_prediction):
         acados_ocp_solver.set(stage, "u", u[:, 0])
 
-    hd, hd_d, qd, w_d, f_d, M_d = compute_reference(t, ts, 20.0*(initial+1), L)
+    hd, hd_d, qd, w_d, f_d, M_d = compute_reference(t, ts, 70.0*(initial+1), L)
 
     # Initial condition for the desired states
     X_d = np.zeros((14, t.shape[0]+1), dtype=np.double)
@@ -193,8 +193,7 @@ def main(ts: float, t_f: float, t_N: float, L: list, odom_pub_1, odom_pub_2, ini
         tic = rospy.get_time()
         aux = get_real(D1[:, k])
         aux_2 = get_quat(D1[:, k])
-        print(aux)
-        print(aux_2)
+        print(np.linalg.norm(aux))
         # Control actions
 
         #dual_twist_1_d = dual_twist(u[:, k], D1[:, k])
@@ -251,10 +250,10 @@ def main(ts: float, t_f: float, t_N: float, L: list, odom_pub_1, odom_pub_2, ini
     plot_dual_dual_reference(fig12, ax12, ax22, ax32, ax42, D1[4, :], D1[5:8, :], X_d[4, :], X_d[5:8, :], t, "Dual-Quaternion Dual Integration "+ str(initial), folder_path)
 
     fig13, ax13, ax23, ax33 = fancy_plots_3()
-    plot_states_angular_reference(fig13, ax13, ax23, ax33, xi[0:3, :], w_d[0:3, :], t, "Angular Velocity of the System Based on LieAlgebra and Reference "+ str(initial), folder_path)
+    plot_states_angular_reference(fig13, ax13, ax23, ax33, xi[0:3, :], xi[0:3, :], t, "Angular Velocity of the System Based on LieAlgebra and Reference "+ str(initial), folder_path)
     
     fig14, ax14, ax24, ax34 = fancy_plots_3()
-    plot_states_velocity_reference(fig14, ax14, ax24, ax34, xi[3:6, :], hd_d[0:3, :], t, "Linear Velocity of the System Based on LieAlgebra and Reference "+ str(initial), folder_path)
+    plot_states_velocity_reference(fig14, ax14, ax24, ax34, xi[3:6, :], xi[0:3, :], t, "Linear Velocity of the System Based on LieAlgebra and Reference "+ str(initial), folder_path)
 
     fig15, ax15, ax25, ax35 = fancy_plots_3()
     plot_states_velocity_reference(fig15, ax15, ax25, ax35, u[3:6, :], u[3:6, :], t, "Linear Velocity Body Frame of the System Based on LieAlgebra and Reference "+ str(initial), folder_path)

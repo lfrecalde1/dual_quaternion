@@ -318,8 +318,8 @@ def main(odom_pub_1, odom_pub_2, L, x0, v_max, a_max, n, initial):
             #print(f"{field} : {acados_ocp_solver.get_stats(field)}")
             None
         print(initial)
-        #kkt_values[:, k]  = acados_ocp_solver.get_stats('residuals')
-        #sqp_iteration[:, k] = acados_ocp_solver.get_stats('sqp_iter')
+        kkt_values[:, k]  = acados_ocp_solver.get_stats('residuals')
+        sqp_iteration[:, k] = acados_ocp_solver.get_stats('sqp_iter')
         #acados_ocp_solver.print_statistics()
 
         # Get the control Action

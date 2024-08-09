@@ -244,7 +244,7 @@ def quatdot_simple(quat, omega):
     dual_error = norm_d
 
     aux_1 = quat_data * (K_quat*quat_error)
-    aux_2 = dual_data * (K_quat*dual_error)
+    aux_2 = dual_data * (0*dual_error)
 
     aux_dual = ca.vertcat(aux_1, aux_2)
 
@@ -391,7 +391,7 @@ def ln_dual(q_error):
 
     ## Real Part
     norm = ca.norm_2(q_error_real[1:4] + ca.np.finfo(np.float64).eps)
-    angle = ca.atan2(norm, q_error_real[0])
+    angle = 2*ca.atan2(norm, q_error_real[0])
 
     ## Dual Part
     H_error_dual_plus = ca.vertcat(ca.horzcat(q_error_dual[0, 0], -q_error_dual[1, 0], -q_error_dual[2, 0], -q_error_dual[3, 0]),
