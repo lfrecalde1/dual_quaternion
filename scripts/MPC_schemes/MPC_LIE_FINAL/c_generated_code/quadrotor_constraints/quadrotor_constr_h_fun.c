@@ -59,7 +59,7 @@ static const casadi_int casadi_s0[18] = {14, 1, 0, 14, 0, 1, 2, 3, 4, 5, 6, 7, 8
 static const casadi_int casadi_s1[8] = {4, 1, 0, 4, 0, 1, 2, 3};
 static const casadi_int casadi_s2[3] = {0, 0, 0};
 static const casadi_int casadi_s3[22] = {18, 1, 0, 18, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17};
-static const casadi_int casadi_s4[6] = {2, 1, 0, 2, 0, 1};
+static const casadi_int casadi_s4[5] = {1, 1, 0, 1, 0};
 
 /* f_quat:(i0[8])->(o0[4]) */
 static int casadi_f1(const casadi_real** arg, casadi_real** res, casadi_int* iw, casadi_real* w, int mem) {
@@ -83,11 +83,11 @@ static int casadi_f1(const casadi_real** arg, casadi_real** res, casadi_int* iw,
   return 0;
 }
 
-/* quadrotor_constr_h_fun:(i0[14],i1[4],i2[],i3[18])->(o0[2]) */
+/* quadrotor_constr_h_fun:(i0[14],i1[4],i2[],i3[18])->(o0) */
 static int casadi_f0(const casadi_real** arg, casadi_real** res, casadi_int* iw, casadi_real* w, int mem) {
   casadi_real **res1=res+1, *rr, *ss;
   const casadi_real **arg1=arg+4;
-  casadi_real w0, w1, w2, w3, w4, w5, w6, w7, w8, w9, w10, w11, w12, w13, *w14=w+15, *w15=w+29, *w16=w+37, *w17=w+41;
+  casadi_real w0, w1, w2, w3, w4, w5, w6, w7, w8, w9, w10, w11, w12, w13, *w14=w+15, *w15=w+29, *w16=w+37;
   /* #0: @0 = input[0][0] */
   w0 = arg[0] ? arg[0][0] : 0;
   /* #1: @1 = input[0][1] */
@@ -142,16 +142,6 @@ static int casadi_f0(const casadi_real** arg, casadi_real** res, casadi_int* iw,
   w0 = sqrt(casadi_dot(4, w16, w16));
   /* #18: output[0][0] = @0 */
   if (res[0]) res[0][0] = w0;
-  /* #19: @16 = @14[:4] */
-  for (rr=w16, ss=w14+0; ss!=w14+4; ss+=1) *rr++ = *ss;
-  /* #20: @17 = @14[4:8] */
-  for (rr=w17, ss=w14+4; ss!=w14+8; ss+=1) *rr++ = *ss;
-  /* #21: @0 = dot(@16, @17) */
-  w0 = casadi_dot(4, w16, w17);
-  /* #22: @0 = (2.*@0) */
-  w0 = (2.* w0 );
-  /* #23: output[0][1] = @0 */
-  if (res[0]) res[0][1] = w0;
   return 0;
 }
 
@@ -231,7 +221,7 @@ CASADI_SYMBOL_EXPORT int quadrotor_constr_h_fun_work(casadi_int *sz_arg, casadi_
   if (sz_arg) *sz_arg = 18;
   if (sz_res) *sz_res = 3;
   if (sz_iw) *sz_iw = 0;
-  if (sz_w) *sz_w = 45;
+  if (sz_w) *sz_w = 41;
   return 0;
 }
 

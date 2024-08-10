@@ -345,7 +345,7 @@ if __name__ == '__main__':
     try: #################################### Simulation  #####################################################
         # Time parameters
         ts = 0.01
-        t_f = 20
+        t_f = 10
         t_N = 0.5
 
         # Parameters of the system  (mass, inertial matrix, gravity)
@@ -365,7 +365,7 @@ if __name__ == '__main__':
         X_total_aux = []
 
         a_max = np.array([1 ,2, 3, 4])*0.3
-        v_max = np.array([1, 1.5, 2, 2.5, 3, 3.5, 4])*1
+        v_max = np.array([1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6])*1
 
         max_position = 4
         min_position = -4
@@ -395,7 +395,7 @@ if __name__ == '__main__':
             # Fixed Initial Conditions
             theta_0 = 0.0
             n_0 = np.array([0.0, 0.0, 1.0])
-            quat_0 = np.hstack([np.cos(theta_0 / 2), np.sin(theta_0 / 2) * np.array(n_0)])
+            #quat_0 = np.hstack([np.cos(theta_0 / 2), np.sin(theta_0 / 2) * np.array(n_0)])
             #quat_0 = np.hstack([qd[0,0], qd[1, 0], qd[2, 0], qd[3, 0]])
 
             # Random initial conditions

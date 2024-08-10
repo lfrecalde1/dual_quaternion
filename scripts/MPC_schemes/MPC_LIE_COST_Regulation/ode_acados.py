@@ -205,11 +205,9 @@ def quatdot_simple(quat, omega):
     quat_data = quat[0:4, 0]
     dual_data =  quat[4:8, 0]
 
-    # Auxiliary variable in order to avoid numerical issues
-    #norm_r = ca.dot(quat_data, quat_data)
+    # Auxiliary variables in order to avoid numerical issues
     K_quat = 10
-    #norm_d = 2*(quat_data.T@dual_data)
-
+    
     norm_r = ca.norm_2(quat_data)
     norm_d = 2* ca.dot(quat_data, dual_data)
 
@@ -217,11 +215,11 @@ def quatdot_simple(quat, omega):
     dual_error = norm_d
 
     aux_1 = quat_data * (K_quat*quat_error)
-    aux_2 = dual_data * (K_quat*dual_error)
+    aux_2 = dual_data * (0*dual_error)
 
     aux_dual = ca.vertcat(aux_1, aux_2)
 
-    # Creatin aux Variables
+    # Create aux Variables
     H_r_plus = ca.vertcat(ca.horzcat(quat_data[0, 0], -quat_data[1, 0], -quat_data[2, 0], -quat_data[3, 0]),
                                 ca.horzcat(quat_data[1, 0], quat_data[0, 0], -quat_data[3, 0], quat_data[2, 0]),
                                 ca.horzcat(quat_data[2, 0], quat_data[3, 0], quat_data[0, 0], -quat_data[1, 0]),
@@ -235,8 +233,10 @@ def quatdot_simple(quat, omega):
     Hplus = ca.vertcat(ca.horzcat(H_r_plus, zeros),
                         ca.horzcat(H_d_plus, H_r_plus))
 
-    # Auxiliar variable veloicities
+    # Auxiliar variable veloicities 
     omega = ca.vertcat(0.0, omega[0, 0], omega[1, 0], omega[2, 0], 0.0, omega[3, 0], omega[4, 0], omega[5, 0])
+
+    # New dot
     q_dot = (1/2)*(Hplus@ omega) + aux_dual
     return q_dot
 
@@ -570,7 +570,7 @@ def quadrotorModel(L: list)-> AcadosModel:
     norm_q = ca.norm_2(get_quat(X[0:8]))
     dot_real_dual = 2* ca.dot(X[0:4], X[4:8])
     constraint.norm = Function("norm", [X], [norm_q])
-    constraint.expr = ca.vertcat(norm_q, dot_real_dual)
+    constraint.expr = ca.vertcat(norm_q)
     constraint.min = 1.0
     constraint.max = 1.0
     constraint.min2 = 0.0

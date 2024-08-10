@@ -69,7 +69,7 @@ def main(odom_pub_1, odom_pub_2, L, x0, v_max, a_max, n, initial):
     g = L[4]
     # Sample Time Defintion
     sample_time = 0.01
-    t_f = 20
+    t_f = 10
 
     # Time defintion aux variable
     t = np.arange(0, t_f + sample_time, sample_time)
@@ -417,7 +417,7 @@ if __name__ == '__main__':
         print(x_0.shape[0])
 
         a_max = np.array([1 ,2, 3, 4])*0.3
-        v_max = np.array([1, 1.5, 2, 2.5, 3, 3.5, 4])*1
+        v_max = np.array([1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6])*1
 
         # Use itertools.product to get all possible combinations
         combinations = np.array(list(itertools.product(v_max, a_max)))

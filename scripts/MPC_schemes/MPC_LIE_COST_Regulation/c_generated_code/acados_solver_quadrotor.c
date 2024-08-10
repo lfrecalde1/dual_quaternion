@@ -448,13 +448,9 @@ void quadrotor_acados_create_5_set_nlp_in(quadrotor_solver_capsule* capsule, con
     double* zu = zlumem+NS*3;
     // change only the non-zero elements:
     Zl[0] = 100;
-    Zl[1] = 100;
     Zu[0] = 100;
-    Zu[1] = 100;
     zl[0] = 100;
-    zl[1] = 100;
     zu[0] = 100;
-    zu[1] = 100;
 
     for (int i = 0; i < N; i++)
     {
@@ -491,22 +487,22 @@ void quadrotor_acados_create_5_set_nlp_in(quadrotor_solver_capsule* capsule, con
     double* lbx0 = lubx0;
     double* ubx0 = lubx0 + NBX0;
     // change only the non-zero elements:
-    lbx0[0] = -0.7145532840637573;
-    ubx0[0] = -0.7145532840637573;
-    lbx0[1] = 0.21411134657553124;
-    ubx0[1] = 0.21411134657553124;
-    lbx0[2] = 0.6587754708648138;
-    ubx0[2] = 0.6587754708648138;
-    lbx0[3] = 0.0979020658012622;
-    ubx0[3] = 0.0979020658012622;
-    lbx0[4] = -0.6413003820068262;
-    ubx0[4] = -0.6413003820068262;
-    lbx0[5] = 0.3439163067606834;
-    ubx0[5] = 0.3439163067606834;
-    lbx0[6] = -0.4320338317870376;
-    ubx0[6] = -0.4320338317870376;
-    lbx0[7] = -2.5256503485946853;
-    ubx0[7] = -2.5256503485946853;
+    lbx0[0] = 0.606652981720736;
+    ubx0[0] = 0.606652981720736;
+    lbx0[1] = -0.7473258671419708;
+    ubx0[1] = -0.7473258671419708;
+    lbx0[2] = 0.22654169773347735;
+    ubx0[2] = 0.22654169773347735;
+    lbx0[3] = -0.14884578347361943;
+    ubx0[3] = -0.14884578347361943;
+    lbx0[4] = -0.4576805369595171;
+    ubx0[4] = -0.4576805369595171;
+    lbx0[5] = -0.5781854373032868;
+    ubx0[5] = -0.5781854373032868;
+    lbx0[6] = 0.2223814332335634;
+    ubx0[6] = 0.2223814332335634;
+    lbx0[7] = 1.3760439397662612;
+    ubx0[7] = 1.3760439397662612;
 
     ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, 0, "idxbx", idxbx0);
     ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, 0, "lbx", lbx0);
@@ -570,7 +566,6 @@ void quadrotor_acados_create_5_set_nlp_in(quadrotor_solver_capsule* capsule, con
     int* idxsh = malloc(NSH * sizeof(int));
     
     idxsh[0] = 0;
-    idxsh[1] = 1;
     double* lush = calloc(2*NSH, sizeof(double));
     double* lsh = lush;
     double* ush = lush + NSH;
@@ -745,14 +740,14 @@ void quadrotor_acados_create_7_set_nlp_out(quadrotor_solver_capsule* capsule)
 
     // initialize with x0
     
-    x0[0] = -0.7145532840637573;
-    x0[1] = 0.21411134657553124;
-    x0[2] = 0.6587754708648138;
-    x0[3] = 0.0979020658012622;
-    x0[4] = -0.6413003820068262;
-    x0[5] = 0.3439163067606834;
-    x0[6] = -0.4320338317870376;
-    x0[7] = -2.5256503485946853;
+    x0[0] = 0.606652981720736;
+    x0[1] = -0.7473258671419708;
+    x0[2] = 0.22654169773347735;
+    x0[3] = -0.14884578347361943;
+    x0[4] = -0.4576805369595171;
+    x0[5] = -0.5781854373032868;
+    x0[6] = 0.2223814332335634;
+    x0[7] = 1.3760439397662612;
 
 
     double* u0 = xu0 + NX;
