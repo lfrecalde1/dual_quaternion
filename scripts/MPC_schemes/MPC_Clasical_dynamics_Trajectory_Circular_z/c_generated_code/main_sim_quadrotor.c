@@ -81,16 +81,16 @@ int main()
     x_current[12] = 0.0;
 
   
-    x_current[0] = 0;
-    x_current[1] = 0;
-    x_current[2] = 0;
+    x_current[0] = 2.9669740864543;
+    x_current[1] = -3.2528881104016305;
+    x_current[2] = 2.424528344995589;
     x_current[3] = 0;
     x_current[4] = 0;
     x_current[5] = 0;
-    x_current[6] = 1;
-    x_current[7] = 0;
-    x_current[8] = 0;
-    x_current[9] = 0;
+    x_current[6] = -0.0330375479897632;
+    x_current[7] = -0.03818837315813863;
+    x_current[8] = -0.8689082441178443;
+    x_current[9] = 0.4923907309062627;
     x_current[10] = 0;
     x_current[11] = 0;
     x_current[12] = 0;

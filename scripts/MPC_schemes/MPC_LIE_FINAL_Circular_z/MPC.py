@@ -422,7 +422,7 @@ if __name__ == '__main__':
         #a_max = np.array([1 ,2, 3, 4])*0.3
         #v_max = np.array([1, 1.5, 2, 2.5, 3, 3.5, 4])*1
 
-        a_max = np.array([1, 2, 3, 4, 5, 6, 7, 8])*0.3
+        a_max = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])*0.3
         v_max = np.array([1])*1
 
         # Use itertools.product to get all possible combinations

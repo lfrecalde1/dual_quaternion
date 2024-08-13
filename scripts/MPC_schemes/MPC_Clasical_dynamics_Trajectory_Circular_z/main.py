@@ -367,7 +367,7 @@ if __name__ == '__main__':
         #a_max = np.array([1 ,2, 3, 4])*0.3
         #v_max = np.array([1, 1.5, 2, 2.5, 3, 3.5, 4])*1
 
-        a_max = np.array([1, 2, 3, 4, 5, 6, 7, 8])*0.3
+        a_max = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])*0.3
         v_max = np.array([1])*1
 
         max_position = 4
@@ -385,11 +385,11 @@ if __name__ == '__main__':
 
         for i_random in range(number_experiments):
             # Reference States
-            pos_0 = np.array([0, 0, 0])
+            #pos_0 = np.array([0, 0, 0])
             #pos_0 = np.array([hd[0,0], hd[1, 0], hd[2, 0]])
 
             # Random Initial positions
-            #pos_0 = np.array([ramdon_positions[i_random, 0], ramdon_positions[i_random, 1], ramdon_positions[i_random, 2]])
+            pos_0 = np.array([ramdon_positions[i_random, 0], ramdon_positions[i_random, 1], ramdon_positions[i_random, 2]])
             vel_0 = np.array([0.0, 0.0, 0.0], dtype=np.double)
             omega_0 = np.array([0.0, 0.0, 0.0], dtype=np.double)
             #vel_0 = np.array([hd_d[0, 0], hd_d[1, 0], hd_d[2, 0]], dtype=np.double)
@@ -398,11 +398,11 @@ if __name__ == '__main__':
             # Fixed Initial Conditions
             theta_0 = 0.0
             n_0 = np.array([0.0, 0.0, 1.0])
-            quat_0 = np.hstack([np.cos(theta_0 / 2), np.sin(theta_0 / 2) * np.array(n_0)])
+            #quat_0 = np.hstack([np.cos(theta_0 / 2), np.sin(theta_0 / 2) * np.array(n_0)])
             #quat_0 = np.hstack([qd[0,0], qd[1, 0], qd[2, 0], qd[3, 0]])
 
             # Random initial conditions
-            #quat_0 = np.array([ramdon_quaternions[i_random, 3], ramdon_quaternions[i_random, 0], ramdon_quaternions[i_random, 1], ramdon_quaternions[i_random, 2]])
+            quat_0 = np.array([ramdon_quaternions[i_random, 3], ramdon_quaternions[i_random, 0], ramdon_quaternions[i_random, 1], ramdon_quaternions[i_random, 2]])
             x = np.hstack((pos_0, vel_0, quat_0, omega_0))
             x_aux = np.hstack((pos_0, quat_0, omega_0, vel_0))
             X_total.append(x)

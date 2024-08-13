@@ -2,7 +2,7 @@
 %% Clean variables
 clc, clear all, close all;
 %% Times Trajectory
-t_init_trajectory =7;
+t_init_trajectory =4;
 t_final_trajectory = 20;
 
 %% Trajectory
@@ -58,9 +58,9 @@ H = H_f - H_i;
 figure;
 hold on;
 for i = 1:N
-    t = linspace(time(i), time(i + 1), 100);
+    t = (time(i): 0.05:time(i + 1));
     if i == 1
-        idx = (i - 1) * numCoeff + 1:i * numCoeff;
+        idx = (i - 1) * numCoeff + 1:i * numCoeff
         px = coeff_x(idx)' * position_time(t);
     else
         px = zi*cos(w_d*t);
@@ -76,7 +76,7 @@ hold off;
 figure;
 hold on;
 for i = 1:N
-    t = linspace(time(i), time(i + 1), 100);
+    t = (time(i): 0.05:time(i + 1));
     if i == 1
         idx = (i - 1) * numCoeff + 1:i * numCoeff;
         vx = coeff_x(idx)' * velocity_time(t);
@@ -94,7 +94,7 @@ hold off;
 figure;
 hold on;
 for i = 1:N
-    t = linspace(time(i), time(i + 1), 100);
+    t = (time(i): 0.05:time(i + 1));
     if i == 1
         idx = (i - 1) * numCoeff + 1:i * numCoeff;
         ax = coeff_x(idx)' * acceleration_time(t);
@@ -113,7 +113,7 @@ hold off;
 figure;
 hold on;
 for i = 1:N
-    t = linspace(time(i), time(i + 1), 100);
+    t = (time(i): 0.05:time(i + 1));
     if i == 1
         idx = (i - 1) * numCoeff + 1:i * numCoeff;
         jx = coeff_x(idx)' * jerk_time(t);
@@ -132,7 +132,7 @@ hold off;
 figure;
 hold on;
 for i = 1:N
-    t = linspace(time(i), time(i + 1), 100);
+    t = (time(i): 0.05:time(i + 1));
     if i == 1
         idx = (i - 1) * numCoeff + 1:i * numCoeff;
         sx = coeff_x(idx)' * snap_time(t);
