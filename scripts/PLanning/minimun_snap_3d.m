@@ -4,23 +4,23 @@
 clc, clear all, close all;
 
 %% Times Trajectory
-t_s = 0.05;
+t_s = 0.01;
 t_f = 20;
 t = (0:t_s:t_f);
 
-t_init_trajectory = t(50);
+t_init_trajectory = t(260);
 t_final_trajectory = t(end);
 
 %% Time allocation for the two waypoints
 time = [0, t_init_trajectory, t_final_trajectory];
 
 %% Initial State
-x_init = [0;0;5];
-N = 2;
+x_init = [0;0;0];
+
 
 %% b vector inital point over trajectory and initial states of the system
 zi = 2;
-w_d = 3;
+w_d = 2;
 [b, b_final_trajectory] = trajectory_3d_init_final(zi, w_d, x_init, time(2), time(3));
 
 %% Matrix A

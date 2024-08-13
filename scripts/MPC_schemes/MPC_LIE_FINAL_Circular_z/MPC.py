@@ -11,7 +11,7 @@ from ode_acados import dualquat_trans_casadi, dualquat_quat_casadi, rotation_cas
 from ode_acados import f_rk4_casadi_simple, noise, cost_quaternion_casadi, cost_translation_casadi
 from ode_acados import error_dual_aux_casadi
 from nmpc_acados import create_ocp_solver
-from ode_acados import compute_flatness_states
+from ode_acados import compute_flatness_states, trajectory
 from acados_template import AcadosOcpSolver, AcadosSimSolver
 import scipy.io
 from scipy.io import savemat
@@ -153,6 +153,7 @@ def main(odom_pub_1, odom_pub_2, L, x0, v_max, a_max, n, initial):
 
     # Desired Trajectory
     #hd, hd_d, qd, w_d, f_d, M_d = compute_reference(t, sample_time, v_max, a_max, n, L)
+    #hd, hd_d, hd_dd, hd_ddd, hd_dddd, theta, theta_d, theta_dd = trajectory(t, 2, (initial +1)*0.5)
     hd, hd_d, qd, w_d, f_d, M_d = compute_flatness_states(t, L,  2, (initial + 1)*0.5)
 
     dual_1_d = dualquat_from_pose(qw1_d, qx1_d, qy1_d,  qz1_d, tx1_d, ty1_d, tz1_d)
