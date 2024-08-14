@@ -55,7 +55,7 @@ j_init_new = [x_ddd;y_ddd;z_ddd];
 s_init_new = [x_dddd;y_dddd;z_dddd];
 
 [b] = trajectory_3d_init_final(zi, w_d, x_init, v_init, a_init, j_init, s_init, time(2));
-
+. 
 [b1] = trajectory_3d_init_final_aux(zi, w_d, x_init_new, v_init_new, a_init_new, j_init_new, s_init_new, 0);
 
 %% Matrix A

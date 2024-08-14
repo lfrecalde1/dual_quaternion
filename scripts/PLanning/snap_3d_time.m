@@ -13,10 +13,8 @@ t_s = 0.05;
 t_f = 30;
 t = (0:t_s:t_f);
 
-
-
 %% Initial State
-x_init = [10;10;10];
+x_init = [0;0;0];
 
 %% b vector inital point over trajectory and initial states of the system
 zi = 2;
@@ -44,9 +42,6 @@ objective = coeff_x(:)' * H * coeff_x(:) + lambda * t_1_expr;
 a_max = 2.0;  % Maximum acceleration in m/s^2 (adjust as needed)
 a_min = -2.0;  % Minimum acceleration in m/s^2 (adjust as needed)
 
-constraints_aux1 = coeff_x(1:10,1)'*acceleration_time(t_1_expr) - a_max;
-constraints_aux2 = -coeff_x(1:10,1)'*acceleration_time(t_1_expr) + a_min;
-constraints_aux = [constraints_aux1; constraints_aux2];
 % Define the equality constraints
 constraints_eq = A * coeff_x(:) - b;
 
