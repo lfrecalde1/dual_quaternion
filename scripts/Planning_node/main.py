@@ -3,10 +3,7 @@ import rospy
 import numpy as np
 import matplotlib.pyplot as plt
 from nav_msgs.msg import Odometry
-from ode_acados import trajectory, compute_b, position_time, velocity_time, acceleration_time, jerk_time, snap_time, A_matrix, H_matrix
-from ode_acados import trajectory_3d, trajectory_3d_init_phase, minimum_snap_planning, compute_flatness_states
-from fancy_plots import fancy_plots_3, fancy_plots_4, fancy_plots_1
-from fancy_plots import plot_states_position, plot_states_velocity_reference, plot_states_acceleration_reference, plot_states_quaternion
+from ode_acados import trajectory, quadratic_program
 import os
 script_dir = os.path.dirname(__file__)
 #folder_path = os.path.join(script_dir, 'cost_with_velocities/')
@@ -58,13 +55,15 @@ def main(L):
 
     ##  Compute array with time
     traj_flight_time = np.array([t_inital[0], t_trajectory[0], t_final[0]], dtype=np.double)
-    print(traj_flight_time)
 
     ## Init and final of the trajectory
     zi = 2
     w_c = 2
     r_init, r_d_init, r_dd_init, r_ddd_init, r_dddd_init, _, _, _ = trajectory(t_inital, zi, w_c)
+    h_init = np.array([r_init[0,0], r_d_init[0, 0], r_dd_init[0, 0], r_ddd_init[0, 0], r_dddd_init[0, 0]])
+
     r_final, r_d_final, r_dd_final, r_ddd_final, r_dddd_final, _, _, _ = trajectory(t_trajectory, zi, w_c)
+    h_final = np.array([r_final[0,0], r_d_final[0, 0], r_dd_final[0, 0], r_ddd_final[0, 0], r_dddd_final[0, 0]])
 
     # Time defintion aux variable
     t_stable = np.arange(0, 2 + sample_time, sample_time)
@@ -96,6 +95,18 @@ def main(L):
     number_points = 1/sample_time
     number_polynomial = 9
     number_coeff = number_polynomial + 1
+
+    ## Time trajectory auxiliar variable
+    t_trajectory_values  = np.arange(traj_flight_time[0], traj_flight_time[1] + traj_flight_time[0], sample_time)
+
+    ## Coeff
+    x = quadratic_program(traj_flight_time, waypoints_1, h_init, h_final)
+    print(x)
+
+
+
+
+
 
 if __name__ == '__main__':
     try:

@@ -1,7 +1,7 @@
 {
     "acados_include_path": "/home/fer/acados/include",
     "acados_lib_path": "/home/fer/acados/lib",
-    "code_export_directory": "/home/fer/dual_ws/src/dual_quaternion/scripts/MPC_schemes/MPC_LIE_FINAL_Circular_z/c_generated_code",
+    "code_export_directory": "/home/fer/dual_ws/src/dual_quaternion/scripts/MPC_LIE_FINAL/c_generated_code",
     "constraints": {
         "C": [],
         "C_e": [],

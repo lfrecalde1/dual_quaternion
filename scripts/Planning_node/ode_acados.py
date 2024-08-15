@@ -2,6 +2,7 @@ import numpy as np
 import casadi as ca
 from scipy.spatial.transform import Rotation as R
 from scipy.linalg import expm
+from scipy.linalg import block_diag
 from scipy import sparse
 import osqp
 
@@ -361,6 +362,154 @@ def A_matrix(t_init, t_final):
     A = sparse.block_diag([Ax, Ax, Ax], format='csc')
     
     return A
+def A(t):
+    ## Compute Values For matrix A
+    ## Equality position and final velocities, accelerations and jerks
+    A_zeros_data = A_zeros()
+    A_zeros_aux_data = A_zeros_aux()
+    A_t_1 = A_aux(t[0])
+    A_t_2 = A_aux(t[1])
+    A_t_3 = A_aux(t[2])
+    A_init = A_start()
+    A_med_velocities = A_med()
+    A_pos = position_time(0.0).T
+
+    # Equality velicties accelerations final first segment
+    A_vel_eq_1 = velocity_time(t[0]).T
+    A_acc_eq_1 = acceleration_time(t[0]).T
+    A_jerk_eq_1 = jerk_time(t[0]).T
+    A_snap_eq_1 = snap_time(t[0]).T
+
+    # Equality velicties accelerations final second segment
+    A_vel_eq_2 = velocity_time(t[1]).T
+    A_acc_eq_2 = acceleration_time(t[1]).T
+    A_jerk_eq_2 = jerk_time(t[1]).T
+    A_snap_eq_2 = snap_time(t[1]).T
+
+    # Equality velicties accelerations init third segment
+    A_vel_eq_3 = velocity_time(0).T
+    A_acc_eq_3 = acceleration_time(0).T
+    A_jerk_eq_3 = jerk_time(0).T
+    A_snap_eq_3 = snap_time(0).T
+
+    A = np.block([
+        [A_init, A_zeros_data, A_zeros_data],
+        [A_t_1, A_med_velocities, A_zeros_data],
+        [A_zeros_data, A_t_2, A_med_velocities],
+        [A_zeros_data, A_zeros_data, A_t_3],
+        [A_zeros_aux_data, A_pos, A_zeros_aux_data],
+        [A_zeros_aux_data, A_zeros_aux_data, A_pos],
+        [A_vel_eq_1, A_zeros_aux_data, A_zeros_aux_data],
+        [A_acc_eq_1, A_zeros_aux_data, A_zeros_aux_data],
+        [A_jerk_eq_1, A_zeros_aux_data, A_zeros_aux_data],
+        [A_snap_eq_1, A_zeros_aux_data, A_zeros_aux_data],
+        [A_zeros_aux_data, A_vel_eq_2, A_zeros_aux_data],
+        [A_zeros_aux_data, A_acc_eq_2, A_zeros_aux_data],
+        [A_zeros_aux_data, A_jerk_eq_2, A_zeros_aux_data],
+        [A_zeros_aux_data, A_snap_eq_2, A_zeros_aux_data],
+        [A_zeros_aux_data, A_zeros_aux_data, A_vel_eq_3],
+        [A_zeros_aux_data, A_zeros_aux_data, A_acc_eq_3],
+        [A_zeros_aux_data, A_zeros_aux_data, A_jerk_eq_3],
+        [A_zeros_aux_data, A_zeros_aux_data, A_snap_eq_3]
+    ])
+
+    return A
+def B(points, h_init, h_final):
+    b_1 = np.array([points[0], 0, 0, 0, 0])
+    b_2 = np.array([points[1], 0, 0, 0, 0])
+    b_3 = np.array([points[2], 0, 0, 0, 0])
+    b_4 = np.array([points[3], 0, 0, 0, 0])
+    # Define the vector b_5
+    b_5 = np.array([points[1], points[2]])
+
+    b_first = np.array([h_init[1], h_init[2], h_init[3], h_init[4]]);
+    b_second = np.array([h_final[1], h_final[2], h_final[3], h_final[4]]);
+    b_third = b_second
+    b = np.concatenate((b_1, b_2, b_3, b_4, b_5, b_first, b_second, b_third))
+    return b
+
+def H(t):
+    print(t)
+    H_f_1 = hessian_cost(t[0])
+    H_f_2 = hessian_cost(t[1])
+    H_f_3 = hessian_cost(t[2])
+    H_i = hessian_cost(0.0)
+
+    H1 = H_f_1 - H_i
+    H2 = H_f_2 - H_i
+    H3 = H_f_3 - H_i
+
+    H = block_diag(H1, H2, H3)
+    return H
+
+def quadratic_program(t, waypoints, h_init, h_final):
+    A_data = A(t)
+    b_data = B(waypoints, h_init, h_final)
+    H_data = H(t)
+    P = sparse.csc_matrix(H_data)  # Quadratic term
+    q = np.zeros((A_data.shape[1]))  # Linear term
+
+    # Equality constraint: A_eq * x = b_eq
+    A_eq = sparse.csc_matrix(A_data)  # Equality constraint matrix
+    b_eq = np.array(b_data)  # Equality constraint vector
+
+    # Create an OSQP object
+    prob = osqp.OSQP()
+
+    # Setup the problem in OSQP format
+    prob.setup(P, q, A_eq, b_eq, b_eq, verbose=False)
+
+    # Solve the problem
+    res = prob.solve()
+    return res.x
+
+def A_aux(t_final):
+    
+    # Construct the Ax matrix
+    A = np.vstack([
+        position_time(t_final).T,
+        velocity_time(t_final).T,
+        acceleration_time(t_final).T,
+        jerk_time(t_final).T,
+        snap_time(t_final).T
+    ])
+    return A
+
+def A_zeros():
+    # Construct the Ax matrix
+    A = np.zeros((5, 10), dtype=np.double)
+    return A
+
+def A_zeros_aux():
+    # Construct the Ax matrix
+    A = np.zeros((1, 10), dtype=np.double)
+    return A
+
+def A_start():
+    # Construct the matrix A
+    A = np.array([
+        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 2, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 6, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 24, 0, 0, 0, 0, 0]
+    ])
+    
+    # Return the constructed matrix A
+    return A
+
+def A_med():
+    # Construct the matrix A
+    A = np.array([
+        [0,  0,  0,  0,  0,  0,  0,  0,  0,  0],
+        [0, -1,  0,  0,  0,  0,  0,  0,  0,  0],
+        [0,  0, -2,  0,  0,  0,  0,  0,  0,  0],
+        [0,  0,  0, -6,  0,  0,  0,  0,  0,  0],
+        [0,  0,  0,  0, -24, 0,  0,  0,  0,  0]
+    ])
+    
+    # Return the constructed matrix A
+    return A
 
 def hessian_cost(t):
     H = np.array([
@@ -375,7 +524,6 @@ def hessian_cost(t):
         [0, 0, 0, 0, 0,   201600*t**4,   967680*t**5,  2822400*t**6,   6451200*t**7,   12700800*t**8],
         [0, 0, 0, 0, 0,   362880*t**5,  1814400*t**6,  5443200*t**7,  12700800*t**8,   25401600*t**9]
     ])
-    
     return H
 
 
