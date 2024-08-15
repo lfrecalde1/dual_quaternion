@@ -49,11 +49,24 @@ def main(L):
     g = L[4]
 
     # Sample Time Defintion
-    sample_time = 0.05
-    t_f = 10
+    sample_time = 0.01
+
+    ## Define time for each segment
+    t_inital = np.array([2])
+    t_trajectory = np.array([10])
+    t_final = np.array([2])
+
+    ##  Compute array with time
+    traj_flight_time = np.array([t_inital[0], t_trajectory[0], t_final[0]], dtype=np.double)
+    print(traj_flight_time)
+
+    ## Init and final of the trajectory
+    zi = 2
+    w_c = 2
+    r_init, r_d_init, r_dd_init, r_ddd_init, r_dddd_init, _, _, _ = trajectory(t_inital, zi, w_c)
+    r_final, r_d_final, r_dd_final, r_ddd_final, r_dddd_final, _, _, _ = trajectory(t_trajectory, zi, w_c)
 
     # Time defintion aux variable
-    t = np.arange(0, t_f + sample_time, sample_time)
     t_stable = np.arange(0, 2 + sample_time, sample_time)
 
     # Frequency of the simulation
@@ -75,32 +88,14 @@ def main(L):
         delta_t = toc_solver
         rospy.loginfo("Init System " + str(delta_t))
 
-    # Compute PLanning Section
-    zi = 2
-    w_c =2
-    h, h_d, q, w, f, M = compute_flatness_states(t, L, zi, w_c, x, sample_time)
+    # Compute PLanning Section Manually
+    waypoints_1 = np.array([x[0], r_init[0, 0], r_final[0, 0], x[0]])
+    traj_size = waypoints_1.shape[0] - 1
 
-    ## Publishing Data
-    for k in range(0, t.shape[0]):
-        tic = rospy.get_time()
-
-        # run time
-        loop_rate.sleep()
-        toc_solver = rospy.get_time() - tic
-        delta_t = toc_solver
-
-        rospy.loginfo(message_ros + str(delta_t))
-
-    fig11, ax11, ax21, ax31 = fancy_plots_3()
-    plot_states_position(fig11, ax11, ax21, ax31, h[0:3, :], h[0:3, :], t, "Position of the System "+ str(initial), folder_path)
-
-    # Linear Velocities Inertial frame
-    fig12, ax12, ax22, ax32 = fancy_plots_3()
-    plot_states_velocity_reference(fig12, ax12, ax22, ax32, h_d[0:3, :], h_d[0:3, :], t, "Linear Velocity of the System and Reference "+ str(initial), folder_path)
-
-    # Quaternions Body Frame
-    fig13, ax13, ax23, ax33, ax43 = fancy_plots_4()
-    plot_states_quaternion(fig13, ax13, ax23, ax33, ax43, q, q, t, "Quaternions of the System "+ str(initial), folder_path)
+    # Number Point over trajectory and polynomials
+    number_points = 1/sample_time
+    number_polynomial = 9
+    number_coeff = number_polynomial + 1
 
 if __name__ == '__main__':
     try:

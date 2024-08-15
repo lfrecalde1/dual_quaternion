@@ -2,7 +2,7 @@
 clc, clear all, close all;
 
 %% Define waypoints along the x-axis
-waypoints_1 = [0.0; 2; 0; 2];
+waypoints_1 = [0.0; 2; 2; 0];
 traj_size = size(waypoints_1, 1) -1;
 ts = 0.01;
 
@@ -11,9 +11,9 @@ number_poly = 9;
 number_coeff = number_poly + 1;
 
 %% Define time for ecah segment
-traj_flight_times(1) = 1;
-traj_flight_times(2) = 0.5;
-traj_flight_times(3) = 1;
+traj_flight_times(1) = 2;
+traj_flight_times(2) = 10;
+traj_flight_times(3) = 2;
 
 traj_flight_times_aux(1) = 0.0;
 traj_flight_times_aux(2) = traj_flight_times(1);

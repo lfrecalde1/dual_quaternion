@@ -2,7 +2,7 @@
 clc, clear all, close all;
 
 %% Define waypoints along the x-axis
-waypoints_1 = [0.0; 2; 0; 2];
+waypoints_1 = [0.0; 2; 2; 0];
 traj_size = size(waypoints_1, 1) -1;
 ts = 0.01;
 
@@ -12,7 +12,7 @@ number_coeff = number_poly + 1;
 
 %% Define time for each segment
 traj_flight_times(1) = 2;
-traj_flight_times(2) = 1;
+traj_flight_times(2) = 20;
 traj_flight_times(3) = 2;
 
 traj_flight_times_aux(1) = 0.0;
@@ -53,6 +53,16 @@ A_snap_equality_2 = snap_time(traj_flight_times(2))';
 %% Final desired velocities first segment
 b_second = [0;0;0;0];
 
+%% Constraints velocity acceleration jerk and snap final second segment
+A_vel_equality_3 = velocity_time(0)';
+A_acc_equality_3 = acceleration_time(0)';
+A_jerk_equality_3 = jerk_time(0)';
+A_snap_equality_3 = snap_time(0)';
+
+%% Final desired velocities first segment
+b_third = b_second;
+
+
 %% Matrix A
 A = [A_init, A_zeros, A_zeros;...
      A_t_1, A_med_aux, A_zeros;...
@@ -67,7 +77,11 @@ A = [A_init, A_zeros, A_zeros;...
      A_zeros_aux, A_vel_equality_2, A_zeros_aux;...
      A_zeros_aux, A_acc_equality_2, A_zeros_aux;...
      A_zeros_aux, A_jerk_equality_2, A_zeros_aux;...
-     A_zeros_aux, A_snap_equality_2, A_zeros_aux];
+     A_zeros_aux, A_snap_equality_2, A_zeros_aux;...
+     A_zeros_aux,  A_zeros_aux, A_vel_equality_3;...
+     A_zeros_aux,  A_zeros_aux, A_acc_equality_3;...
+     A_zeros_aux, A_zeros_aux, A_jerk_equality_3;...
+     A_zeros_aux,  A_zeros_aux, A_snap_equality_3];
 
 %% Positions, velocities and accelerations
 b_1 = [waypoints_1(1);0;0;0;0];
@@ -76,7 +90,7 @@ b_3 = [waypoints_1(3);0;0;0;0];
 b_4 = [waypoints_1(4);0;0;0;0];
 b_5 = [waypoints_1(2);waypoints_1(3)];
 % 
-b =[b_1; b_2; b_3; b_4; b_5; b_first; b_second];
+b =[b_1; b_2; b_3; b_4; b_5; b_first; b_second; b_third];
 % 
 % %% Hessian
 H_f_1 = hessian_cost(traj_flight_times(1));

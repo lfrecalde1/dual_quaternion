@@ -1,8 +1,16 @@
 %% Clean variables
 clc, clear all, close all;
 
+%% Define time for each segment
+traj_flight_times(1) = 2;
+traj_flight_times(2) = 10;
+traj_flight_times(3) = 2;
+
 %% Define waypoints along the x-axis
-waypoints_1 = [0.0; 2; 0; 2];
+[h_init] = trajectory_time(traj_flight_times(1));
+[h_final] = trajectory_time(traj_flight_times(2)+traj_flight_times(1));
+
+waypoints_1 = [0.0; h_init(1); h_final(1); 0];
 traj_size = size(waypoints_1, 1) -1;
 ts = 0.01;
 
@@ -10,16 +18,12 @@ number_points = 1/ts;
 number_poly = 9;
 number_coeff = number_poly + 1;
 
-%% Define time for ecah segment
-traj_flight_times(1) = 1;
-traj_flight_times(2) = 0.5;
-traj_flight_times(3) = 1;
-
+t_trajectory = (traj_flight_times(1):ts:traj_flight_times(2) + traj_flight_times(1)-ts);
+%% Auxiliary variable time
 traj_flight_times_aux(1) = 0.0;
 traj_flight_times_aux(2) = traj_flight_times(1);
 traj_flight_times_aux(3) = traj_flight_times(2);
 traj_flight_times_aux(4) = traj_flight_times(3);
-
 
 for k=1:length(traj_flight_times_aux)
     aux_time(k) = sum(traj_flight_times_aux(1:k));
@@ -42,16 +46,26 @@ A_jerk_equality_1 = jerk_time(traj_flight_times(1))';
 A_snap_equality_1 = snap_time(traj_flight_times(1))';
 
 %% Final desired velocities first segment
-b_first = [0;0;0;0];
+b_first = [h_init(2);h_init(3);h_init(4);h_init(5)];
 
-%% Constraints velocity acceleration jerk and snap init second segment
-A_vel_equality_2 = velocity_time(traj_flight_times(1))';
-A_acc_equality_1 = acceleration_time(traj_flight_times(1))';
-A_jerk_equality_1 = jerk_time(traj_flight_times(1))';
-A_snap_equality_1 = snap_time(traj_flight_times(1))';
+%% Constraints velocity acceleration jerk and snap final second segment
+A_vel_equality_2 = velocity_time(traj_flight_times(2))';
+A_acc_equality_2 = acceleration_time(traj_flight_times(2))';
+A_jerk_equality_2 = jerk_time(traj_flight_times(2))';
+A_snap_equality_2 = snap_time(traj_flight_times(2))';
 
 %% Final desired velocities first segment
-b_first = [0;0;0;0];
+b_second = [h_final(2);h_final(3);h_final(4);h_final(5)];
+
+%% Constraints velocity acceleration jerk and snap final second segment
+A_vel_equality_3 = velocity_time(0)';
+A_acc_equality_3 = acceleration_time(0)';
+A_jerk_equality_3 = jerk_time(0)';
+A_snap_equality_3 = snap_time(0)';
+
+%% Final desired velocities first segment
+b_third = b_second;
+
 
 %% Matrix A
 A = [A_init, A_zeros, A_zeros;...
@@ -63,7 +77,15 @@ A = [A_init, A_zeros, A_zeros;...
      A_vel_equality_1, A_zeros_aux, A_zeros_aux;...
      A_acc_equality_1, A_zeros_aux, A_zeros_aux;...
      A_jerk_equality_1, A_zeros_aux, A_zeros_aux;...
-     A_snap_equality_1, A_zeros_aux, A_zeros_aux];
+     A_snap_equality_1, A_zeros_aux, A_zeros_aux;...
+     A_zeros_aux, A_vel_equality_2, A_zeros_aux;...
+     A_zeros_aux, A_acc_equality_2, A_zeros_aux;...
+     A_zeros_aux, A_jerk_equality_2, A_zeros_aux;...
+     A_zeros_aux, A_snap_equality_2, A_zeros_aux;...
+     A_zeros_aux,  A_zeros_aux, A_vel_equality_3;...
+     A_zeros_aux,  A_zeros_aux, A_acc_equality_3;...
+     A_zeros_aux, A_zeros_aux, A_jerk_equality_3;...
+     A_zeros_aux,  A_zeros_aux, A_snap_equality_3];
 
 %% Positions, velocities and accelerations
 b_1 = [waypoints_1(1);0;0;0;0];
@@ -72,7 +94,7 @@ b_3 = [waypoints_1(3);0;0;0;0];
 b_4 = [waypoints_1(4);0;0;0;0];
 b_5 = [waypoints_1(2);waypoints_1(3)];
 % 
-b =[b_1; b_2; b_3; b_4; b_5; b_first];
+b =[b_1; b_2; b_3; b_4; b_5; b_first; b_second; b_third];
 % 
 % %% Hessian
 H_f_1 = hessian_cost(traj_flight_times(1));
@@ -86,23 +108,32 @@ H3 = H_f_3 - H_i;
 H = blkdiag(H1, H2, H3);
 
 traj_polys = quadprog(H, [], [], [], A, b);
-coeff = reshape(traj_polys, number_coeff, traj_size)'   
+coeff = reshape(traj_polys, number_coeff, traj_size)';
 % 
 index = 0;
 %% PLot results
 
 for k=1:traj_size
-    plot_time = traj_flight_times(k)*number_points;
+    plot_time = traj_flight_times(k)*number_points
     time_step = traj_flight_times(k)/plot_time;
-
-    for j=1:plot_time
-        position(index + j) = coeff(k, :)*position_time((j - 1)*time_step);
-        position_aux(k, index + j) = coeff(k, :)*position_time((j - 1)*time_step);
-        velocity(index + j) = coeff(k, :)*velocity_time((j - 1)*time_step);
-        acceleration(index + j) = coeff(k, :)*acceleration_time((j - 1)*time_step);
-        jerk(index + j) = coeff(k, :)*jerk_time((j - 1)*time_step);
-        snap(index + j) = coeff(k, :)*snap_time((j - 1)*time_step);
-        time_data(index + j) =  (index + j - 1)*time_step;
+    if k ~= 2
+        for j=1:plot_time
+            position(index + j) = coeff(k, :)*position_time((j - 1)*time_step);
+            velocity(index + j) = coeff(k, :)*velocity_time((j - 1)*time_step);
+            acceleration(index + j) = coeff(k, :)*acceleration_time((j - 1)*time_step);
+            jerk(index + j) = coeff(k, :)*jerk_time((j - 1)*time_step);
+            snap(index + j) = coeff(k, :)*snap_time((j - 1)*time_step);
+        end
+    else
+       
+        for j=1:length(t_trajectory)
+            h = trajectory_time(t_trajectory(j));
+            position(index + j) = h(1);
+            velocity(index + j) = h(2);
+            acceleration(index + j) = h(3);
+            jerk(index + j) = h(4);
+            snap(index + j) = h(5);
+        end
     end
 
     index = index + plot_time;

@@ -15,6 +15,8 @@ from ode_acados import compute_flatness_states, trajectory
 from acados_template import AcadosOcpSolver, AcadosSimSolver
 import scipy.io
 from scipy.io import savemat
+from geometry_msgs.msg import Point
+from visualization_msgs.msg import Marker
 
 
 # Creating Funtions based on Casadi
@@ -64,7 +66,41 @@ def send_odometry(odom_msg, odom_pub):
     odom_pub.publish(odom_msg)
     return None
 
-def main(odom_pub_1, odom_pub_2, L, x0, v_max, a_max, n, initial):
+def init_marker(marker_msg, x):
+    marker_msg.header.frame_id = "world"
+    marker_msg.header.stamp = rospy.Time.now()
+    marker_msg.ns = "trajectory"
+    marker_msg.id = 0
+    marker_msg.type = Marker.LINE_STRIP
+    marker_msg.action = Marker.ADD
+    marker_msg.pose.orientation.w = 1.0
+    marker_msg.scale.x = 0.02  # Line width
+    marker_msg.color.a = 1.0  # Alpha
+    marker_msg.color.r = 0.0  # Red
+    marker_msg.color.g = 1.0  # Green
+    marker_msg.color.b = 0.0  # Blue
+    point = Point()
+    point.x = x[0]
+    point.y = x[1]
+    point.z = x[2]
+    points = [point]
+    marker_msg.points = points
+    return marker_msg, points
+
+def send_marker(marker_msg, points, publisher, x):
+    marker_msg.header.stamp = rospy.Time.now()
+    marker_msg.type = Marker.LINE_STRIP
+    marker_msg.action = Marker.ADD
+    point = Point()
+    point.x = x[0]
+    point.y = x[1]
+    point.z = x[2]
+    points.append(point)
+    marker_msg.points = points
+    publisher.publish(marker_msg)
+    return marker_msg, points
+
+def main(odom_pub_1, odom_pub_2, trajec_pub, L, x0, v_max, a_max, n, initial):
     # Split Values
     m = L[0]
     g = L[4]
@@ -200,6 +236,9 @@ def main(odom_pub_1, odom_pub_2, L, x0, v_max, a_max, n, initial):
     quat_1_d_msg = get_odometry(quat_1_d_msg, X_d[0:8, 0], 'quat_1_d')
     send_odometry(quat_1_d_msg, odom_pub_2)
 
+    marker_msg = Marker()
+    marker_msg, points = init_marker(marker_msg, hd[:, 0])
+
     # Optimization problem
     ocp = create_ocp_solver(X[:, 0], N_prediction, t_N, F_max, F_min, tau_1_max, tau_1_min, tau_2_max, tau_2_min, tau_3_max, taux_3_min, L, sample_time)
     #acados_ocp_solver = AcadosOcpSolver(ocp, json_file="acados_ocp_" + ocp.model.name + ".json", build= True, generate= True)
@@ -270,6 +309,7 @@ def main(odom_pub_1, odom_pub_2, L, x0, v_max, a_max, n, initial):
     # Simulation loop
     for k in range(0, t.shape[0] - N_prediction):
         tic = rospy.get_time()
+        marker_msg, points = send_marker(marker_msg, points, trajec_pub, hd[0:, k])
 #
         white_noise = np.random.multivariate_normal(np.zeros(12),uav_white_noise_cov)
 
@@ -391,6 +431,9 @@ if __name__ == '__main__':
 
         odomety_topic_2 = "/" + "dual_2" + "/odom"
         odometry_publisher_2 = rospy.Publisher(odomety_topic_2, Odometry, queue_size = 10)
+
+        trajectory_topic = "/" + "ref"
+        trajectory_publisher = rospy.Publisher(trajectory_topic, Marker, queue_size = 10)
         # Dynamics Parameters
         m = 1                                                                             
         Jxx = 2.64e-3
@@ -428,7 +471,7 @@ if __name__ == '__main__':
 
         # Multiple Experiments
         for k in range(x_0.shape[0]):
-            x, xref, F, M, orientation_cost, translation_cost, control_cost, t, N_prediction, kkt_values, sqp_iteration = main(odometry_publisher_1, odometry_publisher_2, L, x_0[k, :],  combinations[k, 0], combinations[k, 1], 1, k)
+            x, xref, F, M, orientation_cost, translation_cost, control_cost, t, N_prediction, kkt_values, sqp_iteration = main(odometry_publisher_1, odometry_publisher_2, trajectory_publisher, L, x_0[k, :],  combinations[k, 0], combinations[k, 1], 1, k)
             Data_States.append(x)
             Data_reference.append(xref)
             Data_F.append(F)
