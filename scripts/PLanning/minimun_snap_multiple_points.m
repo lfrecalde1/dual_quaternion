@@ -32,10 +32,6 @@ t_med1 = time(2);
 t_med2 = time(3);
 t_final = time(4);
 
-t_norm_init = 0;
-t_norm_med1 = (t_med1 - t_init) / (t_final - t_init);
-t_norm_med2 = (t_med2 - t_init) / (t_final - t_init);
-t_norm_final = 1;
 
 %% NUm coeff
 numCoeff = 10;
@@ -130,6 +126,21 @@ for i = 1:N
 end
 xlabel('Time');
 ylabel('px')
+grid on;
+title('Minimum Snap Trajectory between Two Waypoints');
+hold off;
+
+
+figure;
+hold on;
+for i = 1:N
+    t = linspace(time(i), time(i + 1), 100);
+    idx = (i - 1) * numCoeff + 1:i * numCoeff;
+    vx = coeff_x(idx)' * velocity_time(t);
+    plot(t, vx, 'b-', 'LineWidth', 1.5);
+end
+xlabel('Time');
+ylabel('vx')
 grid on;
 title('Minimum Snap Trajectory between Two Waypoints');
 hold off;
