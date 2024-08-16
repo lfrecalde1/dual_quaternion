@@ -9,6 +9,7 @@ from casadi import jacobian
 from acados_template import AcadosModel
 from scipy.spatial.transform import Rotation as R
 from scipy.linalg import expm
+from scipy.linalg import block_diag
 from scipy import sparse
 import osqp
 
@@ -722,7 +723,6 @@ def cost_translation_casadi():
     f_cost = Function('f_cost', [td, t], [cost])
     return f_cost
 
-
 def skew_matrix(x):
     a1 = x[0]
     a2 = x[1]
@@ -820,7 +820,7 @@ def trajectory(t, zi, w_c):
 
     return r, r_d, r_dd, r_ddd, r_dddd, theta, theta_d, theta_dd
 
-def compute_flatness_states(t, L,  zi, w_c, x, sample_time):
+def compute_flatness_states(L, x, t_initial, t_trajectory, t_final, sample_time, zi, w_c):
 
     # Drone Parameters
     m = L[0]
@@ -836,7 +836,7 @@ def compute_flatness_states(t, L,  zi, w_c, x, sample_time):
     Yw = np.array([[0.0], [1.0], [0.0]])
 
     #hd, hd_p, hd_pp, hd_ppp, hd_pppp, theta, theta_p, theta_pp = trajectory(t, zi, w_c)
-    hd, hd_p, hd_pp, hd_ppp, hd_pppp, theta, theta_p, theta_pp = minimum_snap_planning(x, zi, w_c, t, sample_time)
+    hd, hd_p, hd_pp, hd_ppp, hd_pppp, theta, theta_p, theta_pp, t = minimum_snap_final(t_initial, t_trajectory, t_final, sample_time, x, zi, w_c)
 
     # Empty vector for the internal values
     alpha =  np.zeros((3, hd.shape[1]), dtype=np.double)
@@ -954,7 +954,7 @@ def compute_flatness_states(t, L,  zi, w_c, x, sample_time):
         # Compute torque
         M[:, k] = aux_torque
         # Compute nominal force of the in the body frame
-    return hd, hd_pp, q, w, f, M
+    return hd, hd_p, q, w, f, M, t
 
 def compute_b(h_init, h, h_d, h_dd, h_ddd, h_dddd, index):
     # Split Values
@@ -1008,8 +1008,6 @@ def velocity_time(t):
     ])
     return vector
 
-import numpy as np
-
 def acceleration_time(t):
     t = np.array(t)  # Ensure t is a NumPy array
     vector = np.vstack([
@@ -1058,26 +1056,152 @@ def snap_time(t):
     ])
     return vector
 
-def A_matrix(t_init, t_final):
+def A(t):
+    ## Compute Values For matrix A
+    ## Equality position and final velocities, accelerations and jerks
+    A_zeros_data = A_zeros()
+    A_zeros_aux_data = A_zeros_aux()
+    A_t_1 = A_aux(t[0])
+    A_t_2 = A_aux(t[1])
+    A_t_3 = A_aux(t[2])
+    A_init = A_start()
+    A_med_velocities = A_med()
+    A_pos = position_time(0.0).T
+
+    # Equality velicties accelerations final first segment
+    A_vel_eq_1 = velocity_time(t[0]).T
+    A_acc_eq_1 = acceleration_time(t[0]).T
+    A_jerk_eq_1 = jerk_time(t[0]).T
+    A_snap_eq_1 = snap_time(t[0]).T
+
+    # Equality velicties accelerations final second segment
+    A_vel_eq_2 = velocity_time(t[1]).T
+    A_acc_eq_2 = acceleration_time(t[1]).T
+    A_jerk_eq_2 = jerk_time(t[1]).T
+    A_snap_eq_2 = snap_time(t[1]).T
+
+    # Equality velicties accelerations init third segment
+    A_vel_eq_3 = velocity_time(0).T
+    A_acc_eq_3 = acceleration_time(0).T
+    A_jerk_eq_3 = jerk_time(0).T
+    A_snap_eq_3 = snap_time(0).T
+
+    A = np.block([
+        [A_init, A_zeros_data, A_zeros_data],
+        [A_t_1, A_med_velocities, A_zeros_data],
+        [A_zeros_data, A_t_2, A_med_velocities],
+        [A_zeros_data, A_zeros_data, A_t_3],
+        [A_zeros_aux_data, A_pos, A_zeros_aux_data],
+        [A_zeros_aux_data, A_zeros_aux_data, A_pos],
+        [A_vel_eq_1, A_zeros_aux_data, A_zeros_aux_data],
+        [A_acc_eq_1, A_zeros_aux_data, A_zeros_aux_data],
+        [A_jerk_eq_1, A_zeros_aux_data, A_zeros_aux_data],
+        [A_snap_eq_1, A_zeros_aux_data, A_zeros_aux_data],
+        [A_zeros_aux_data, A_vel_eq_2, A_zeros_aux_data],
+        [A_zeros_aux_data, A_acc_eq_2, A_zeros_aux_data],
+        [A_zeros_aux_data, A_jerk_eq_2, A_zeros_aux_data],
+        [A_zeros_aux_data, A_snap_eq_2, A_zeros_aux_data],
+        [A_zeros_aux_data, A_zeros_aux_data, A_vel_eq_3],
+        [A_zeros_aux_data, A_zeros_aux_data, A_acc_eq_3],
+        [A_zeros_aux_data, A_zeros_aux_data, A_jerk_eq_3],
+        [A_zeros_aux_data, A_zeros_aux_data, A_snap_eq_3]
+    ])
+
+    return A
+def B(points, h_init, h_final):
+    b_1 = np.array([points[0], 0, 0, 0, 0])
+    b_2 = np.array([points[1], 0, 0, 0, 0])
+    b_3 = np.array([points[2], 0, 0, 0, 0])
+    b_4 = np.array([points[3], 0, 0, 0, 0])
+    # Define the vector b_5
+    b_5 = np.array([points[1], points[2]])
+
+    b_first = np.array([h_init[1], h_init[2], h_init[3], h_init[4]]);
+    b_second = np.array([h_final[1], h_final[2], h_final[3], h_final[4]]);
+    b_third = b_second
+    b = np.concatenate((b_1, b_2, b_3, b_4, b_5, b_first, b_second, b_third))
+    return b
+
+def H(t):
+    H_f_1 = hessian_cost(t[0])
+    H_f_2 = hessian_cost(t[1])
+    H_f_3 = hessian_cost(t[2])
+    H_i = hessian_cost(0.0)
+
+    H1 = H_f_1 - H_i
+    H2 = H_f_2 - H_i
+    H3 = H_f_3 - H_i
+
+    H = block_diag(H1, H2, H3)
+    return H
+
+def quadratic_program(t, waypoints, h_init, h_final):
+    A_data = A(t)
+    b_data = B(waypoints, h_init, h_final)
+    H_data = H(t)
+    P = sparse.csc_matrix(H_data)  # Quadratic term
+    q = np.zeros((A_data.shape[1]))  # Linear term
+
+    # Equality constraint: A_eq * x = b_eq
+    A_eq = sparse.csc_matrix(A_data)  # Equality constraint matrix
+    b_eq = np.array(b_data)  # Equality constraint vector
+
+    # Create an OSQP object
+    prob = osqp.OSQP()
+
+    # Setup the problem in OSQP format
+    prob.setup(P, q, A_eq, b_eq, b_eq, verbose=False)
+
+    # Solve the problem
+    res = prob.solve()
+    return res.x
+
+def A_aux(t_final):
     
     # Construct the Ax matrix
-    Ax = np.vstack([
-        position_time(t_init).T,
-        velocity_time(t_init).T,
-        acceleration_time(t_init).T,
-        jerk_time(t_init).T,
-        snap_time(t_init).T,
+    A = np.vstack([
         position_time(t_final).T,
         velocity_time(t_final).T,
         acceleration_time(t_final).T,
         jerk_time(t_final).T,
         snap_time(t_final).T
     ])
-    
-    # Create the block diagonal matrix by repeating Ax three times
+    return A
 
-    A = sparse.block_diag([Ax, Ax, Ax], format='csc')
+def A_zeros():
+    # Construct the Ax matrix
+    A = np.zeros((5, 10), dtype=np.double)
+    return A
+
+def A_zeros_aux():
+    # Construct the Ax matrix
+    A = np.zeros((1, 10), dtype=np.double)
+    return A
+
+def A_start():
+    # Construct the matrix A
+    A = np.array([
+        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 2, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 6, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 24, 0, 0, 0, 0, 0]
+    ])
     
+    # Return the constructed matrix A
+    return A
+
+def A_med():
+    # Construct the matrix A
+    A = np.array([
+        [0,  0,  0,  0,  0,  0,  0,  0,  0,  0],
+        [0, -1,  0,  0,  0,  0,  0,  0,  0,  0],
+        [0,  0, -2,  0,  0,  0,  0,  0,  0,  0],
+        [0,  0,  0, -6,  0,  0,  0,  0,  0,  0],
+        [0,  0,  0,  0, -24, 0,  0,  0,  0,  0]
+    ])
+    
+    # Return the constructed matrix A
     return A
 
 def hessian_cost(t):
@@ -1093,123 +1217,143 @@ def hessian_cost(t):
         [0, 0, 0, 0, 0,   201600*t**4,   967680*t**5,  2822400*t**6,   6451200*t**7,   12700800*t**8],
         [0, 0, 0, 0, 0,   362880*t**5,  1814400*t**6,  5443200*t**7,  12700800*t**8,   25401600*t**9]
     ])
-    
     return H
 
+def minimum_snap_final(t_initial, t_trajectory, t_final, sample_time, x, zi, w_c):
+    # Reshape states
+    x = x.reshape((3, 1))
 
-def H_matrix(t_init, t_final):
-    # Compute the Hessian matrices at the initial and final times
-    H_f = hessian_cost(t_final)
-    H_i = hessian_cost(t_init)
-    
-    # Calculate the difference matrix Hx
-    Hx = H_f - H_i
-    
-    # Create a block diagonal matrix with Hx repeated three times
-    H_sparse = sparse.block_diag([Hx, Hx, Hx], format='csc')
-    
-    return H_sparse
+    ##  Compute array with time
+    traj_flight_time = np.array([[t_initial, t_trajectory, t_final]], dtype=np.double)
 
-def trajectory_3d(zi, w_d, t):
-    
-    # Trajectory Points x
-    x = zi * np.cos(w_d * t)
-    x_d = -zi * w_d * np.sin(w_d * t)
-    x_dd = -zi * w_d**2 * np.cos(w_d * t)
-    x_ddd = zi * w_d**3 * np.sin(w_d * t)
-    x_dddd = zi * w_d**4 * np.cos(w_d * t)
+    r_init, r_d_init, r_dd_init, r_ddd_init, r_dddd_init, _, _, _ = trajectory(traj_flight_time[:, 0], zi, w_c)
+    #r_init, _, r_d_init, _, r_dd_init, r_ddd_init, r_dddd_init, _ = ref_circular_trajectory(traj_flight_time[:, 0], zi, w_c)
+    h_init = np.hstack((r_init, r_d_init, r_dd_init, r_ddd_init, r_dddd_init))
 
-    # Trajectory Points y
-    y = zi * np.sin(w_d * t)
-    y_d = zi * w_d * np.cos(w_d * t)
-    y_dd = -zi * w_d**2 * np.sin(w_d * t)
-    y_ddd = -zi * w_d**3 * np.cos(w_d * t)
-    y_dddd = zi * w_d**4 * np.sin(w_d * t)
+    r_final, r_d_final, r_dd_final, r_ddd_final, r_dddd_final, _, _, _ = trajectory(traj_flight_time[:, 0] + traj_flight_time[:, 1], zi, w_c)
+    #r_final, _, r_d_final, _, r_dd_final, r_ddd_final, r_dddd_final, _ = ref_circular_trajectory(traj_flight_time[:, 0] + traj_flight_time[:, 1], zi, w_c)
+    h_final = np.hstack((r_final, r_d_final, r_dd_final, r_ddd_final, r_dddd_final))
 
-    # Trajectory Point z
-    z = 1 + 0.1 * t
-    z_d = 0.1 * np.ones_like(t)
-    z_dd = np.zeros_like(t)
-    z_ddd = np.zeros_like(t)
-    z_dddd = np.zeros_like(t)
+    # Definition waypoints
+    waypoints_1 = np.hstack((x, r_init, r_final, x))
+    traj_size = waypoints_1.shape[1] - 1
 
-    # Complete Data
-    h = np.vstack([x, y, z])
-    h_d = np.vstack([x_d, y_d, z_d])
-    h_dd = np.vstack([x_dd, y_dd, z_dd])
-    h_ddd = np.vstack([x_ddd, y_ddd, z_ddd])
-    h_dddd = np.vstack([x_dddd, y_dddd, z_dddd])
+    # Number Point over trajectory and polynomials
+    number_points = 1/sample_time
+    number_polynomial = 9
+    number_coeff = number_polynomial + 1
 
-    return h, h_d, h_dd, h_ddd, h_dddd
+    ## Time trajectory auxiliar variable
+    t_trajectory_values  = np.arange(traj_flight_time[0, 0], traj_flight_time[0, 1] + traj_flight_time[0, 0], sample_time)
+    r, r_d, r_dd, r_ddd, r_dddd, _, _, _ = trajectory(t_trajectory_values, zi, w_c)
+    #r, _, r_d, _, r_dd, r_ddd, r_dddd, _ = ref_circular_trajectory(t_trajectory_values, zi, w_c)
 
-def trajectory_3d_init_phase(coeff, t):
-    h = []
-    h_d = []
-    h_dd = []
-    h_ddd = []
-    h_dddd = []
+    ## Coeff
+    coeff_x = quadratic_program(traj_flight_time[0, :], waypoints_1[0, :], h_init[0, :], h_final[0, :])
+    coeff_x = coeff_x.reshape(traj_size, number_coeff)
+    coeff_y = quadratic_program(traj_flight_time[0, :], waypoints_1[1, :], h_init[1, :], h_final[1, :])
+    coeff_y = coeff_y.reshape(traj_size, number_coeff)
+    coeff_z = quadratic_program(traj_flight_time[0, :], waypoints_1[2, :], h_init[2, :], h_final[2, :])
+    coeff_z = coeff_z.reshape(traj_size, number_coeff)
 
-    for k in range(coeff.shape[1]):
-        p = coeff[:, k].dot(position_time(t))
-        v = coeff[:, k].dot(velocity_time(t))
-        a = coeff[:, k].dot(acceleration_time(t))
-        j = coeff[:, k].dot(jerk_time(t))
-        s = coeff[:, k].dot(snap_time(t))
-        h.append(p)
-        h_d.append(v)
-        h_dd.append(a)
-        h_ddd.append(j)
-        h_dddd.append(s)
+    ## Compute Trajectories using Coeff and the predefined Trajectory
+    position_x = []
+    velocity_x = []
+    acceleration_x = []
+    jerk_x = []
+    snap_x = []
 
-    # Convert lists to numpy arrays
-    h = np.vstack(h)
-    h_d = np.vstack(h_d)
-    h_dd = np.vstack(h_dd)
-    h_ddd = np.vstack(h_ddd)
-    h_dddd = np.vstack(h_dddd)
+    position_y = []
+    velocity_y = []
+    acceleration_y = []
+    jerk_y = []
+    snap_y = []
 
-    return h, h_d, h_dd, h_ddd, h_dddd
+    position_z = []
+    velocity_z = []
+    acceleration_z = []
+    jerk_z = []
+    snap_z = []
 
-def minimum_snap_planning(x, zi, w_c, t, sample_time):
-    # Get Desired Trajectory
-    r, r_d, r_dd, r_ddd, r_dddd, theta, theta_d, theta_dd = trajectory(t, zi, w_c)
-    #r, r_d, r_dd, r_ddd, r_dddd =  trajectory_3d(zi, w_c, t)
+    for k in range(0, traj_size):
+        plot_time = traj_flight_time[0, k] * number_points
+        time_step = traj_flight_time[0, k]/plot_time
+        if k != 1:
+            for j in range(0, int(plot_time)):
+                ## X section
+                position_x.append(np.dot(coeff_x[k, :],  position_time(j*time_step))[0])
+                velocity_x.append(np.dot(coeff_x[k, :],  velocity_time(j*time_step))[0])
+                acceleration_x.append(np.dot(coeff_x[k, :], acceleration_time(j*time_step))[0])
+                jerk_x.append(np.dot(coeff_x[k, :], jerk_time(j*time_step))[0])
+                snap_x.append(np.dot(coeff_x[k, :], snap_time(j*time_step))[0])
 
-    # Init time trajectory index
-    index = 150
-    time = np.array([0.0, t[index]])
-    t_init = np.arange(0, time[1], sample_time)
+                ## Y section
+                position_y.append(np.dot(coeff_y[k, :],  position_time(j*time_step))[0])
+                velocity_y.append(np.dot(coeff_y[k, :],  velocity_time(j*time_step))[0])
+                acceleration_y.append(np.dot(coeff_y[k, :], acceleration_time(j*time_step))[0])
+                jerk_y.append(np.dot(coeff_y[k, :], jerk_time(j*time_step))[0])
+                snap_y.append(np.dot(coeff_y[k, :], snap_time(j*time_step))[0])
 
-    b = compute_b(x, r, r_d, r_dd, r_ddd, r_dddd, index)
-    A = A_matrix(time[0], time[1])
-    H = H_matrix(time[0], time[1])
-    q = np.zeros(H.shape[0])
+                ## Z section
+                position_z.append(np.dot(coeff_z[k, :],  position_time(j*time_step))[0])
+                velocity_z.append(np.dot(coeff_z[k, :],  velocity_time(j*time_step))[0])
+                acceleration_z.append(np.dot(coeff_z[k, :], acceleration_time(j*time_step))[0])
+                jerk_z.append(np.dot(coeff_z[k, :], jerk_time(j*time_step))[0])
+                snap_z.append(np.dot(coeff_z[k, :], snap_time(j*time_step))[0])
+        else:
+            for j in range(0, t_trajectory_values.shape[0]):
+                ## X section
+                position_x.append(r[0, j])
+                velocity_x.append(r_d[0, j])
+                acceleration_x.append(r_dd[0, j])
+                jerk_x.append(r_ddd[0, j])
+                snap_x.append(r_dddd[0, j])
 
-    # OSQP requires the constraints to be in the form l <= Ax <= u
-    l = b  # Lower bound (equal to b_eq for equality constraint)
-    u = b  # Upper bound (equal to b_eq for equality constraint)
+                ## Y section
+                position_y.append(r[1, j])
+                velocity_y.append(r_d[1, j])
+                acceleration_y.append(r_dd[1, j])
+                jerk_y.append(r_ddd[1, j])
+                snap_y.append(r_dddd[1, j])
 
-    # Create an OSQP object
-    prob = osqp.OSQP()
+                ## Z section
+                position_z.append(r[2, j])
+                velocity_z.append(r_d[2, j])
+                acceleration_z.append(r_dd[2, j])
+                jerk_z.append(r_ddd[2, j])
+                snap_z.append(r_dddd[2, j])
 
-    # Setup the problem using dense matrices
-    prob.setup(H, q, A, l, u, verbose=False)
+    position_x = np.array(position_x)
+    position_y = np.array(position_y)
+    position_z = np.array(position_z)
 
-    # Solve the problem
-    res = prob.solve()
+    # Convert the lists to numpy arrays
+    velocity_x = np.array(velocity_x)
+    velocity_y = np.array(velocity_y)
+    velocity_z = np.array(velocity_z)
 
-    ## Coeff polynomial
-    coeff = res.x.reshape(3, 10).T
+    acceleration_x = np.array(acceleration_x)
+    acceleration_y = np.array(acceleration_y)
+    acceleration_z = np.array(acceleration_z)
 
-    ## Init phase
-    r_init, r_init_d, r_init_dd, r_init_ddd, r_init_dddd = trajectory_3d_init_phase(coeff, t_init)
+    jerk_x = np.array(jerk_x)
+    jerk_y = np.array(jerk_y)
+    jerk_z = np.array(jerk_z)
 
-    h = np.hstack([r_init, r[:, index:]])
-    h_d = np.hstack([r_init_d, r_d[:, index:]])
-    h_dd = np.hstack([r_init_dd, r_dd[:, index:]])
-    h_ddd = np.hstack([r_init_ddd, r_ddd[:, index:]])
-    h_dddd = np.hstack([r_init_dddd, r_dddd[:, index:]])
+    snap_x = np.array(snap_x)
+    snap_y = np.array(snap_y)
+    snap_z = np.array(snap_z)
 
+    ## Final Data
+    h = np.vstack([position_x.T, position_y.T, position_z.T])
+    h_d = np.vstack([velocity_x.T, velocity_y.T, velocity_z.T])
+    h_dd = np.vstack([acceleration_x.T, acceleration_y.T, acceleration_z.T])
+    h_ddd = np.vstack([jerk_x.T, jerk_y.T, jerk_z.T])
+    h_dddd = np.vstack([snap_x.T, snap_y.T, snap_z.T])
+    t = np.arange(0, h.shape[1]*sample_time, sample_time);
 
-
-    return h, h_d, h_dd, h_ddd, h_dddd, theta, theta_d, theta_dd
+    ## We can also compute the angle using the trajectories
+    theta = np.zeros((h.shape[1]))
+    theta_d = np.zeros((h.shape[1]))
+    theta_dd = np.zeros((h.shape[1]))
+    return h, h_d, h_dd, h_ddd, h_dddd, theta, theta_d, theta_dd, t

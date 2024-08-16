@@ -107,17 +107,18 @@ H2 = H_f_2 - H_i;
 H3 = H_f_3 - H_i;
 H = blkdiag(H1, H2, H3);
 
-traj_polys = quadprog(H, [], [], [], A, b);
-coeff = reshape(traj_polys, number_coeff, traj_size)';
+traj_polys = quadprog(H, [], [], [], A, b)
+coeff = reshape(traj_polys, number_coeff, traj_size)'
 % 
 index = 0;
 %% PLot results
 
 for k=1:traj_size
     plot_time = traj_flight_times(k)*number_points
-    time_step = traj_flight_times(k)/plot_time;
+    time_step = traj_flight_times(k)/plot_time
     if k ~= 2
         for j=1:plot_time
+            (j - 1)*time_step
             position(index + j) = coeff(k, :)*position_time((j - 1)*time_step);
             velocity(index + j) = coeff(k, :)*velocity_time((j - 1)*time_step);
             acceleration(index + j) = coeff(k, :)*acceleration_time((j - 1)*time_step);

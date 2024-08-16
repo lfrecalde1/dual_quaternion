@@ -402,6 +402,124 @@ def plot_states_acceleration_reference(fig11, ax11, ax21, ax31, x, xd, t, name, 
         fig11.savefig(path + name + ".pdf")
         fig11.savefig(path + name + ".png")
         return None
+
+def plot_states_jerk_reference(fig11, ax11, ax21, ax31, x, xd, t, name, path):
+        t = t[0:x.shape[1]]
+        ax11.set_xlim((t[0], t[-1]))
+        ax21.set_xlim((t[0], t[-1]))
+        ax31.set_xlim((t[0], t[-1]))
+
+        ax11.set_xticklabels([])
+        ax21.set_xticklabels([])
+        state_1_e, = ax11.plot(t[0:t.shape[0]], x[0, 0:t.shape[0]],
+                    color='#C43C29', lw=1.0, ls="-")
+
+        state_1_e_d, = ax11.plot(t[0:t.shape[0]], xd[0, 0:t.shape[0]],
+                    color='#1D2121', lw=1.0, ls="--")
+
+        state_2_e, = ax21.plot(t[0:t.shape[0]], x[1, 0:t.shape[0]],
+                        color='#3FB454', lw=1.0, ls="-")
+
+        state_2_e_d, = ax21.plot(t[0:t.shape[0]], xd[1, 0:t.shape[0]],
+                    color='#1D2121', lw=1.0, ls="--")
+
+        state_3_e, = ax31.plot(t[0:t.shape[0]], x[2, 0:t.shape[0]],
+                        color='#3F8BB4', lw=1.0, ls="-")
+
+        state_3_e_d, = ax31.plot(t[0:t.shape[0]], xd[2, 0:t.shape[0]],
+                    color='#1D2121', lw=1.0, ls="--")
+
+        ax11.set_ylabel(r"$[m/s^{3}]$", rotation='vertical')
+        ax11.legend([state_1_e, state_1_e_d],
+                [ r'$j_x$', r'$j_{xd}$'],
+                loc="best",
+                frameon=True, fancybox=True, shadow=False, ncol=2,
+                borderpad=0.5, labelspacing=0.5, handlelength=3, handletextpad=0.1,
+                borderaxespad=0.3, columnspacing=2)
+        ax11.grid(color='#949494', linestyle='-.', linewidth=0.5)
+
+        ax21.set_ylabel(r"$[m/s^{3}]$", rotation='vertical')
+        ax21.legend([state_2_e, state_2_e_d],
+                [r'$j_y$', r'$j_{yd}$'],
+                loc="best",
+                frameon=True, fancybox=True, shadow=False, ncol=2,
+                borderpad=0.5, labelspacing=0.5, handlelength=3, handletextpad=0.1,
+                borderaxespad=0.3, columnspacing=2)
+        ax21.grid(color='#949494', linestyle='-.', linewidth=0.5)
+        ax21.set_xticklabels([])
+    
+        ax31.set_ylabel(r"$[m/s^{3}]$", rotation='vertical')
+        ax31.legend([state_3_e, state_3_e_d],
+                [r'$j_z$', r'$j_{zd}$'],
+                loc="best",
+                frameon=True, fancybox=True, shadow=False, ncol=2,
+                borderpad=0.5, labelspacing=0.5, handlelength=3, handletextpad=0.1,
+                borderaxespad=0.3, columnspacing=2)
+        ax31.grid(color='#949494', linestyle='-.', linewidth=0.5)
+        ax31.set_xlabel(r"$\textrm{Time}[s]$", labelpad=5)
+
+        fig11.savefig(path + name + ".pdf")
+        fig11.savefig(path + name + ".png")
+        return None
+
+def plot_states_snap_reference(fig11, ax11, ax21, ax31, x, xd, t, name, path):
+        t = t[0:x.shape[1]]
+        ax11.set_xlim((t[0], t[-1]))
+        ax21.set_xlim((t[0], t[-1]))
+        ax31.set_xlim((t[0], t[-1]))
+
+        ax11.set_xticklabels([])
+        ax21.set_xticklabels([])
+        state_1_e, = ax11.plot(t[0:t.shape[0]], x[0, 0:t.shape[0]],
+                    color='#C43C29', lw=1.0, ls="-")
+
+        state_1_e_d, = ax11.plot(t[0:t.shape[0]], xd[0, 0:t.shape[0]],
+                    color='#1D2121', lw=1.0, ls="--")
+
+        state_2_e, = ax21.plot(t[0:t.shape[0]], x[1, 0:t.shape[0]],
+                        color='#3FB454', lw=1.0, ls="-")
+
+        state_2_e_d, = ax21.plot(t[0:t.shape[0]], xd[1, 0:t.shape[0]],
+                    color='#1D2121', lw=1.0, ls="--")
+
+        state_3_e, = ax31.plot(t[0:t.shape[0]], x[2, 0:t.shape[0]],
+                        color='#3F8BB4', lw=1.0, ls="-")
+
+        state_3_e_d, = ax31.plot(t[0:t.shape[0]], xd[2, 0:t.shape[0]],
+                    color='#1D2121', lw=1.0, ls="--")
+
+        ax11.set_ylabel(r"$[m/s^{4}]$", rotation='vertical')
+        ax11.legend([state_1_e, state_1_e_d],
+                [ r'$s_x$', r'$s_{xd}$'],
+                loc="best",
+                frameon=True, fancybox=True, shadow=False, ncol=2,
+                borderpad=0.5, labelspacing=0.5, handlelength=3, handletextpad=0.1,
+                borderaxespad=0.3, columnspacing=2)
+        ax11.grid(color='#949494', linestyle='-.', linewidth=0.5)
+
+        ax21.set_ylabel(r"$[m/s^{4}]$", rotation='vertical')
+        ax21.legend([state_2_e, state_2_e_d],
+                [r'$s_y$', r'$s_{yd}$'],
+                loc="best",
+                frameon=True, fancybox=True, shadow=False, ncol=2,
+                borderpad=0.5, labelspacing=0.5, handlelength=3, handletextpad=0.1,
+                borderaxespad=0.3, columnspacing=2)
+        ax21.grid(color='#949494', linestyle='-.', linewidth=0.5)
+        ax21.set_xticklabels([])
+    
+        ax31.set_ylabel(r"$[m/s^{4}]$", rotation='vertical')
+        ax31.legend([state_3_e, state_3_e_d],
+                [r'$s_z$', r'$s_{zd}$'],
+                loc="best",
+                frameon=True, fancybox=True, shadow=False, ncol=2,
+                borderpad=0.5, labelspacing=0.5, handlelength=3, handletextpad=0.1,
+                borderaxespad=0.3, columnspacing=2)
+        ax31.grid(color='#949494', linestyle='-.', linewidth=0.5)
+        ax31.set_xlabel(r"$\textrm{Time}[s]$", labelpad=5)
+
+        fig11.savefig(path + name + ".pdf")
+        fig11.savefig(path + name + ".png")
+        return None
 def plot_states_angular_reference(fig11, ax11, ax21, ax31, x, xd, t, name, path):
         t = t[0:x.shape[1]]
         ax11.set_xlim((t[0], t[-1]))

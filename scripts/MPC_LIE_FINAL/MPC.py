@@ -106,10 +106,13 @@ def main(odom_pub_1, odom_pub_2, trajec_pub, L, x0, v_max, a_max, n, initial):
     g = L[4]
     # Sample Time Defintion
     sample_time = 0.01
+    t_inital = 2
+    t_trajectory = 30
+    t_final = 2
     t_f = 30
 
+    hd, hd_d, qd, w_d, f_d, M_d, t = compute_flatness_states(L, x0[0:3], t_inital, t_trajectory, t_final, sample_time, 2, (initial + 1)*0.5)
     # Time defintion aux variable
-    t = np.arange(0, t_f + sample_time, sample_time)
 
     # Frequency of the simulation
     hz = int(1/(sample_time))
@@ -182,7 +185,7 @@ def main(odom_pub_1, odom_pub_2, trajec_pub, L, x0, v_max, a_max, n, initial):
     #hd, hd_d, qd, w_d, f_d, M_d = compute_reference(t, sample_time, v_max, a_max, n, L)
     #hd, hd_d, hd_dd, hd_ddd, hd_dddd, theta, theta_d, theta_dd = trajectory(t, 2, (initial +1)*0.5)
     #hd, hd_d, qd, w_d, f_d, M_d = compute_flatness_states(t, L,  2, (initial + 1)*0.5)
-    hd, hd_d, qd, w_d, f_d, M_d = compute_flatness_states(t, L,  2, (initial + 1)*0.5, x0[0:3], sample_time)
+    #hd, hd_d, qd, w_d, f_d, M_d = compute_flatness_states(t, L,  2, (initial + 1)*0.5, x0[0:3], sample_time)
 
 
     # Initial condition for the desired states

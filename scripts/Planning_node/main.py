@@ -3,7 +3,9 @@ import rospy
 import numpy as np
 import matplotlib.pyplot as plt
 from nav_msgs.msg import Odometry
-from ode_acados import trajectory, quadratic_program
+from ode_acados import compute_flatness_states
+from fancy_plots import fancy_plots_3, plot_states_position, fancy_plots_4, plot_states_velocity_reference, plot_states_quaternion
+
 import os
 script_dir = os.path.dirname(__file__)
 #folder_path = os.path.join(script_dir, 'cost_with_velocities/')
@@ -49,21 +51,14 @@ def main(L):
     sample_time = 0.01
 
     ## Define time for each segment
-    t_inital = np.array([2])
-    t_trajectory = np.array([10])
-    t_final = np.array([2])
+    t_inital = 2
+    t_trajectory = 30
+    t_final = 2
 
-    ##  Compute array with time
-    traj_flight_time = np.array([t_inital[0], t_trajectory[0], t_final[0]], dtype=np.double)
 
-    ## Init and final of the trajectory
-    zi = 2
-    w_c = 2
-    r_init, r_d_init, r_dd_init, r_ddd_init, r_dddd_init, _, _, _ = trajectory(t_inital, zi, w_c)
-    h_init = np.array([r_init[0,0], r_d_init[0, 0], r_dd_init[0, 0], r_ddd_init[0, 0], r_dddd_init[0, 0]])
+    zi = 2.0
+    w_c = 4
 
-    r_final, r_d_final, r_dd_final, r_ddd_final, r_dddd_final, _, _, _ = trajectory(t_trajectory, zi, w_c)
-    h_final = np.array([r_final[0,0], r_d_final[0, 0], r_dd_final[0, 0], r_ddd_final[0, 0], r_dddd_final[0, 0]])
 
     # Time defintion aux variable
     t_stable = np.arange(0, 2 + sample_time, sample_time)
@@ -87,26 +82,19 @@ def main(L):
         delta_t = toc_solver
         rospy.loginfo("Init System " + str(delta_t))
 
-    # Compute PLanning Section Manually
-    waypoints_1 = np.array([x[0], r_init[0, 0], r_final[0, 0], x[0]])
-    traj_size = waypoints_1.shape[0] - 1
+    h, h_d, q, w, f, M, t = compute_flatness_states(L, x, t_inital, t_trajectory, t_final, sample_time, zi, w_c)
 
-    # Number Point over trajectory and polynomials
-    number_points = 1/sample_time
-    number_polynomial = 9
-    number_coeff = number_polynomial + 1
+    fig11, ax11, ax21, ax31 = fancy_plots_3()
+    plot_states_position(fig11, ax11, ax21, ax31, h[0:3, :], h[0:3, :], t, "Position of the System "+ str(initial), folder_path)
 
-    ## Time trajectory auxiliar variable
-    t_trajectory_values  = np.arange(traj_flight_time[0], traj_flight_time[1] + traj_flight_time[0], sample_time)
+    fig12, ax12, ax22, ax32 = fancy_plots_3()
+    plot_states_velocity_reference(fig12, ax12, ax22, ax32, h_d[0:3, :], h_d[0:3, :], t, "Linear Velocity of the System and Reference "+ str(initial), folder_path)
 
-    ## Coeff
-    x = quadratic_program(traj_flight_time, waypoints_1, h_init, h_final)
-    print(x)
+     # Quaternions Body Frame
+    fig13, ax13, ax23, ax33, ax43 = fancy_plots_4()
+    plot_states_quaternion(fig13, ax13, ax23, ax33, ax43, q, q, t, "Quaternions of the System "+ str(initial), folder_path)
 
-
-
-
-
+    
 
 if __name__ == '__main__':
     try:
