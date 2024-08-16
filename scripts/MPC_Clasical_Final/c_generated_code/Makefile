@@ -39,9 +39,9 @@
 
 # model
 MODEL_SRC=
-MODEL_SRC+= quadrotor_model/quadrotor_impl_dae_fun.c
-MODEL_SRC+= quadrotor_model/quadrotor_impl_dae_fun_jac_x_xdot_z.c
-MODEL_SRC+= quadrotor_model/quadrotor_impl_dae_jac_x_xdot_u_z.c
+MODEL_SRC+= quadrotor_model/quadrotor_expl_ode_fun.c
+MODEL_SRC+= quadrotor_model/quadrotor_expl_vde_forw.c
+MODEL_SRC+= quadrotor_model/quadrotor_expl_vde_adj.c
 MODEL_OBJ := $(MODEL_SRC:.c=.o)
 
 # optimal control problem - mostly CasADi exports
@@ -146,7 +146,7 @@ ocp_cython_c: ocp_shared_lib
 	-o acados_ocp_solver_pyx.c \
 	-I $(INCLUDE_PATH)/../interfaces/acados_template/acados_template \
 	$(INCLUDE_PATH)/../interfaces/acados_template/acados_template/acados_ocp_solver_pyx.pyx \
-	-I /home/fer/dual_ws/src/dual_quaternion/scripts/MPC_schemes/MPC_Clasical_dynamics_Trajectory_Circular_z/c_generated_code \
+	-I /home/fer/dual_ws/src/dual_quaternion/scripts/MPC_Clasical_Final/c_generated_code \
 
 ocp_cython_o: ocp_cython_c
 	$(CC) $(ACADOS_FLAGS) -c -O2 \
@@ -173,7 +173,7 @@ sim_cython_c: sim_shared_lib
 	-o acados_sim_solver_pyx.c \
 	-I $(INCLUDE_PATH)/../interfaces/acados_template/acados_template \
 	$(INCLUDE_PATH)/../interfaces/acados_template/acados_template/acados_sim_solver_pyx.pyx \
-	-I /home/fer/dual_ws/src/dual_quaternion/scripts/MPC_schemes/MPC_Clasical_dynamics_Trajectory_Circular_z/c_generated_code \
+	-I /home/fer/dual_ws/src/dual_quaternion/scripts/MPC_Clasical_Final/c_generated_code \
 
 sim_cython_o: sim_cython_c
 	$(CC) $(ACADOS_FLAGS) -c -O2 \
