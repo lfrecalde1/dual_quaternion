@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from nav_msgs.msg import Odometry
 from ode_acados import compute_flatness_states
-from fancy_plots import fancy_plots_3, plot_states_position, fancy_plots_4, plot_states_velocity_reference, plot_states_quaternion
+from fancy_plots import fancy_plots_3, plot_states_position, fancy_plots_4, plot_states_velocity_reference, plot_states_quaternion, plot_states_angular_reference
 
 import os
 script_dir = os.path.dirname(__file__)
@@ -57,7 +57,7 @@ def main(L):
 
 
     zi = 2.0
-    w_c = 4
+    w_c = 2.0
 
 
     # Time defintion aux variable
@@ -82,7 +82,7 @@ def main(L):
         delta_t = toc_solver
         rospy.loginfo("Init System " + str(delta_t))
 
-    h, h_d, q, w, f, M, t = compute_flatness_states(L, x, t_inital, t_trajectory, t_final, sample_time, zi, w_c)
+    h, h_d, h_dd, q, w, f, M, t = compute_flatness_states(L, x, t_inital, t_trajectory, t_final, sample_time, zi, w_c)
 
     fig11, ax11, ax21, ax31 = fancy_plots_3()
     plot_states_position(fig11, ax11, ax21, ax31, h[0:3, :], h[0:3, :], t, "Position of the System "+ str(initial), folder_path)
@@ -94,7 +94,9 @@ def main(L):
     fig13, ax13, ax23, ax33, ax43 = fancy_plots_4()
     plot_states_quaternion(fig13, ax13, ax23, ax33, ax43, q, q, t, "Quaternions of the System "+ str(initial), folder_path)
 
-    
+    fig14, ax14, ax24, ax34 = fancy_plots_3()
+    plot_states_angular_reference(fig14, ax14, ax24, ax34, h_dd[0:3, :], h_dd[0:3, :], t, "Linear Acceleration of the System and Reference "+ str(initial), folder_path)
+
 
 if __name__ == '__main__':
     try:

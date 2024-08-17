@@ -818,6 +818,12 @@ def trajectory(t, zi, w_c):
         r_ddd[:, k] = expm(skew_matrix(w))@(p_ddd[:, k] + skew_w_ddd@p[:, k] + 3*skew_w_dd@p_d[:, k] + 3*skew_w_d@p_dd[:, k] + skew_w_d_3@p[:, k] + 3*skew_w_d_2@p_d[:, k] + 3 * skew_w_d@skew_w_dd@p[:, k])
         r_dddd[:, k] = expm(skew_matrix(w))@(p_dddd[:, k] + skew_w_dddd@p[:, k] + 4 * skew_w_ddd@p_d[:, k] + 6*skew_w_dd@p_dd[:, k] + 4 * skew_w_d@p_ddd[:, k] + skew_w_d_4@p[:, k] + 3*skew_w_dd_2@p[:, k] + 4*skew_w_d_3@p_d[:, k] + 6*skew_w_d_2@p_dd[:, k] + 6*skew_w_d_2@skew_w_dd@p[:, k] + 4*skew_w_d@skew_w_ddd@p[:, k] + 12*skew_w_d@skew_w_dd@p_d[:, k])
 
+    x0 = 0 * np.zeros((t.shape[0]))
+    y0 = 0 * np.zeros((t.shape[0]))
+    z0 = 3 * np.ones((t.shape[0]))
+
+    h0 = np.vstack((x0, y0, z0))
+    r = r + h0
     return r, r_d, r_dd, r_ddd, r_dddd, theta, theta_d, theta_dd
 
 def compute_flatness_states(L, x, t_initial, t_trajectory, t_final, sample_time, zi, w_c):
@@ -954,38 +960,7 @@ def compute_flatness_states(L, x, t_initial, t_trajectory, t_final, sample_time,
         # Compute torque
         M[:, k] = aux_torque
         # Compute nominal force of the in the body frame
-    return hd, hd_p, q, w, f, M, t
-
-def compute_b(h_init, h, h_d, h_dd, h_ddd, h_dddd, index):
-    # Split Values
-    x = h[0, index]
-    y = h[1, index]
-    z = h[2, index]
-
-    x_d = h_d[0, index]
-    y_d = h_d[1, index]
-    z_d = h_d[2, index]
-
-    x_dd = h_dd[0, index]
-    y_dd = h_dd[1, index]
-    z_dd = h_dd[2, index]
-
-    x_ddd = h_ddd[0, index]
-    y_ddd = h_ddd[1, index]
-    z_ddd = h_ddd[2, index]
-
-    x_dddd = h_dddd[0, index]
-    y_dddd = h_dddd[1, index]
-    z_dddd = h_dddd[2, index]
-
-    x_init = h_init[0]
-    y_init = h_init[1]
-    z_init = h_init[2]
-
-    b = np.array([x_init, 0, 0, 0, 0, x, x_d, x_dd, x_ddd, x_dddd, y_init, 0, 0, 0, 0, y, y_d, y_dd, y_ddd, y_dddd,
-                  z_init, 0, 0, 0, 0, z, z_d, z_dd, z_ddd, z_dddd])
-
-    return b
+    return hd, hd_p, hd_pp, q, w, f, M, t
 
 def position_time(t):
     t = np.array(t)  # Ensure t is a NumPy array
@@ -1064,6 +1039,7 @@ def A(t):
     A_t_1 = A_aux(t[0])
     A_t_2 = A_aux(t[1])
     A_t_3 = A_aux(t[2])
+    A_t_4 = A_aux(t[3])
     A_init = A_start()
     A_med_velocities = A_med()
     A_pos = position_time(0.0).T
@@ -1086,53 +1062,69 @@ def A(t):
     A_jerk_eq_3 = jerk_time(0).T
     A_snap_eq_3 = snap_time(0).T
 
-    A = np.block([
-        [A_init, A_zeros_data, A_zeros_data],
-        [A_t_1, A_med_velocities, A_zeros_data],
-        [A_zeros_data, A_t_2, A_med_velocities],
-        [A_zeros_data, A_zeros_data, A_t_3],
-        [A_zeros_aux_data, A_pos, A_zeros_aux_data],
-        [A_zeros_aux_data, A_zeros_aux_data, A_pos],
-        [A_vel_eq_1, A_zeros_aux_data, A_zeros_aux_data],
-        [A_acc_eq_1, A_zeros_aux_data, A_zeros_aux_data],
-        [A_jerk_eq_1, A_zeros_aux_data, A_zeros_aux_data],
-        [A_snap_eq_1, A_zeros_aux_data, A_zeros_aux_data],
-        [A_zeros_aux_data, A_vel_eq_2, A_zeros_aux_data],
-        [A_zeros_aux_data, A_acc_eq_2, A_zeros_aux_data],
-        [A_zeros_aux_data, A_jerk_eq_2, A_zeros_aux_data],
-        [A_zeros_aux_data, A_snap_eq_2, A_zeros_aux_data],
-        [A_zeros_aux_data, A_zeros_aux_data, A_vel_eq_3],
-        [A_zeros_aux_data, A_zeros_aux_data, A_acc_eq_3],
-        [A_zeros_aux_data, A_zeros_aux_data, A_jerk_eq_3],
-        [A_zeros_aux_data, A_zeros_aux_data, A_snap_eq_3]
-    ])
+    # Equality velicties accelerations init third segment
+    A_vel_eq_4 = velocity_time(0).T
+    A_acc_eq_4 = acceleration_time(0).T
+    A_jerk_eq_4 = jerk_time(0).T
+    A_snap_eq_4 = snap_time(0).T
 
+    A = np.block([
+        [A_init, A_zeros_data, A_zeros_data, A_zeros_data],
+        [A_t_1, A_med_velocities, A_zeros_data, A_zeros_data],
+        [A_zeros_data, A_t_2, A_med_velocities, A_zeros_data],
+        [A_zeros_data, A_zeros_data, A_t_3, A_med_velocities],
+        [A_zeros_data, A_zeros_data, A_zeros_data, A_t_4],
+        [A_zeros_aux_data, A_pos, A_zeros_aux_data, A_zeros_aux_data],
+        [A_zeros_aux_data, A_zeros_aux_data, A_pos, A_zeros_aux_data],
+        [A_zeros_aux_data, A_zeros_aux_data, A_zeros_aux_data, A_pos],
+        [A_vel_eq_1, A_zeros_aux_data, A_zeros_aux_data, A_zeros_aux_data],
+        [A_acc_eq_1, A_zeros_aux_data, A_zeros_aux_data, A_zeros_aux_data],
+        [A_jerk_eq_1, A_zeros_aux_data, A_zeros_aux_data, A_zeros_aux_data],
+        [A_snap_eq_1, A_zeros_aux_data, A_zeros_aux_data, A_zeros_aux_data],
+        [A_zeros_aux_data, A_vel_eq_2, A_zeros_aux_data, A_zeros_aux_data],
+        [A_zeros_aux_data, A_acc_eq_2, A_zeros_aux_data, A_zeros_aux_data],
+        [A_zeros_aux_data, A_jerk_eq_2, A_zeros_aux_data, A_zeros_aux_data],
+        [A_zeros_aux_data, A_snap_eq_2, A_zeros_aux_data, A_zeros_aux_data],
+        [A_zeros_aux_data, A_zeros_aux_data, A_vel_eq_3, A_zeros_aux_data],
+        [A_zeros_aux_data, A_zeros_aux_data, A_acc_eq_3, A_zeros_aux_data],
+        [A_zeros_aux_data, A_zeros_aux_data, A_jerk_eq_3, A_zeros_aux_data],
+        [A_zeros_aux_data, A_zeros_aux_data, A_snap_eq_3, A_zeros_aux_data],
+        [A_zeros_aux_data, A_zeros_aux_data, A_zeros_aux_data, A_vel_eq_4],
+        [A_zeros_aux_data, A_zeros_aux_data, A_zeros_aux_data, A_acc_eq_4],
+        [A_zeros_aux_data, A_zeros_aux_data, A_zeros_aux_data, A_jerk_eq_4],
+        [A_zeros_aux_data, A_zeros_aux_data, A_zeros_aux_data, A_snap_eq_4]
+    ])
     return A
+
 def B(points, h_init, h_final):
     b_1 = np.array([points[0], 0, 0, 0, 0])
     b_2 = np.array([points[1], 0, 0, 0, 0])
     b_3 = np.array([points[2], 0, 0, 0, 0])
     b_4 = np.array([points[3], 0, 0, 0, 0])
+    b_5 = np.array([points[4], 0, 0, 0, 0])
     # Define the vector b_5
-    b_5 = np.array([points[1], points[2]])
+    b_6 = np.array([points[1], points[2], points[3]])
 
     b_first = np.array([h_init[1], h_init[2], h_init[3], h_init[4]]);
     b_second = np.array([h_final[1], h_final[2], h_final[3], h_final[4]]);
     b_third = b_second
-    b = np.concatenate((b_1, b_2, b_3, b_4, b_5, b_first, b_second, b_third))
+    b_fourth = np.array([0.0, 0.0, 0.0, 0.0]);
+    b = np.concatenate((b_1, b_2, b_3, b_4, b_5, b_6, b_first, b_second, b_third, b_fourth))
     return b
 
 def H(t):
     H_f_1 = hessian_cost(t[0])
     H_f_2 = hessian_cost(t[1])
     H_f_3 = hessian_cost(t[2])
+    H_f_4 = hessian_cost(t[3])
     H_i = hessian_cost(0.0)
 
     H1 = H_f_1 - H_i
     H2 = H_f_2 - H_i
     H3 = H_f_3 - H_i
+    H4 = H_f_4 - H_i
 
-    H = block_diag(H1, H2, H3)
+    H = block_diag(H1, H2, H3, H4)
     return H
 
 def quadratic_program(t, waypoints, h_init, h_final):
@@ -1224,7 +1216,7 @@ def minimum_snap_final(t_initial, t_trajectory, t_final, sample_time, x, zi, w_c
     x = x.reshape((3, 1))
 
     ##  Compute array with time
-    traj_flight_time = np.array([[t_initial, t_trajectory, t_final]], dtype=np.double)
+    traj_flight_time = np.array([[t_initial, t_trajectory, t_final, t_final]], dtype=np.double)
 
     r_init, r_d_init, r_dd_init, r_ddd_init, r_dddd_init, _, _, _ = trajectory(traj_flight_time[:, 0], zi, w_c)
     #r_init, _, r_d_init, _, r_dd_init, r_ddd_init, r_dddd_init, _ = ref_circular_trajectory(traj_flight_time[:, 0], zi, w_c)
@@ -1235,7 +1227,7 @@ def minimum_snap_final(t_initial, t_trajectory, t_final, sample_time, x, zi, w_c
     h_final = np.hstack((r_final, r_d_final, r_dd_final, r_ddd_final, r_dddd_final))
 
     # Definition waypoints
-    waypoints_1 = np.hstack((x, r_init, r_final, x))
+    waypoints_1 = np.hstack((x, r_init, r_final, x, x))
     traj_size = waypoints_1.shape[1] - 1
 
     # Number Point over trajectory and polynomials

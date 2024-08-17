@@ -90,7 +90,7 @@ def main(ts: float, t_f: float, t_N: float, x_0: np.ndarray, L: list, odom_pub_1
     t_trajectory = 30
     t_final = 2
 
-    hd, hd_d, qd, w_d, f_d, M_d, t = compute_flatness_states(L, x_0[0:3], t_inital, t_trajectory, t_final, ts, 2, (initial + 1)*0.5)
+    hd, hd_d, hd_dd, qd, w_d, f_d, M_d, t = compute_flatness_states(L, x_0[0:3], t_inital, t_trajectory, t_final, ts, 3, (initial + 1)*0.5)
 
 
     # Ros time definitions
@@ -403,7 +403,7 @@ if __name__ == '__main__':
         v_max = np.array([1])*1
 
         max_position = 4
-        min_position = -4
+        min_position = 0.5
 
         # Use itertools.product to get all possible combinations
         combinations = np.array(list(itertools.product(v_max, a_max)))
