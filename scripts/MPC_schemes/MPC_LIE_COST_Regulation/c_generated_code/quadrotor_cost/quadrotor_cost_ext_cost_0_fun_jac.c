@@ -523,8 +523,8 @@ static int casadi_f0(const casadi_real** arg, casadi_real** res, casadi_int* iw,
   casadi_copy(w15, 4, w16);
   /* #171: @21 = zeros(4x4) */
   casadi_clear(w21, 16);
-  /* #172: @36 = 0.671141 */
-  w36 = 6.7114093959731547e-01;
+  /* #172: @36 = 0.615876 */
+  w36 = 6.1587620208410776e-01;
   /* #173: (@21[0] = @36) */
   for (rr=w21+0, ss=(&w36); rr!=w21+1; rr+=1) *rr = *ss++;
   /* #174: @36 = 600 */

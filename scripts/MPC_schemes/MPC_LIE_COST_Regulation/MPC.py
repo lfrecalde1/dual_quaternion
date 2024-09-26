@@ -183,13 +183,13 @@ def main(odom_pub_1, odom_pub_2, L, x0, initial):
 
     # Optimization problem
     ocp = create_ocp_solver(X[:, 0], N_prediction, t_N, F_max, F_min, tau_1_max, tau_1_min, tau_2_max, tau_2_min, tau_3_max, taux_3_min, L, sample_time)
-    #acados_ocp_solver = AcadosOcpSolver(ocp, json_file="acados_ocp_" + ocp.model.name + ".json", build= True, generate= True)
-    acados_ocp_solver = AcadosOcpSolver(ocp, json_file="acados_ocp_" + ocp.model.name + ".json", build= False, generate= False)
+    acados_ocp_solver = AcadosOcpSolver(ocp, json_file="acados_ocp_" + ocp.model.name + ".json", build= True, generate= True)
+    #acados_ocp_solver = AcadosOcpSolver(ocp, json_file="acados_ocp_" + ocp.model.name + ".json", build= False, generate= False)
 
     
     # Integration using Acados
-    #acados_integrator = AcadosSimSolver(ocp, json_file="acados_sim_" + ocp.model.name + ".json", build= True, generate= True)
-    acados_integrator = AcadosSimSolver(ocp, json_file="acados_sim_" + ocp.model.name + ".json", build= False, generate= False)
+    acados_integrator = AcadosSimSolver(ocp, json_file="acados_sim_" + ocp.model.name + ".json", build= True, generate= True)
+    #acados_integrator = AcadosSimSolver(ocp, json_file="acados_sim_" + ocp.model.name + ".json", build= False, generate= False)
 
     # Dimensions of the optimization problem
     x_dim = ocp.model.x.size()[0]
@@ -374,11 +374,11 @@ if __name__ == '__main__':
         odomety_topic_2 = "/" + "dual_2" + "/odom"
         odometry_publisher_2 = rospy.Publisher(odomety_topic_2, Odometry, queue_size = 10)
         # Dynamics Parameters
-        m = 1                                                                             
-        Jxx = 2.64e-3
-        Jyy = 2.64e-3
-        Jzz = 4.96e-3
-        g = 9.8
+        m = 1.272                                                                             
+        Jxx = 0.00304475
+        Jyy = 0.00454981
+        Jzz = 0.00281995
+        g = 9.80665
         L = [m, Jxx, Jyy, Jzz, g]
 
         # empty matrices

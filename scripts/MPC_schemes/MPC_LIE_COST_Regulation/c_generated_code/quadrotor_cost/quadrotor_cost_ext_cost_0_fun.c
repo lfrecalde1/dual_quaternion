@@ -520,8 +520,8 @@ static int casadi_f0(const casadi_real** arg, casadi_real** res, casadi_int* iw,
   casadi_copy(w14, 4, w15);
   /* #171: @18 = zeros(4x4) */
   casadi_clear(w18, 16);
-  /* #172: @3 = 0.671141 */
-  w3 = 6.7114093959731547e-01;
+  /* #172: @3 = 0.615876 */
+  w3 = 6.1587620208410776e-01;
   /* #173: (@18[0] = @3) */
   for (rr=w18+0, ss=(&w3); rr!=w18+1; rr+=1) *rr = *ss++;
   /* #174: @3 = 600 */

@@ -141,7 +141,7 @@ void quadrotor_acados_create_1_set_plan(ocp_nlp_plan_t* nlp_solver_plan, const i
     /************************************************
     *  plan
     ************************************************/
-    nlp_solver_plan->nlp_solver = SQP;
+    nlp_solver_plan->nlp_solver = SQP_RTI;
 
     nlp_solver_plan->ocp_qp_solver_plan.qp_solver = FULL_CONDENSING_HPIPM;
 
@@ -487,22 +487,22 @@ void quadrotor_acados_create_5_set_nlp_in(quadrotor_solver_capsule* capsule, con
     double* lbx0 = lubx0;
     double* ubx0 = lubx0 + NBX0;
     // change only the non-zero elements:
-    lbx0[0] = 0.606652981720736;
-    ubx0[0] = 0.606652981720736;
-    lbx0[1] = -0.7473258671419708;
-    ubx0[1] = -0.7473258671419708;
-    lbx0[2] = 0.22654169773347735;
-    ubx0[2] = 0.22654169773347735;
-    lbx0[3] = -0.14884578347361943;
-    ubx0[3] = -0.14884578347361943;
-    lbx0[4] = -0.4576805369595171;
-    ubx0[4] = -0.4576805369595171;
-    lbx0[5] = -0.5781854373032868;
-    ubx0[5] = -0.5781854373032868;
-    lbx0[6] = 0.2223814332335634;
-    ubx0[6] = 0.2223814332335634;
-    lbx0[7] = 1.3760439397662612;
-    ubx0[7] = 1.3760439397662612;
+    lbx0[0] = 0.914815540620551;
+    ubx0[0] = 0.914815540620551;
+    lbx0[1] = 0.04957499614667203;
+    ubx0[1] = 0.04957499614667203;
+    lbx0[2] = -0.14980985319147128;
+    ubx0[2] = -0.14980985319147128;
+    lbx0[3] = 0.3717685493461439;
+    ubx0[3] = 0.3717685493461439;
+    lbx0[4] = 0.4003456406340507;
+    ubx0[4] = 0.4003456406340507;
+    lbx0[5] = -2.570610601512083;
+    ubx0[5] = -2.570610601512083;
+    lbx0[6] = -0.8947456290023809;
+    ubx0[6] = -0.8947456290023809;
+    lbx0[7] = -1.0028984834448016;
+    ubx0[7] = -1.0028984834448016;
 
     ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, 0, "idxbx", idxbx0);
     ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, 0, "lbx", lbx0);
@@ -541,8 +541,8 @@ void quadrotor_acados_create_5_set_nlp_in(quadrotor_solver_capsule* capsule, con
     double* lbu = lubu;
     double* ubu = lubu + NBU;
     
-    lbu[0] = 4.800000000000001;
-    ubu[0] = 29.8;
+    lbu[0] = 7.4740588;
+    ubu[0] = 32.4740588;
     lbu[1] = -0.1;
     ubu[1] = 0.1;
     lbu[2] = -0.1;
@@ -690,24 +690,6 @@ void quadrotor_acados_create_6_set_opts(quadrotor_solver_capsule* capsule)
     ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "qp_hpipm_mode", "BALANCE");
 
 
-    // set SQP specific options
-    double nlp_solver_tol_stat = 0.000001;
-    ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "tol_stat", &nlp_solver_tol_stat);
-
-    double nlp_solver_tol_eq = 0.000001;
-    ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "tol_eq", &nlp_solver_tol_eq);
-
-    double nlp_solver_tol_ineq = 0.000001;
-    ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "tol_ineq", &nlp_solver_tol_ineq);
-
-    double nlp_solver_tol_comp = 0.000001;
-    ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "tol_comp", &nlp_solver_tol_comp);
-
-    int nlp_solver_max_iter = 100;
-    ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "max_iter", &nlp_solver_max_iter);
-
-    int initialize_t_slacks = 0;
-    ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "initialize_t_slacks", &initialize_t_slacks);
 
     int qp_solver_iter_max = 50;
     ocp_nlp_solver_opts_set(nlp_config, nlp_opts, "qp_iter_max", &qp_solver_iter_max);
@@ -740,14 +722,14 @@ void quadrotor_acados_create_7_set_nlp_out(quadrotor_solver_capsule* capsule)
 
     // initialize with x0
     
-    x0[0] = 0.606652981720736;
-    x0[1] = -0.7473258671419708;
-    x0[2] = 0.22654169773347735;
-    x0[3] = -0.14884578347361943;
-    x0[4] = -0.4576805369595171;
-    x0[5] = -0.5781854373032868;
-    x0[6] = 0.2223814332335634;
-    x0[7] = 1.3760439397662612;
+    x0[0] = 0.914815540620551;
+    x0[1] = 0.04957499614667203;
+    x0[2] = -0.14980985319147128;
+    x0[3] = 0.3717685493461439;
+    x0[4] = 0.4003456406340507;
+    x0[5] = -2.570610601512083;
+    x0[6] = -0.8947456290023809;
+    x0[7] = -1.0028984834448016;
 
 
     double* u0 = xu0 + NX;
@@ -1091,24 +1073,16 @@ void quadrotor_acados_print_stats(quadrotor_solver_capsule* capsule)
     if (stat_n > 8)
         printf("\t\tqp_res_stat\tqp_res_eq\tqp_res_ineq\tqp_res_comp");
     printf("\n");
-
+    printf("iter\tqp_stat\tqp_iter\n");
     for (int i = 0; i < nrow; i++)
     {
         for (int j = 0; j < stat_n + 1; j++)
         {
-            if (j == 0 || j == 5 || j == 6)
-            {
-                tmp_int = (int) stat[i + j * nrow];
-                printf("%d\t", tmp_int);
-            }
-            else
-            {
-                printf("%e\t", stat[i + j * nrow]);
-            }
+            tmp_int = (int) stat[i + j * nrow];
+            printf("%d\t", tmp_int);
         }
         printf("\n");
     }
-
 }
 
 int quadrotor_acados_custom_update(quadrotor_solver_capsule* capsule, double* data, int data_len)
